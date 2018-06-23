@@ -32,9 +32,31 @@ $ curl https://raw.githubusercontent.com/eosforce/genesis/master/genesis.json -o
 $ cd build/programs/nodeos && ./nodeos
 ```
 
-:warning: Ensure your chain id is correct when your node is up: `bd61ae3a031e8ef2f97ee3b0e62776d6d30d4833c8f7c1645c657b149151004b`
+:warning:
+
+- Make sure your config directory has these 6 files:
+
+    ```bash
+    config
+    ├── System.abi
+    ├── System.wasm
+    ├── eosio.token.abi
+    ├── eosio.token.wasm
+    ├── config.ini
+    └── genesis.json
+    ```
+
+    - `config.ini` with `p2p-peer-address` added. You can find some seed nodes in the following P2P node section.
+
+    - `genesis.json` from [github.com/eosforce/genesis](https://raw.githubusercontent.com/eosforce/genesis/master/genesis.json).
+
+    - compiled contract files: `System.abi`, `System.wasm`, `eosio.token.abi` and `eosio.token.wasm` from `build/contracts/System` and `build/contracts/eosio.token`.
+
+- Ensure your chain id is correct when your node is up: `bd61ae3a031e8ef2f97ee3b0e62776d6d30d4833c8f7c1645c657b149151004b`
 
 ### Seed list
+
+#### P2P node
 
 These IPs could be used as `p2p-peer-address` in your `config.ini`:
 
@@ -47,8 +69,18 @@ IP            | P2P
 47.97.122.109 | 7894
 101.132.77.22 | 9066
 
+#### Wallet node
+
+The following IPs only provide HTTP service for wallet.
+
+IP           | Http
+:----:       | :----:
+47.96.105.18 | 8888
+47.94.18.198 | 8888
+47.75.5.228  | 8888
+
 ## Resources
 
-1. [eosfore.io website](http://eosforce.io)
+1. [Eosfore.io Website](http://eosforce.io)
 2. [Community Telegram Group](https://t.me/eosforce_en)
 3. [Developer Telegram Group](https://t.me/EOSForce)

@@ -60,24 +60,26 @@ $ cd build/programs/nodeos && ./nodeos
 
 These IPs could be used as `p2p-peer-address` in your `config.ini`:
 
-IP            | P2P
-:----:        | :----:
-47.104.255.49 | 65511
-47.254.71.89  | 8222
-47.75.126.7   | 19876
-47.96.232.211 | 8899
-47.97.122.109 | 7894
-101.132.77.22 | 9066
+IP            | P2P    | By
+:----:        | :----: | :----:
+47.104.255.49 | 65511  | eosforce
+47.254.71.89  | 8222   | eosforce
+47.75.126.7   | 19876  | eosforce
+47.96.232.211 | 8899   | eosforce
+47.97.122.109 | 7894   | eosforce
+101.132.77.22 | 9066   | eosforce
+47.52.54.232  | 18933  | eosshuimu
 
 #### Wallet node
 
-The following IPs only provide HTTP service for wallet.
+The following IPs provide HTTP service for wallet.
 
-IP           | Http
-:----:       | :----:
-47.96.105.18 | 8888
-47.94.18.198 | 8888
-47.75.5.228  | 8888
+IP           | Http   | By
+:----:       | :----: | :----:
+47.96.105.18 | 8888   | eosfroce
+47.94.18.198 | 8888   | eosforce
+47.75.5.228  | 8888   | eosforce
+47.52.54.232 | 8888   | eosshuimu
 
 ## Resources
 

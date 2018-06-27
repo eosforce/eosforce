@@ -60,28 +60,28 @@ $ cd build/programs/nodeos && ./nodeos
 
 These IPs could be used as `p2p-peer-address` in your `config.ini`:
 
-IP            | P2P    | By
-:----:        | :----: | :----:
-47.104.255.49 | 65511  | eosforce
-47.254.71.89  | 8222   | eosforce
-47.75.126.7   | 19876  | eosforce
-47.96.232.211 | 8899   | eosforce
-47.97.122.109 | 7894   | eosforce
-101.132.77.22 | 9066   | eosforce
-47.52.54.232  | 18933  | eosshuimu
-47.75.138.177 | 9876   | eosjedi
+IP            | Domain Name           | P2P    | By
+:----:        | :----:                | :----: | :----:
+47.104.255.49 | http://p1.eosforce.cn | 65511  | eosforce
+47.254.71.89  | http://p2.eosforce.cn | 8222   | eosforce
+47.75.126.7   | http://p3.eosforce.cn | 19876  | eosforce
+47.96.232.211 | http://p4.eosforce.cn | 8899   | eosforce
+47.97.122.109 | http://p5.eosforce.cn | 7894   | eosforce
+101.132.77.22 | http://p6.eosforce.cn | 9066   | eosforce
+47.52.54.232  |                       | 18933  | eosshuimu
+47.75.138.177 |                       | 9876   | eosjedi
 
 #### Wallet node
 
 The following IPs provide HTTP service for wallet.
 
-IP            | Http   | By
-:----:        | :----: | :----:
-47.96.105.18  | 8888   | eosfroce
-47.94.18.198  | 8888   | eosforce
-47.75.5.228   | 8888   | eosforce
-47.52.54.232  | 8888   | eosshuimu
-47.75.138.177 | 8888   | eosjedi
+IP            | Domain Name            | Http   | By
+:----:        | :----:                 | :----: | :----:
+47.96.105.18  | https://w1.eosforce.cn | 8888   | eosfroce
+47.94.18.198  | https://w2.eosforce.cn | 8888   | eosforce
+47.75.5.228   | https://w3.eosforce.cn | 8888   | eosforce
+47.52.54.232  |                        | 8888   | eosshuimu
+47.75.138.177 |                        | 8888   | eosjedi
 
 ## Resources
 

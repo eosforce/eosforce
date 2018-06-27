@@ -77,9 +77,9 @@ The following IPs provide HTTP service for wallet.
 
 IP                 | Domain Name            | By
 :----:             | :----:                 | :----:
-47.96.105.18:8888  | https://w1.eosforce.cn | eosfroce
-47.94.18.198:8888  | https://w2.eosforce.cn | eosforce
-47.75.5.228:8888   | https://w3.eosforce.cn | eosforce
+                   | https://w1.eosforce.cn | eosfroce
+                   | https://w2.eosforce.cn | eosforce
+                   | https://w3.eosforce.cn | eosforce
 47.52.54.232:8888  |                        | eosshuimu
 47.75.138.177:8888 |                        | eosjedi
 

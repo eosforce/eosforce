@@ -68,18 +68,20 @@ IP            | P2P    | By
 47.96.232.211 | 8899   | eosforce
 47.97.122.109 | 7894   | eosforce
 101.132.77.22 | 9066   | eosforce
-47.52.54.232  | 18933  | eosshuimu
+47.52.54.232  | 18933  | eosjedi
+47.75.138.177 | 9876   | eosshuimu
 
 #### Wallet node
 
 The following IPs provide HTTP service for wallet.
 
-IP           | Http   | By
-:----:       | :----: | :----:
-47.96.105.18 | 8888   | eosfroce
-47.94.18.198 | 8888   | eosforce
-47.75.5.228  | 8888   | eosforce
-47.52.54.232 | 8888   | eosshuimu
+IP            | Http   | By
+:----:        | :----: | :----:
+47.96.105.18  | 8888   | eosfroce
+47.94.18.198  | 8888   | eosforce
+47.75.5.228   | 8888   | eosforce
+47.52.54.232  | 8888   | eosjedi
+47.75.138.177 | 8888   | eosshuimu
 
 ## Resources
 

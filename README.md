@@ -71,6 +71,7 @@ IP                  | Domain Name                 | By
 47.52.54.232:18933  | N/A                         | eosshuimu
 47.75.138.177:9876  | N/A                         | eosjedi
 112.74.179.235:9876 | N/A                         | eosgod
+47.91.175.9:15888   | p.eosco.top:15888           | eosco
 
 #### Wallet node
 
@@ -84,6 +85,7 @@ N/A                 | https://w3.eosforce.cn | eosforce
 47.52.54.232:8888   | N/A                    | eosshuimu
 47.75.138.177:8888  | N/A                    | eosjedi
 112.74.179.235:8888 | N/A                    | eosgod
+47.91.175.9:8888    | p.eosco.top:8888       | eosco
 
 ## Resources
 

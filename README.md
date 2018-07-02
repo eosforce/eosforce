@@ -70,18 +70,20 @@ IP                  | Domain Name                 | By
 101.132.77.22:9066  | http://p6.eosforce.cn:9066  | eosforce
 47.52.54.232:18933  | N/A                         | eosshuimu
 47.75.138.177:9876  | N/A                         | eosjedi
+112.74.179.235:9876 | N/A                         | eosgod
 
 #### Wallet node
 
 The following IPs provide HTTP service for wallet.
 
-IP                 | Domain Name            | By
-:----:             | :----:                 | :----:
-N/A                | https://w1.eosforce.cn | eosfroce
-N/A                | https://w2.eosforce.cn | eosforce
-N/A                | https://w3.eosforce.cn | eosforce
-47.52.54.232:8888  | N/A                    | eosshuimu
-47.75.138.177:8888 | N/A                    | eosjedi
+IP                  | Domain Name            | By
+:----:              | :----:                 | :----:
+N/A                 | https://w1.eosforce.cn | eosfroce
+N/A                 | https://w2.eosforce.cn | eosforce
+N/A                 | https://w3.eosforce.cn | eosforce
+47.52.54.232:8888   | N/A                    | eosshuimu
+47.75.138.177:8888  | N/A                    | eosjedi
+112.74.179.235:8888 | N/A                    | eosgod
 
 ## Resources
 

@@ -72,6 +72,9 @@ IP                  | Domain Name                 | By
 47.75.138.177:9876  | N/A                         | eosjedi
 112.74.179.235:9876 | N/A                         | eosgod
 47.91.175.9:15888   | p.eosco.top:15888           | eosco
+132.232.104.44:8001 | N/A                         | jiqix
+47.93.38.143:19951  | N/A                         | coinlord.one:
+47.52.126.100:9123  | N/A                         | eospro
 
 #### Wallet node
 
@@ -86,6 +89,9 @@ N/A                 | https://w3.eosforce.cn | eosforce
 47.75.138.177:8888  | N/A                    | eosjedi
 112.74.179.235:8888 | N/A                    | eosgod
 47.91.175.9:8888    | p.eosco.top:8888       | eosco
+132.232.104.44:8000 | N/A                    | jiqix
+47.93.38.143:20188  | N/A                    | coinlord.one
+47.52.126.100:8888  | N/A                    | eospro
 
 ## Resources
 

@@ -54,6 +54,10 @@ $ cd build/programs/nodeos && ./nodeos
 
 - Ensure your chain id is correct when your node is up: `bd61ae3a031e8ef2f97ee3b0e62776d6d30d4833c8f7c1645c657b149151004b`
 
+- [RPC interface](https://documenter.getpostman.com/view/4394576/RWEnobze#17704cbd-13cd-4d21-a7dd-ab19287dd1fe)
+
+- [CLI command reference](https://github.com/eosforce/contracts/tree/master/System#command-reference)
+
 ### Seed list
 
 #### P2P node

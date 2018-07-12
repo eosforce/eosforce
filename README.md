@@ -1,5 +1,20 @@
 # EOS Force
 
+<!-- vim-markdown-toc GFM -->
+
+* [Supported Operating Systems](#supported-operating-systems)
+* [Getting Started](#getting-started)
+    * [Build from source](#build-from-source)
+        * [Notes](#notes)
+        * [Command reference](#command-reference)
+    * [Docker](#docker)
+    * [Seed list](#seed-list)
+        * [P2P node](#p2p-node)
+        * [Wallet node](#wallet-node)
+* [Resources](#resources)
+
+<!-- vim-markdown-toc -->
+
 ## Supported Operating Systems
 
 EOS Force currently supports the following operating systems:
@@ -8,6 +23,8 @@ EOS Force currently supports the following operating systems:
 2. macOS 10.12 and higher (macOS 10.13.x recommended)
 
 ## Getting Started
+
+### Build from source
 
 ```bash
 # clone this repository and build
@@ -32,6 +49,8 @@ $ curl https://raw.githubusercontent.com/eosforce/genesis/master/genesis.json -o
 $ cd build/programs/nodeos && ./nodeos
 ```
 
+#### Notes
+
 :warning:
 
 - Make sure your config directory has these 6 files:
@@ -54,9 +73,15 @@ $ cd build/programs/nodeos && ./nodeos
 
 - Ensure your chain id is correct when your node is up: `bd61ae3a031e8ef2f97ee3b0e62776d6d30d4833c8f7c1645c657b149151004b`
 
+#### Command reference
+
 - [RPC interface](https://documenter.getpostman.com/view/4394576/RWEnobze#17704cbd-13cd-4d21-a7dd-ab19287dd1fe)
 
 - [CLI command reference](https://github.com/eosforce/contracts/tree/master/System#command-reference)
+
+### Docker
+
+[Run a node via docker](https://github.com/eosforce/genesis#run-a-node-via-docker)
 
 ### Seed list
 

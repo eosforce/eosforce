@@ -91,19 +91,20 @@ These IPs could be used as `p2p-peer-address` in your `config.ini`:
 
 IP                  | Domain Name                 | By
 :----:              | :----:                      | :----:
+47.99.47.190:10321  | N/A                         | mathwallet
+47.52.126.100:9123  | N/A                         | eospro
+47.93.38.143:19951  | N/A                         | coinlord.one:
+132.232.104.44:8001 | N/A                         | jiqix
+47.91.175.9:15888   | p.eosco.top:15888           | eosco
+112.74.179.235:9876 | N/A                         | eosgod
+47.75.138.177:9876  | N/A                         | eosjedi
+47.52.54.232:18933  | N/A                         | eosshuimu
 47.104.255.49:65511 | http://p1.eosforce.cn:65511 | eosforce
 47.254.71.89:8222   | http://p2.eosforce.cn:8222  | eosforce
 47.75.126.7:19876   | http://p3.eosforce.cn:19876 | eosforce
 47.96.232.211:8899  | http://p4.eosforce.cn:8899  | eosforce
 47.97.122.109:7894  | http://p5.eosforce.cn:7894  | eosforce
 101.132.77.22:9066  | http://p6.eosforce.cn:9066  | eosforce
-47.52.54.232:18933  | N/A                         | eosshuimu
-47.75.138.177:9876  | N/A                         | eosjedi
-112.74.179.235:9876 | N/A                         | eosgod
-47.91.175.9:15888   | p.eosco.top:15888           | eosco
-132.232.104.44:8001 | N/A                         | jiqix
-47.93.38.143:19951  | N/A                         | coinlord.one:
-47.52.126.100:9123  | N/A                         | eospro
 
 #### Wallet node
 

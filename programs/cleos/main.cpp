@@ -91,6 +91,7 @@ Options:
 #include <eosio/chain/trace.hpp>
 #include <eosio/chain_plugin/chain_plugin.hpp>
 #include <eosio/chain/contract_types.hpp>
+#include <eosio/chain/asset.hpp>
 
 #pragma push_macro("N")
 #undef N
@@ -2453,6 +2454,7 @@ int main( int argc, char** argv ) {
       trx.max_cpu_usage_ms = 0;
       trx.delay_sec = 0;
       trx.actions = { chain::action(trxperm, name(proposed_contract), name(proposed_action), proposed_trx_serialized) };
+      trx.fee = eosio::chain::asset(100);
 
       fc::to_variant(trx, trx_var);
 

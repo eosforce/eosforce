@@ -50,8 +50,9 @@ namespace eosio {
       vector<action>  context_free_actions;
       vector<action>  actions;
       extensions_type transaction_extensions; 
+      asset                  fee;
 
-      EOSLIB_SERIALIZE_DERIVED( transaction, transaction_header, (context_free_actions)(actions)(transaction_extensions) )
+      EOSLIB_SERIALIZE_DERIVED( transaction, transaction_header, (context_free_actions)(actions)(transaction_extensions)(fee) )
    };
 
    struct onerror {

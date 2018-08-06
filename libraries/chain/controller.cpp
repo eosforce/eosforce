@@ -670,6 +670,21 @@ struct controller_impl {
       signed_transaction dtrx;
       fc::raw::unpack(ds,static_cast<transaction&>(dtrx) );
 
+      //action check
+      check_action(dtrx.actions);
+      
+      //fee, setcode setapi action fliter by txfee.get_required_fee
+      FC_ASSERT(txfee.check_transaction(dtrx) == true, "transaction include actor more than one");
+      FC_ASSERT(dtrx.fee == txfee.get_required_fee(dtrx), "set tx fee failed");
+      try {
+        auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(dtrx.fee, dtrx.actions[0].authorization[0].actor) );
+        auto onftrace = push_transaction( onftrx, fc::time_point::maximum(), true, config::default_min_transaction_cpu_usage);
+        if( onftrace->except ) throw *onftrace->except;
+        ilog("-------call onfee function tx");
+      } catch ( ... ) {
+        FC_ASSERT(false, "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
+      }
+
       transaction_context trx_context( self, dtrx, gto.trx_id );
       trx_context.deadline = deadline;
       trx_context.billed_cpu_time_us = billed_cpu_time_us;

@@ -86,7 +86,7 @@ $ cd build/programs/nodeos && ./nodeos
 ### Seed list
 
 #### P2P node
-
+#####but some p2p node can not use, please view http://t.eosforce.io/p2p/ you can find normal p2p node
 These IPs could be used as `p2p-peer-address` in your `config.ini`:
 
 IP                  | Domain Name                 | By

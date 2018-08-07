@@ -8,6 +8,7 @@
 #include <eosiolib/types.hpp>
 #include <eosiolib/time.hpp>
 #include <eosiolib/serialize.hpp>
+#include <eosiolib/asset.hpp>
 #include <vector>
 
 namespace eosio {

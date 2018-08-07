@@ -1,9 +1,6 @@
 {
   "version": "eosio::abi/1.0",
   "types": [{
-      "new_type_name": "account_name",
-      "type": "name"
-   },{
       "new_type_name": "permission_name",
       "type": "name"
    },{
@@ -50,7 +47,8 @@
       "fields": [
          {"name": "context_free_actions", "type": "action[]"},
          {"name": "actions", "type": "action[]"},
-         {"name": "transaction_extensions", "type": "extension[]"}
+         {"name": "transaction_extensions", "type": "extension[]"},
+         {"name": "fee", "type": "asset"}
       ]
    },{
       "name": "propose",

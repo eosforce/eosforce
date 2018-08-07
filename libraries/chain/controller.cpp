@@ -455,62 +455,27 @@ struct controller_impl {
      }
    }
 
-   void initialize_code(const bytes code) {
-     auto code_id = fc::sha256::hash( code.data(), (uint32_t)code.size() );
-     const auto& account = db.get<account_object,by_name>(N(eosio));
+  void initialize_contract(uint64_t contract, const bytes code, const bytes abi){
+     auto code_id = fc::sha256::hash(code.data(), (uint32_t)code.size());
      int64_t code_size = code.size();
-     db.modify( account, [&]( auto& a ) {
-       a.last_code_update = conf.genesis.initial_timestamp;
-       a.code_version = code_id;
-       a.code.resize( code_size );
-       memcpy(a.code.data(), code.data(), code_size); 
-     });
-     const auto& account_sequence = db.get<account_sequence_object, by_name>(N(eosio));
-     db.modify( account_sequence, [&]( auto& aso ) {
-       aso.code_sequence += 1;
-     });
-   }
-
-   void initialize_abi(const bytes abi) {
-     auto abi_id = fc::sha256::hash(abi.data(), (uint32_t)abi.size());
-     const auto& account = db.get<account_object,by_name>(N(eosio));
-     int64_t abi_size = abi.size();
-     db.modify( account, [&]( auto& a ) {
-       a.abi_version = abi_id;
-       a.abi.resize( abi_size );
-       if( abi_size > 0 )
-          memcpy( a.abi.data(), abi.data(), abi_size );
-     });
-     const auto& account_sequence = db.get<account_sequence_object, by_name>(N(eosio));
-     db.modify( account_sequence, [&]( auto& aso ) {
-       aso.abi_sequence += 1;
-     });
-   }
-
-   void initialize_token(const bytes code, const bytes abi) {
-     auto code_id = fc::sha256::hash( code.data(), (uint32_t)code.size() );
-     const auto& account = db.get<account_object,by_name>(N(eosio.token));
-     int64_t code_size = code.size();
-     db.modify( account, [&]( auto& a ) {
-       a.last_code_update = conf.genesis.initial_timestamp;
-       a.code_version = code_id;
-       a.code.resize( code_size );
-       memcpy(a.code.data(), code.data(), code_size); 
-     });
-     const auto& account_sequence = db.get<account_sequence_object, by_name>(N(eosio.token));
-     db.modify( account_sequence, [&]( auto& aso ) {
-       aso.code_sequence += 1;
-     });
-
      auto abi_id = fc::sha256::hash(abi.data(), (uint32_t)abi.size());
      int64_t abi_size = abi.size();
-     db.modify( account, [&]( auto& a ) {
+
+     const auto &account = db.get<account_object, by_name>(contract);
+     db.modify(account, [&](auto &a) {
+       a.last_code_update = conf.genesis.initial_timestamp;
+       a.code_version = code_id;
+       a.code.resize(code_size);
        a.abi_version = abi_id;
-       a.abi.resize( abi_size );
-       if( abi_size > 0 )
-          memcpy( a.abi.data(), abi.data(), abi_size );
+       a.abi.resize(abi_size);
+       memcpy(a.code.data(), code.data(), code_size);
+       if (abi_size > 0)
+         memcpy(a.abi.data(), abi.data(), abi_size);
      });
-     db.modify( account_sequence, [&]( auto& aso ) {
+
+     const auto &account_sequence = db.get<account_sequence_object, by_name>(contract);
+     db.modify(account_sequence, [&](auto &aso) {
+       aso.code_sequence += 1;
        aso.abi_sequence += 1;
      });
    }
@@ -537,9 +502,18 @@ struct controller_impl {
       authority system_auth(conf.genesis.initial_key);
       create_native_account( config::system_account_name, system_auth, system_auth, true );
       create_native_account( N(eosio.token), system_auth, system_auth, false );
-      initialize_code(conf.genesis.code);
-      initialize_abi(conf.genesis.abi);
-      initialize_token(conf.genesis.token_code, conf.genesis.token_abi);
+      create_native_account( N(eossys.msig), system_auth, system_auth, true );
+      create_native_account( N(eossys.bios), system_auth, system_auth, false );
+
+      //init contract: System
+      initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi);
+      //init contract: eosio.token
+      initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
+      //init contract: eosio.bios
+      initialize_contract(N(eossys.bios), conf.bios_code, conf.bios_abi);
+      //init contract: eosio.msig
+      initialize_contract(N(eossys.msig), conf.msig_code, conf.msig_abi);
+
       initialize_account();
       initialize_producer();
       initialize_chain_emergency();
@@ -695,6 +669,21 @@ struct controller_impl {
 
       signed_transaction dtrx;
       fc::raw::unpack(ds,static_cast<transaction&>(dtrx) );
+
+      //action check
+      check_action(dtrx.actions);
+      
+      //fee, setcode setapi action fliter by txfee.get_required_fee
+      FC_ASSERT(txfee.check_transaction((transaction)dtrx) == true, "transaction include actor more than one");
+      FC_ASSERT(dtrx.fee == txfee.get_required_fee(dtrx), "set tx fee failed");
+      try {
+        auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(dtrx.fee, dtrx.actions[0].authorization[0].actor) );
+        ilog("-------call onfee function tx");
+        auto onftrace = push_transaction( onftrx, fc::time_point::maximum(), true, config::default_min_transaction_cpu_usage);
+        if( onftrace->except ) throw *onftrace->except;
+      } catch ( ... ) {
+        FC_ASSERT(false, "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
+      }
 
       transaction_context trx_context( self, dtrx, gto.trx_id );
       trx_context.deadline = deadline;

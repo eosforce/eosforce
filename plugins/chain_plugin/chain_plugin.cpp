@@ -200,6 +200,31 @@ fc::time_point calculate_genesis_timestamp( string tstr ) {
    return genesis_timestamp;
 }
 
+/**
+ * load code and abi file to bytes
+ * string contract: contract name (eg: System, eosio.token)
+ * bytes& code: out param
+ * bytes& abi: out param
+ */
+void load_contract_code_abi(const string contract, bytes& code, bytes& abi){
+      ilog("initializing contract : ${contract}", ("contract", contract));
+      auto wastPath = app().config_dir() / contract += ".wasm";
+      std::string wast;
+      fc::read_file_contents(wastPath, wast);
+      FC_ASSERT(!wast.empty(), "no wast file found ");
+      const string binary_wasm_header("\x00\x61\x73\x6d", 4);
+      if(wast.compare(0, 4, binary_wasm_header) == 0) {
+            code = bytes(wast.begin(), wast.end());
+      } else {
+            FC_ASSERT("not support this wast");
+      }
+      auto abiPath = app().config_dir() / contract += ".abi";
+      FC_ASSERT( fc::exists( abiPath ), "no abi file found ");
+      auto abijson = fc::json::from_file(abiPath).as<abi_def>();
+      abi = fc::raw::pack(abijson);
+}
+
+
 void chain_plugin::plugin_initialize(const variables_map& options) {
    ilog("initializing chain plugin");
 
@@ -336,36 +361,11 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
    auto genesis_file = app().config_dir() / "genesis.json";
    my->chain_config->genesis = fc::json::from_file(genesis_file).as<genesis_state>();
-   auto wastPath = app().config_dir() / "System.wasm";
-   std::string wast;
-   fc::read_file_contents(wastPath, wast);
-   FC_ASSERT(!wast.empty(), "no wast file found ");
-   const string binary_wasm_header("\x00\x61\x73\x6d", 4);
-   if(wast.compare(0, 4, binary_wasm_header) == 0) {
-       my->chain_config->genesis.code = bytes(wast.begin(), wast.end());
-   }
-   else {
-       FC_ASSERT("not support this wast");
-   }
-   auto abiPath = app().config_dir() / "System.abi";
-   FC_ASSERT( fc::exists( abiPath ), "no abi file found ");
-   auto abi = fc::json::from_file(abiPath).as<abi_def>();
-   my->chain_config->genesis.abi = fc::raw::pack(abi);
-
-   auto tokenWastPath = app().config_dir() / "eosio.token.wasm";
-   std::string tokenWast;
-   fc::read_file_contents(tokenWastPath, tokenWast);
-   FC_ASSERT(!tokenWast.empty(), "no wast file found ");
-   if(tokenWast.compare(0, 4, binary_wasm_header) == 0) {
-       my->chain_config->genesis.token_code = bytes(tokenWast.begin(), tokenWast.end());
-   }
-   else {
-       FC_ASSERT("not support this wast");
-   }
-   auto tokenAbiPath = app().config_dir() / "eosio.token.abi";
-   FC_ASSERT( fc::exists( tokenAbiPath ), "no abi file found ");
-   auto tokenAbi = fc::json::from_file(tokenAbiPath).as<abi_def>();
-   my->chain_config->genesis.token_abi = fc::raw::pack(tokenAbi);
+   
+    load_contract_code_abi("System", my->chain_config->genesis.code, my->chain_config->genesis.abi);
+    load_contract_code_abi("eosio.token", my->chain_config->genesis.token_code, my->chain_config->genesis.token_abi);
+    load_contract_code_abi("eosio.bios", my->chain_config->bios_code, my->chain_config->bios_abi);
+    load_contract_code_abi("eosio.msig", my->chain_config->msig_code, my->chain_config->msig_abi);
 
    //ilog("----------genesis_file: ${gs}", ("gs", my->chain_config->genesis));
    if( options.count("genesis-json") ) {

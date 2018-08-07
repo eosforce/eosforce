@@ -1,9 +1,6 @@
 {
    "version": "eosio::abi/1.0",
    "types": [{
-      "new_type_name": "account_name",
-      "type": "name"
-   },{
       "new_type_name": "permission_name",
       "type": "name"
    },{

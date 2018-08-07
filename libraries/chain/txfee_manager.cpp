@@ -27,11 +27,11 @@ namespace eosio { namespace chain {
         fee_map[N(create)]          = asset(10*10000);
 
         //eosio.msig
-        fee_map[N(propose)]         = asset(1000);
-        fee_map[N(approve)]         = asset(1000);
-        fee_map[N(unapprove)]       = asset(1000);
-        fee_map[N(cancel)]          = asset(1000);
-        fee_map[N(exec)]            = asset(1000);
+        // fee_map[N(propose)]         = asset(1000);
+        // fee_map[N(approve)]         = asset(1000);
+        // fee_map[N(unapprove)]       = asset(1000);
+        // fee_map[N(cancel)]          = asset(1000);
+        // fee_map[N(exec)]            = asset(1000);
    }
 
    bool txfee_manager::check_transaction( const transaction& trx)const

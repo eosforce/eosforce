@@ -2454,7 +2454,10 @@ int main( int argc, char** argv ) {
       trx.max_cpu_usage_ms = 0;
       trx.delay_sec = 0;
       trx.actions = { chain::action(trxperm, name(proposed_contract), name(proposed_action), proposed_trx_serialized) };
-      trx.fee = eosio::chain::asset(100);
+      //   determine_required_fee(trx);
+      auto get_arg = fc::mutable_variant_object("transaction", trx);
+      const auto& required_fee = call(get_required_fee, get_arg);
+      fc::from_variant( required_fee["required_fee"], trx.fee);
 
       fc::to_variant(trx, trx_var);
 

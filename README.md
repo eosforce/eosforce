@@ -2,16 +2,17 @@
 
 <!-- vim-markdown-toc GFM -->
 
-* [Supported Operating Systems](#supported-operating-systems)
-* [Getting Started](#getting-started)
-    * [Build from source](#build-from-source)
-        * [Notes](#notes)
-        * [Command reference](#command-reference)
-    * [Docker](#docker)
-    * [Seed list](#seed-list)
-        * [P2P node](#p2p-node)
-        * [Wallet node](#wallet-node)
-* [Resources](#resources)
+- [EOS Force](#eos-force)
+    - [Supported Operating Systems](#supported-operating-systems)
+    - [Getting Started](#getting-started)
+        - [Build from source](#build-from-source)
+            - [Notes](#notes)
+            - [Command reference](#command-reference)
+        - [Docker](#docker)
+        - [Seed list](#seed-list)
+            - [P2P node](#p2p-node)
+            - [Wallet node](#wallet-node)
+    - [Resources](#resources)
 
 <!-- vim-markdown-toc -->
 
@@ -39,6 +40,8 @@ $ cd build && make install
 # also copy the generated abi and wasm contract file to ~/.local/share/eosio/nodeos/config
 $ cp build/contracts/eosio.token/eosio.token.abi build/contracts/eosio.token/eosio.token.wasm ~/.local/share/eosio/nodeos/config
 $ cp build/contracts/System/System.abi build/contracts/System/System.wasm ~/.local/share/eosio/nodeos/config
+$ cp build/contracts/eosio.bios/eosio.bios.abi build/contracts/eosio.bios/eosio.bios.wasm ~/.local/share/eosio/nodeos/config
+$ cp build/contracts/eosio.msig/eosio.msig.abi build/contracts/eosio.msig/eosio.msig.wasm ~/.local/share/eosio/nodeos/config
 
 # place some p2p nodes in here, see the following seed list section
 $ vim ~/.local/share/eosio/nodeos/config/config.ini
@@ -61,6 +64,10 @@ $ cd build/programs/nodeos && ./nodeos
     ├── System.wasm
     ├── eosio.token.abi
     ├── eosio.token.wasm
+    ├── eosio.bios.abi
+    ├── eosio.bios.wasm
+    ├── eosio.msig.abi
+    ├── eosio.msig.wasm
     ├── config.ini
     └── genesis.json
     ```

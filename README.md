@@ -101,16 +101,13 @@ IP                  | Domain Name                 | By
 119.23.107.150:10321| N/A                         | onetaoforce
 47.75.124.107:9876  | N/A                         | eosawake
 47.97.115.84:9876   | N/A                         | jeepool
-139.162.96.42:8666  | N/A                         | coinjinja
 120.77.148.60:9889  | N/A                         | eostrust
-47.89.57.18:9988    | N/A                         | matou
 140.143.18.115:8001 | N/A                         | imlianquan
-154.8.213.229:8001  | N/A                         | masterbp
 47.97.197.66:10321  | N/A                         | ccbc
 47.99.47.190:10321  | N/A                         | mathwallet
-47.52.126.100:9123  | N/A                         | eospro
 47.93.38.143:19951  | N/A                         | coinlord.one:
-132.232.104.44:8001 | N/A                         | jiqix
+132.232.22.135:6000 | N/A                         | jiqix
+120.79.75.114:9876  | N/A                         | fos.top
 47.91.175.9:15888   | p.eosco.top:15888           | eosco
 112.74.179.235:9876 | N/A                         | eosgod
 47.75.138.177:9876  | N/A                         | eosjedi

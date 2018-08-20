@@ -229,6 +229,12 @@ struct controller_impl {
          } else if( !end ) {
             blog.reset_to_genesis( conf.genesis, head->block );
          }
+      } else {
+        //the chain has been launched, init bios and msig: accounts of "eosio.bios" and "eosio.msig" has been created, and modify account and contract
+        set_system_contract_account(N(eosio.bios), false);
+        set_system_contract_account(N(eosio.msig), true);
+        initialize_contract( N(eosio.bios), conf.bios_code, conf.bios_abi );
+        initialize_contract( N(eosio.msig), conf.msig_code, conf.msig_abi );
       }
 
       const auto& ubi = reversible_blocks.get_index<reversible_block_index,by_num>();
@@ -341,6 +347,7 @@ struct controller_impl {
 
    void create_native_account( account_name name, const authority& owner, const authority& active, bool is_privileged = false ) {
       if (db.find<account_object, by_name>(name) != nullptr) {
+        elog("modify_native_account, This account already exists : ${name}", ("name", name));
         return;
       }
       db.create<account_object>([&](auto& a) {
@@ -370,7 +377,30 @@ struct controller_impl {
 
       resource_limits.add_pending_ram_usage(name, ram_delta);
       resource_limits.verify_account_ram_usage(name);
+      ilog("create_native_account : ${name}", ("name", name));
    }
+
+  // set account as system contract account
+   void set_system_contract_account( account_name name, bool is_privileged = false ) {
+      //modify account privileged
+      const auto &account = db.get<account_object, by_name>(name);
+      if (account != nullptr) {
+        elog("modify_native_account, This account already exists : ${name}", ("name", name));
+        return;
+      }
+      db.modify(account, [&](auto &a) {
+        a.privileged = is_privileged;
+      });
+
+      //modify auth
+      authority system_auth(conf.genesis.initial_key);
+      const auto& active_permission = authorization.get_permission({name, config::active_name});
+      const auto& owner_permission = authorization.get_permission({name, config::owner_name});
+      if(active_permission != nullptr && owner_permission != nullptr){
+      authorization.modify_permission(active_permission, system_auth);
+      authorization.modify_permission(owner_permission, system_auth);
+      }
+  }
 
    void initialize_producer() {
       for (auto producer : conf.genesis.initial_producer_list) {
@@ -502,17 +532,11 @@ struct controller_impl {
       authority system_auth(conf.genesis.initial_key);
       create_native_account( config::system_account_name, system_auth, system_auth, true );
       create_native_account( N(eosio.token), system_auth, system_auth, false );
-      create_native_account( N(eossys.msig), system_auth, system_auth, true );
-      create_native_account( N(eossys.bios), system_auth, system_auth, false );
 
       //init contract: System
       initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi);
       //init contract: eosio.token
       initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
-      //init contract: eosio.bios
-      initialize_contract(N(eossys.bios), conf.bios_code, conf.bios_abi);
-      //init contract: eosio.msig
-      initialize_contract(N(eossys.msig), conf.msig_code, conf.msig_abi);
 
       initialize_account();
       initialize_producer();

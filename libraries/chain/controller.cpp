@@ -384,10 +384,6 @@ struct controller_impl {
    void set_system_contract_account( account_name name, bool is_privileged = false ) {
       //modify account privileged
       const auto &account = db.get<account_object, by_name>(name);
-      if (account != nullptr) {
-        elog("modify_native_account, This account already exists : ${name}", ("name", name));
-        return;
-      }
       db.modify(account, [&](auto &a) {
         a.privileged = is_privileged;
       });

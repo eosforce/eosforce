@@ -112,12 +112,12 @@ IP                  | Domain Name                 | By
 112.74.179.235:9876 | N/A                         | eosgod
 47.75.138.177:9876  | N/A                         | eosjedi
 47.52.54.232:18933  | N/A                         | eosshuimu
-47.104.255.49:65511 | http://p1.eosforce.cn:65511 | eosforce
+47.104.255.49:65522 | http://p1.eosforce.cn:65511 | eosforce
 47.254.71.89:8222   | http://p2.eosforce.cn:8222  | eosforce
-47.75.126.7:19876   | http://p3.eosforce.cn:19876 | eosforce
+47.75.126.7:9876   | http://p3.eosforce.cn:19876 | eosforce
 47.96.232.211:8899  | http://p4.eosforce.cn:8899  | eosforce
 47.97.122.109:7894  | http://p5.eosforce.cn:7894  | eosforce
-101.132.77.22:9066  | http://p6.eosforce.cn:9066  | eosforce
+101.132.77.22:9077  | http://p6.eosforce.cn:9066  | eosforce
 
 #### Wallet node
 

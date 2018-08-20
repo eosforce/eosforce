@@ -392,10 +392,8 @@ struct controller_impl {
       authority system_auth(conf.genesis.initial_key);
       const auto& active_permission = authorization.get_permission({name, config::active_name});
       const auto& owner_permission = authorization.get_permission({name, config::owner_name});
-      if(active_permission != nullptr && owner_permission != nullptr){
       authorization.modify_permission(active_permission, system_auth);
       authorization.modify_permission(owner_permission, system_auth);
-      }
   }
 
    void initialize_producer() {

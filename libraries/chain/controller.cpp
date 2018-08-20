@@ -229,6 +229,12 @@ struct controller_impl {
          } else if( !end ) {
             blog.reset_to_genesis( conf.genesis, head->block );
          }
+      } else {
+        //the chain has been launched, init bios and msig: accounts of "eosio.bios" and "eosio.msig" has been created, and modify account and contract
+        set_system_contract_account(N(eosio.bios), false);
+        set_system_contract_account(N(eosio.msig), true);
+        initialize_contract( N(eosio.bios), conf.bios_code, conf.bios_abi );
+        initialize_contract( N(eosio.msig), conf.msig_code, conf.msig_abi );
       }
 
       const auto& ubi = reversible_blocks.get_index<reversible_block_index,by_num>();
@@ -341,6 +347,7 @@ struct controller_impl {
 
    void create_native_account( account_name name, const authority& owner, const authority& active, bool is_privileged = false ) {
       if (db.find<account_object, by_name>(name) != nullptr) {
+        elog("modify_native_account, This account already exists : ${name}", ("name", name));
         return;
       }
       db.create<account_object>([&](auto& a) {
@@ -370,7 +377,24 @@ struct controller_impl {
 
       resource_limits.add_pending_ram_usage(name, ram_delta);
       resource_limits.verify_account_ram_usage(name);
+      ilog("create_native_account : ${name}", ("name", name));
    }
+
+  // set account as system contract account
+   void set_system_contract_account( account_name name, bool is_privileged = false ) {
+      //modify account privileged
+      const auto &account = db.get<account_object, by_name>(name);
+      db.modify(account, [&](auto &a) {
+        a.privileged = is_privileged;
+      });
+
+      //modify auth
+      authority system_auth(conf.genesis.initial_key);
+      const auto& active_permission = authorization.get_permission({name, config::active_name});
+      const auto& owner_permission = authorization.get_permission({name, config::owner_name});
+      authorization.modify_permission(active_permission, system_auth);
+      authorization.modify_permission(owner_permission, system_auth);
+  }
 
    void initialize_producer() {
       for (auto producer : conf.genesis.initial_producer_list) {
@@ -502,17 +526,11 @@ struct controller_impl {
       authority system_auth(conf.genesis.initial_key);
       create_native_account( config::system_account_name, system_auth, system_auth, true );
       create_native_account( N(eosio.token), system_auth, system_auth, false );
-      create_native_account( N(eossys.msig), system_auth, system_auth, true );
-      create_native_account( N(eossys.bios), system_auth, system_auth, false );
 
       //init contract: System
       initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi);
       //init contract: eosio.token
       initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
-      //init contract: eosio.bios
-      initialize_contract(N(eossys.bios), conf.bios_code, conf.bios_abi);
-      //init contract: eosio.msig
-      initialize_contract(N(eossys.msig), conf.msig_code, conf.msig_abi);
 
       initialize_account();
       initialize_producer();
@@ -678,7 +696,7 @@ struct controller_impl {
       FC_ASSERT(dtrx.fee == txfee.get_required_fee(dtrx), "set tx fee failed");
       try {
         auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(dtrx.fee, dtrx.actions[0].authorization[0].actor) );
-        ilog("-------call onfee function tx");
+        dlog("-------call onfee function tx");
         auto onftrace = push_transaction( onftrx, fc::time_point::maximum(), true, config::default_min_transaction_cpu_usage);
         if( onftrace->except ) throw *onftrace->except;
       } catch ( ... ) {
@@ -795,14 +813,14 @@ struct controller_impl {
         if ( "transfer" == _a.name.to_string() ) {
           FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
           auto _v =  fc::raw::unpack<tmp_transfer >(_a.data);
-          ilog("transfer memo is : ${mem}", ("mem", _v.memo));
+          dlog("transfer memo is : ${mem}", ("mem", _v.memo));
           FC_ASSERT(_v.memo.size() <= 256, "memo has more than 256 bytes!");
         }
 
         if ( "issue" == _a.name.to_string() ) {
           FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
           auto _v = fc::raw::unpack<tmp_issue >(_a.data);
-          ilog("issue memo is : ${mem}", ("mem", _v.memo));
+          dlog("issue memo is : ${mem}", ("mem", _v.memo));
           FC_ASSERT(_v.memo.size() <= 256, "memo has more than 256 bytes!");
         }
      }
@@ -861,7 +879,7 @@ struct controller_impl {
                   auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor) );
                   auto onftrace = push_transaction( onftrx, fc::time_point::maximum(), true, config::default_min_transaction_cpu_usage);
                   if( onftrace->except ) throw *onftrace->except;
-                  ilog("-------call onfee function tx");
+                  dlog("-------call onfee function tx");
                } catch ( ... ) {
                   FC_ASSERT(false, "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
                }

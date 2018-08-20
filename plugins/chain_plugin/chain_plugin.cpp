@@ -207,7 +207,7 @@ fc::time_point calculate_genesis_timestamp( string tstr ) {
  * bytes& abi: out param
  */
 void load_contract_code_abi(const string contract, bytes& code, bytes& abi){
-      ilog("initializing contract : ${contract}", ("contract", contract));
+      ilog("load contract : ${contract}", ("contract", contract));
       auto wastPath = app().config_dir() / contract += ".wasm";
       std::string wast;
       fc::read_file_contents(wastPath, wast);

@@ -231,6 +231,7 @@ struct controller_impl {
          }
       } else {
         //the chain has been launched, init bios and msig: accounts of "eosio.bios" and "eosio.msig" has been created, and modify account and contract
+        //first stratup, head is null, msig account haven't privileged and contract; when open msig, second startup, run this code to init msig contract account.
         const auto &account = db.get<account_object, by_name>(N(eosio.msig));
         db.modify(account, [&](auto &a) {
           a.privileged = true;
@@ -349,7 +350,7 @@ struct controller_impl {
 
    void create_native_account( account_name name, const authority& owner, const authority& active, bool is_privileged = false ) {
       if (db.find<account_object, by_name>(name) != nullptr) {
-        elog("modify_native_account, This account already exists : ${name}", ("name", name));
+        elog("create_native_account, This account already exists : ${name}", ("name", name));
         return;
       }
       db.create<account_object>([&](auto& a) {

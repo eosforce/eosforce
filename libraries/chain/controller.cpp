@@ -872,6 +872,9 @@ struct controller_impl {
             }
 
             try {
+              if(explicit_billed_cpu_time && billed_cpu_time_us == 0){
+                EOS_ASSERT(false, transaction_exception, "on fee transaction failed");
+              }
               trx_context.exec();
               trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
             } catch (const fc::exception &e) {

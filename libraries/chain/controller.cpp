@@ -231,13 +231,12 @@ struct controller_impl {
          }
       } else {
         //the chain has been launched, init bios and msig: accounts of "eosio.bios" and "eosio.msig" has been created, and modify account and contract
-        //first stratup, head is null, msig account haven't privileged and contract; when open msig, second startup, run this code to init msig contract account.
-        const auto &account = db.get<account_object, by_name>(N(eosio.msig));
-        db.modify(account, [&](auto &a) {
-          a.privileged = true;
-        });
-        initialize_contract( N(eosio.bios), conf.bios_code, conf.bios_abi );
-        initialize_contract( N(eosio.msig), conf.msig_code, conf.msig_abi );
+        // const auto &account = db.get<account_object, by_name>(N(eosio.msig));
+        // db.modify(account, [&](auto &a) {
+        //   a.privileged = true;
+        // });
+        // initialize_contract( N(eosio.bios), conf.bios_code, conf.bios_abi );
+        // initialize_contract( N(eosio.msig), conf.msig_code, conf.msig_abi );
       }
 
       const auto& ubi = reversible_blocks.get_index<reversible_block_index,by_num>();

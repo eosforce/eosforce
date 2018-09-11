@@ -74,10 +74,10 @@ def startWallet():
     run('mkdir -p ' + os.path.abspath(args.wallet_dir))
     background(args.keosd + ' --unlock-timeout %d --http-server-address 127.0.0.1:6666 --wallet-dir %s' % (unlockTimeout, os.path.abspath(args.wallet_dir)))
     sleep(.4)
-    run(args.cleos + 'wallet create')
+    run(args.cleos + 'wallet create --to-console')
 
 def importKeys():
-    run(args.cleos + 'wallet import ' + args.private_key)
+    run(args.cleos + 'wallet import --private-key ' + args.private_key)
     keys = {}
     for a in accounts:
         key = a['pvt']
@@ -85,13 +85,13 @@ def importKeys():
             if len(keys) >= args.max_user_keys:
                 break
             keys[key] = True
-            run(args.cleos + 'wallet import ' + key)
+            run(args.cleos + 'wallet import --private-key ' + key)
     for i in range(firstProducer, firstProducer + numProducers):
         a = accounts[i]
         key = a['pvt']
         if not key in keys:
             keys[key] = True
-            run(args.cleos + 'wallet import ' + key)
+            run(args.cleos + 'wallet import --private-key ' + key)
 
 def startNode(nodeIndex, account):
     dir = args.nodes_dir + ('%02d-' % nodeIndex) + account['name'] + '/'
@@ -104,7 +104,7 @@ def startNode(nodeIndex, account):
     )
     cmd = (
         args.nodeos +
-        '    --max-irreversible-block-age 9999999'
+        '    --max-irreversible-block-age -1'
         '    --contracts-console'
         '    --genesis-json ' + os.path.abspath(args.genesis) +
         '    --blocks-dir ' + os.path.abspath(dir) + '/blocks'
@@ -199,13 +199,6 @@ def claimRewards():
             times.append(getJsonOutput(args.cleos + 'system claimrewards -j ' + row['owner'])['processed']['elapsed'])
     print('Elapsed time for claimrewards:', times)
 
-def vote(b, e):
-    for i in range(b, e):
-        voter = accounts[i]['name']
-        prods = random.sample(range(firstProducer, firstProducer + numProducers), args.num_producers_vote)
-        prods = ' '.join(map(lambda x: accounts[x]['name'], prods))
-        retry(args.cleos + 'system voteproducer prods ' + voter + ' ' + prods)
-
 def proxyVotes(b, e):
     vote(firstProducer, firstProducer + 1)
     proxy = accounts[firstProducer]['name']
@@ -273,7 +266,7 @@ def msigReplaceSystem():
 def produceNewAccounts():
     with open('newusers', 'w') as f:
         for i in range(120_000, 200_000):
-            x = getOutput(args.cleos + 'create key')
+            x = getOutput(args.cleos + 'create key --to-console')
             r = re.match('Private key: *([^ \n]*)\nPublic key: *([^ \n]*)', x, re.DOTALL | re.MULTILINE)
             name = 'user'
             for j in range(7, -1, -1):
@@ -354,7 +347,7 @@ commands = [
 
 parser.add_argument('--public-key', metavar='', help="EOSIO Public Key", default='EOS8Znrtgwt8TfpmbVpTKvA2oB8Nqey625CLN8bCN3TEbgx86Dsvr', dest="public_key")
 parser.add_argument('--private-Key', metavar='', help="EOSIO Private Key", default='5K463ynhZoCDDa4RDcr63cUwWLTnKqmdcoTKTHBjqoKfv4u5V7p', dest="private_key")
-parser.add_argument('--cleos', metavar='', help="Cleos command", default='../../build/programs/cleos/cleos --wallet-url http://localhost:6666 ')
+parser.add_argument('--cleos', metavar='', help="Cleos command", default='../../build/programs/cleos/cleos --wallet-url http://127.0.0.1:6666 ')
 parser.add_argument('--nodeos', metavar='', help="Path to nodeos binary", default='../../build/programs/nodeos/nodeos')
 parser.add_argument('--keosd', metavar='', help="Path to keosd binary", default='../../build/programs/keosd/keosd')
 parser.add_argument('--contracts-dir', metavar='', help="Path to contracts directory", default='../../build/contracts/')
@@ -388,7 +381,7 @@ for (flag, command, function, inAll, help) in commands:
         
 args = parser.parse_args()
 
-args.cleos += '--url http://localhost:%d ' % args.http_port
+args.cleos += '--url http://127.0.0.1:%d ' % args.http_port
 
 logFile = open(args.log_path, 'a')
 

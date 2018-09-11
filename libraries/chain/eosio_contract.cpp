@@ -25,6 +25,7 @@
 #include <eosio/chain/authorization_manager.hpp>
 #include <eosio/chain/resource_limits.hpp>
 // #include <eosio/chain/contract_table_objects.hpp>
+#include <eosio/chain/config.hpp>
 
 namespace eosio { namespace chain {
 
@@ -56,6 +57,12 @@ void validate_authority_precondition( const apply_context& context, const author
                     "permission '${perm}' does not exist",
                     ("perm", a.permission)
                   );
+      }
+   }
+
+   if( context.control.is_producing_block() ) {
+      for( const auto& p : auth.keys ) {
+         context.control.check_key_list( p.key );
       }
    }
 }
@@ -94,13 +101,13 @@ void apply_eosio_newaccount(apply_context& context) {
    // Check if the creator is privileged
    const auto &creator = db.get<account_object, by_name>(create.creator);
    EOS_ASSERT(!creator.privileged, action_validate_exception, "not support privileged accounts");
-   /*if( !creator.privileged ) {
-      EOS_ASSERT( name_str.find( "eosio." ) != 0, action_validate_exception,
-                  "only privileged accounts can have names that start with 'eosio.'" );
-   }*/
+  //  if( !creator.privileged ) {
+  //     EOS_ASSERT( name_str.find( "eosio." ) != 0, action_validate_exception,
+  //                 "only privileged accounts can have names that start with 'eosio.'" );
+  //  }
 
    auto existing_account = db.find<account_object, by_name>(create.name);
-   EOS_ASSERT(existing_account == nullptr, action_validate_exception,
+   EOS_ASSERT(existing_account == nullptr, account_name_exists_exception,
               "Cannot create account named ${name}, as that name is already taken",
               ("name", create.name));
 
@@ -145,7 +152,7 @@ bool allow_setcode(apply_context& context, std::string code_id) {
   const auto& code_account = context.db.get<account_object,by_name>(N(eosio));
   chain::abi_def abi;
   if(abi_serializer::to_abi(code_account.abi, abi)) {
-    abi_serializer abis(abi);
+    abi_serializer abis(abi, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
     const auto* t_id = context.db.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(config::system_account_name, config::system_account_name, N(contractstat)));
     if (t_id != nullptr) {
       const auto &idx = context.db.get_index<key_value_index, by_scope_primary>();
@@ -153,7 +160,7 @@ bool allow_setcode(apply_context& context, std::string code_id) {
       if (it != idx.end()) {
         vector<char> data;
         copy_inline_row(*it, data);
-        auto ct = abis.binary_to_variant("contractstat_info", data);
+        auto ct = abis.binary_to_variant("contractstat_info", data, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
         auto& obj = ct.get_object();
         auto code_obj = obj["code"].get_object();
         auto cid = code_obj["code_id"].as_string();
@@ -172,7 +179,7 @@ bool allow_setabi(apply_context& context, std::string abi_id) {
   const auto& code_account = context.db.get<account_object,by_name>(N(eosio));
   chain::abi_def abi;
   if(abi_serializer::to_abi(code_account.abi, abi)) {
-    abi_serializer abis(abi);
+    abi_serializer abis(abi, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
     const auto* t_id = context.db.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(config::system_account_name, config::system_account_name, N(contractstat)));
     if (t_id != nullptr) {
       const auto &idx = context.db.get_index<key_value_index, by_scope_primary>();
@@ -180,7 +187,7 @@ bool allow_setabi(apply_context& context, std::string abi_id) {
       if (it != idx.end()) {
         vector<char> data;
         copy_inline_row(*it, data);
-        auto ct = abis.binary_to_variant("contractstat_info", data);
+        auto ct = abis.binary_to_variant("contractstat_info", data, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
         auto& obj = ct.get_object();
         auto code_obj = obj["code"].get_object();
         auto aid = code_obj["abi_id"].as_string();
@@ -195,23 +202,24 @@ bool allow_setabi(apply_context& context, std::string abi_id) {
   return false;
 }
 
+
+
 void apply_eosio_setcode(apply_context& context) {
    const auto& cfg = context.control.get_global_properties().configuration;
 
    auto& db = context.db;
-
    auto  act = context.act.data_as<setcode>();
    context.setcode_require_authorization(act.account);
-//   context.require_write_lock( config::eosio_auth_scope );
+  //  context.require_authorization(act.account);
 
-   FC_ASSERT( act.vmtype == 0 );
-   FC_ASSERT( act.vmversion == 0 );
+   EOS_ASSERT( act.vmtype == 0, invalid_contract_vm_type, "code should be 0" );
+   EOS_ASSERT( act.vmversion == 0, invalid_contract_vm_version, "version should be 0" );
 
    fc::sha256 code_id; /// default ID == 0
 
    if( act.code.size() > 0 ) {
      code_id = fc::sha256::hash( act.code.data(), (uint32_t)act.code.size() );
-     wasm_interface::validate(act.code);
+     wasm_interface::validate(context.control, act.code);
    }
 
    const auto& account = db.get<account_object,by_name>(act.account);
@@ -236,7 +244,7 @@ void apply_eosio_setcode(apply_context& context) {
      // FC_THROW("setcode twice is not allowed");
    }
 
-   FC_ASSERT( account.code_version != code_id, "contract is already running this version of code" );
+   EOS_ASSERT( account.code_version != code_id, set_exact_code, "contract is already running this version of code" );
 
    db.modify( account, [&]( auto& a ) {
       /** TODO: consider whether a microsecond level local timestamp is sufficient to detect code version changes*/
@@ -391,7 +399,8 @@ void apply_eosio_deleteauth(apply_context& context) {
       const auto& index = db.get_index<permission_link_index, by_permission_name>();
       auto range = index.equal_range(boost::make_tuple(remove.account, remove.permission));
       EOS_ASSERT(range.first == range.second, action_validate_exception,
-                 "Cannot delete a linked authority. Unlink the authority first");
+                 "Cannot delete a linked authority. Unlink the authority first. This authority is linked to ${code}::${type}.", 
+                 ("code", string(range.first->code))("type", string(range.first->message_type)));
    }
 
    const auto& permission = authorization.get_permission({remove.account, remove.permission});

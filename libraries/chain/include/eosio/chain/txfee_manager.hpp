@@ -6,6 +6,7 @@
 
 #include <eosio/chain/types.hpp>
 #include <eosio/chain/asset.hpp>
+#include <eosio/chain/transaction.hpp>
 
 namespace eosio { namespace chain {
 

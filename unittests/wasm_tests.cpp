@@ -182,7 +182,7 @@ BOOST_FIXTURE_TEST_CASE( abi_from_variant, TESTER ) try {
          const auto& accnt  = this->control->db().get<account_object,by_name>( name );
          abi_def abi;
          if (abi_serializer::to_abi(accnt.abi, abi)) {
-            return abi_serializer(abi);
+            return abi_serializer(abi, abi_serializer_max_time);
          }
          return optional<abi_serializer>();
       } FC_RETHROW_EXCEPTIONS(error, "Failed to find or parse ABI for ${name}", ("name", name))
@@ -206,7 +206,7 @@ BOOST_FIXTURE_TEST_CASE( abi_from_variant, TESTER ) try {
       );
 
    signed_transaction trx;
-   abi_serializer::from_variant(pretty_trx, trx, resolver);
+   abi_serializer::from_variant(pretty_trx, trx, resolver, abi_serializer_max_time);
    set_transaction_headers(trx);
    trx.sign( get_private_key( N(asserter), "active" ), control->get_chain_id() );
    push_transaction( trx );
@@ -775,7 +775,7 @@ BOOST_FIXTURE_TEST_CASE( stl_test, TESTER ) try {
     const auto& accnt  = control->db().get<account_object,by_name>( N(stltest) );
     abi_def abi;
     BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
-    abi_serializer abi_ser(abi);
+    abi_serializer abi_ser(abi, abi_serializer_max_time);
 
     //send message
     {
@@ -787,7 +787,8 @@ BOOST_FIXTURE_TEST_CASE( stl_test, TESTER ) try {
         msg_act.data = abi_ser.variant_to_binary("message", mutable_variant_object()
                                              ("from", "bob")
                                              ("to", "alice")
-                                             ("message","Hi Alice!")
+                                             ("message","Hi Alice!"),
+                                             abi_serializer_max_time
                                              );
         trx.actions.push_back(std::move(msg_act));
 
@@ -878,6 +879,113 @@ BOOST_FIXTURE_TEST_CASE( imports, TESTER ) try {
    }
 
 } FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE( nested_limit_test, TESTER ) try {
+   produce_blocks(2);
+
+   create_accounts( {N(nested)} );
+   produce_block();
+
+   // nested loops
+   {
+      std::stringstream ss;
+      ss << "(module (export \"apply\" (func $apply)) (func $apply (param $0 i64) (param $1 i64) (param $2 i64)";
+      for(unsigned int i = 0; i < 1023; ++i)
+         ss << "(loop (drop (i32.const " <<  i << "))";
+      for(unsigned int i = 0; i < 1023; ++i)
+         ss << ")";
+      ss << "))";
+      set_code(N(nested), ss.str().c_str());
+   }
+   {
+      std::stringstream ss;
+      ss << "(module (export \"apply\" (func $apply)) (func $apply (param $0 i64) (param $1 i64) (param $2 i64)";
+      for(unsigned int i = 0; i < 1024; ++i)
+         ss << "(loop (drop (i32.const " <<  i << "))";
+      for(unsigned int i = 0; i < 1024; ++i)
+         ss << ")";
+      ss << "))";
+      BOOST_CHECK_THROW(set_code(N(nested), ss.str().c_str()), eosio::chain::wasm_execution_error);
+   }
+
+   // nested blocks
+   {
+      std::stringstream ss;
+      ss << "(module (export \"apply\" (func $apply)) (func $apply (param $0 i64) (param $1 i64) (param $2 i64)";
+      for(unsigned int i = 0; i < 1023; ++i)
+         ss << "(block (drop (i32.const " <<  i << "))";
+      for(unsigned int i = 0; i < 1023; ++i)
+         ss << ")";
+      ss << "))";
+      set_code(N(nested), ss.str().c_str());
+   }
+   {
+      std::stringstream ss;
+      ss << "(module (export \"apply\" (func $apply)) (func $apply (param $0 i64) (param $1 i64) (param $2 i64)";
+      for(unsigned int i = 0; i < 1024; ++i)
+         ss << "(block (drop (i32.const " <<  i << "))";
+      for(unsigned int i = 0; i < 1024; ++i)
+         ss << ")";
+      ss << "))";
+      BOOST_CHECK_THROW(set_code(N(nested), ss.str().c_str()), eosio::chain::wasm_execution_error);
+   }
+   // nested ifs
+   {
+      std::stringstream ss;
+      ss << "(module (export \"apply\" (func $apply)) (func $apply (param $0 i64) (param $1 i64) (param $2 i64)";
+      for(unsigned int i = 0; i < 1023; ++i)
+         ss << "(if (i32.wrap/i64 (get_local $0)) (then (drop (i32.const " <<  i << "))";
+      for(unsigned int i = 0; i < 1023; ++i)
+         ss << "))";
+      ss << "))";
+      set_code(N(nested), ss.str().c_str());
+   }
+   {
+      std::stringstream ss;
+      ss << "(module (export \"apply\" (func $apply)) (func $apply (param $0 i64) (param $1 i64) (param $2 i64)";
+      for(unsigned int i = 0; i < 1024; ++i)
+         ss << "(if (i32.wrap/i64 (get_local $0)) (then (drop (i32.const " <<  i << "))";
+      for(unsigned int i = 0; i < 1024; ++i)
+         ss << "))";
+      ss << "))";
+      BOOST_CHECK_THROW(set_code(N(nested), ss.str().c_str()), eosio::chain::wasm_execution_error);
+   }
+   // mixed nested
+   {
+      std::stringstream ss;
+      ss << "(module (export \"apply\" (func $apply)) (func $apply (param $0 i64) (param $1 i64) (param $2 i64)";
+      for(unsigned int i = 0; i < 223; ++i)
+         ss << "(if (i32.wrap/i64 (get_local $0)) (then (drop (i32.const " <<  i << "))";
+      for(unsigned int i = 0; i < 400; ++i)
+         ss << "(block (drop (i32.const " <<  i << "))";
+      for(unsigned int i = 0; i < 400; ++i)
+         ss << "(loop (drop (i32.const " <<  i << "))";
+      for(unsigned int i = 0; i < 800; ++i)
+         ss << ")";
+      for(unsigned int i = 0; i < 223; ++i)
+         ss << "))";
+      ss << "))";
+      set_code(N(nested), ss.str().c_str());
+   }
+   {
+      std::stringstream ss;
+      ss << "(module (export \"apply\" (func $apply)) (func $apply (param $0 i64) (param $1 i64) (param $2 i64)";
+      for(unsigned int i = 0; i < 224; ++i)
+         ss << "(if (i32.wrap/i64 (get_local $0)) (then (drop (i32.const " <<  i << "))";
+      for(unsigned int i = 0; i < 400; ++i)
+         ss << "(block (drop (i32.const " <<  i << "))";
+      for(unsigned int i = 0; i < 400; ++i)
+         ss << "(loop (drop (i32.const " <<  i << "))";
+      for(unsigned int i = 0; i < 800; ++i)
+         ss << ")";
+      for(unsigned int i = 0; i < 224; ++i)
+         ss << "))";
+      ss << "))";
+      BOOST_CHECK_THROW(set_code(N(nested), ss.str().c_str()), eosio::chain::wasm_execution_error);
+   }
+
+} FC_LOG_AND_RETHROW()
+
 
 BOOST_FIXTURE_TEST_CASE( lotso_globals, TESTER ) try {
    produce_blocks(2);
@@ -983,7 +1091,7 @@ BOOST_FIXTURE_TEST_CASE(noop, TESTER) try {
    const auto& accnt  = control->db().get<account_object,by_name>(N(noop));
    abi_def abi;
    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
-   abi_serializer abi_ser(abi);
+   abi_serializer abi_ser(abi, abi_serializer_max_time);
 
    {
       produce_blocks(5);
@@ -996,7 +1104,8 @@ BOOST_FIXTURE_TEST_CASE(noop, TESTER) try {
       act.data = abi_ser.variant_to_binary("anyaction", mutable_variant_object()
                                            ("from", "noop")
                                            ("type", "some type")
-                                           ("data", "some data goes here")
+                                           ("data", "some data goes here"),
+                                           abi_serializer_max_time
                                            );
 
       trx.actions.emplace_back(std::move(act));
@@ -1020,7 +1129,8 @@ BOOST_FIXTURE_TEST_CASE(noop, TESTER) try {
       act.data = abi_ser.variant_to_binary("anyaction", mutable_variant_object()
                                            ("from", "alice")
                                            ("type", "some type")
-                                           ("data", "some data goes here")
+                                           ("data", "some data goes here"),
+                                           abi_serializer_max_time
                                            );
 
       trx.actions.emplace_back(std::move(act));
@@ -1044,8 +1154,7 @@ BOOST_FIXTURE_TEST_CASE(eosio_abi, TESTER) try {
    const auto& accnt  = control->db().get<account_object,by_name>(config::system_account_name);
    abi_def abi;
    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
-   abi_serializer abi_ser(abi);
-   abi_ser.validate();
+   abi_serializer abi_ser(abi, abi_serializer_max_time);
 
    signed_transaction trx;
    name a = N(alice);
@@ -1064,7 +1173,7 @@ BOOST_FIXTURE_TEST_CASE(eosio_abi, TESTER) try {
    fc::variant pretty_output;
    // verify to_variant works on eos native contract type: newaccount
    // see abi_serializer::to_abi()
-   abi_serializer::to_variant(*result, pretty_output, get_resolver());
+   abi_serializer::to_variant(*result, pretty_output, get_resolver(), abi_serializer_max_time);
 
    BOOST_TEST(fc::json::to_string(pretty_output).find("newaccount") != std::string::npos);
 
@@ -1520,6 +1629,12 @@ BOOST_FIXTURE_TEST_CASE( apply_export_and_signature, TESTER ) try {
    BOOST_CHECK_THROW(set_code(N(bbb), no_apply_wast), fc::exception);
    produce_blocks(1);
 
+   BOOST_CHECK_THROW(set_code(N(bbb), no_apply_2_wast), fc::exception);
+   produce_blocks(1);
+
+   BOOST_CHECK_THROW(set_code(N(bbb), no_apply_3_wast), fc::exception);
+   produce_blocks(1);
+
    BOOST_CHECK_THROW(set_code(N(bbb), apply_wrong_signature_wast), fc::exception);
    produce_blocks(1);
 } FC_LOG_AND_RETHROW()
@@ -1616,6 +1731,14 @@ INCBIN(leak_readGlobals, "leak_readGlobals.wasm");
 INCBIN(leak_readImports, "leak_readImports.wasm");
 INCBIN(leak_wasm_binary_cpp_L1249, "leak_wasm_binary_cpp_L1249.wasm");
 INCBIN(readFunctions_slowness_out_of_memory, "readFunctions_slowness_out_of_memory.wasm");
+INCBIN(locals_yc, "locals-yc.wasm");
+INCBIN(locals_s, "locals-s.wasm");
+INCBIN(slowwasm_localsets, "slowwasm_localsets.wasm");
+INCBIN(getcode_deepindent, "getcode_deepindent.wasm");
+INCBIN(indent_mismatch, "indent-mismatch.wasm");
+INCBIN(deep_loops_ext_report, "deep_loops_ext_report.wasm");
+INCBIN(80k_deep_loop_with_ret, "80k_deep_loop_with_ret.wasm");
+INCBIN(80k_deep_loop_with_void, "80k_deep_loop_with_void.wasm");
 
 BOOST_FIXTURE_TEST_CASE( fuzz, TESTER ) try {
    produce_blocks(2);
@@ -1739,8 +1862,39 @@ BOOST_FIXTURE_TEST_CASE( fuzz, TESTER ) try {
       vector<uint8_t> wasm(greadFunctions_slowness_out_of_memoryData, greadFunctions_slowness_out_of_memoryData + greadFunctions_slowness_out_of_memorySize);
       BOOST_CHECK_THROW(set_code(N(fuzzy), wasm), wasm_serialization_error);
    }
+   {
+      vector<uint8_t> wasm(glocals_ycData, glocals_ycData + glocals_ycSize);
+      BOOST_CHECK_THROW(set_code(N(fuzzy), wasm), wasm_serialization_error);
+   }
+   {
+      vector<uint8_t> wasm(glocals_sData, glocals_sData + glocals_sSize);
+      BOOST_CHECK_THROW(set_code(N(fuzzy), wasm), wasm_serialization_error);
+   }
+   {
+      vector<uint8_t> wasm(gslowwasm_localsetsData, gslowwasm_localsetsData + gslowwasm_localsetsSize);
+      BOOST_CHECK_THROW(set_code(N(fuzzy), wasm), wasm_serialization_error);
+   }
+   {
+      vector<uint8_t> wasm(gdeep_loops_ext_reportData, gdeep_loops_ext_reportData + gdeep_loops_ext_reportSize);
+      BOOST_CHECK_THROW(set_code(N(fuzzy), wasm), wasm_execution_error);
+   }
+   {
+      vector<uint8_t> wasm(g80k_deep_loop_with_retData, g80k_deep_loop_with_retData + g80k_deep_loop_with_retSize);
+      BOOST_CHECK_THROW(set_code(N(fuzzy), wasm), wasm_execution_error);
+   }
+   {
+      vector<uint8_t> wasm(g80k_deep_loop_with_voidData, g80k_deep_loop_with_voidData + g80k_deep_loop_with_voidSize);
+      BOOST_CHECK_THROW(set_code(N(fuzzy), wasm), wasm_execution_error);
+   }
 
    produce_blocks(1);
+} FC_LOG_AND_RETHROW()
+
+BOOST_FIXTURE_TEST_CASE( getcode_checks, TESTER ) try {
+   vector<uint8_t> wasm(ggetcode_deepindentData, ggetcode_deepindentData + ggetcode_deepindentSize);
+   wasm_to_wast( wasm.data(), wasm.size(), true );
+   vector<uint8_t> wasmx(gindent_mismatchData, gindent_mismatchData + gindent_mismatchSize);
+   wasm_to_wast( wasmx.data(), wasmx.size(), true );
 } FC_LOG_AND_RETHROW()
 
 

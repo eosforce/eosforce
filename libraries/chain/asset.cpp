@@ -3,7 +3,6 @@
  *  @copyright defined in eos/LICENSE.txt
  */
 #include <eosio/chain/asset.hpp>
-#include <eosio/chain/exceptions.hpp>
 #include <boost/rational.hpp>
 #include <fc/reflect/variant.hpp>
 

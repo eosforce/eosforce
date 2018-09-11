@@ -343,6 +343,50 @@ enum allowed_connection : char {
   PC_ANY = 1 << 2
 };
 
+class producer_names {
+public:
+   producer_names(int total_producers);
+   string producer_name(unsigned int producer_number) const;
+private:
+   static const int total_chars = 12;
+   static const char slot_chars[];
+   static const char valid_char_range;
+};
+
+const char producer_names::slot_chars[] = "abcdefghijklmnopqrstuvwxyz";
+const char producer_names::valid_char_range = sizeof(producer_names::slot_chars) - 1;
+
+// for 26 or fewer total producers create "defproducera" .. "defproducerz"
+// above 26 produce  "defproducera" .. "defproducerz",  "defproduceaa" .. "defproducerb", etc.
+producer_names::producer_names(int total_producers)
+{
+}
+
+string producer_names::producer_name(unsigned int producer_number) const {
+   // keeping legacy "defproducer[a-z]", but if greater than valid_char_range, will use "defpraaaaaaa"
+   char prod_name[] = "defproducera";
+   if (producer_number > valid_char_range) {
+      for (int current_char_loc = 5; current_char_loc < total_chars; ++current_char_loc) {
+         prod_name[current_char_loc] = slot_chars[0];
+      }
+   }
+
+   prod_name[total_chars] = '\0';
+   const auto original_producer_number = producer_number;
+   for (int current_char_loc = total_chars - 1; current_char_loc >= 0; --current_char_loc) {
+      const unsigned int slot_value = static_cast<char>(producer_number % valid_char_range);
+      producer_number /= valid_char_range;
+      prod_name[current_char_loc] = slot_chars[slot_value];
+      if (!producer_number)
+         break;
+   }
+
+   // make sure we haven't cycled back to the first 26 names (some time after 26^6)
+   if (string(prod_name) == "defproducera" && producer_number != 0)
+      throw std::runtime_error( "launcher not designed to handle numbers this large " );
+   return prod_name;
+}
+
 struct launcher_def {
   bool force_overwrite;
   size_t total_nodes;
@@ -762,6 +806,7 @@ launcher_def::bind_nodes () {
       cerr << "Unable to allocate producers due to insufficient prod_nodes = " << prod_nodes << "\n";
       exit (10);
    }
+   producer_names names(producers);
    int non_bios = prod_nodes - 1;
    int per_node = producers / non_bios;
    int extra = producers % non_bios;
@@ -789,10 +834,9 @@ launcher_def::bind_nodes () {
                  ++count;
                  --extra;
               }
-              char ext = 'a' + i;
-              string pname = "defproducer";
+              char ext = i;
               while (count--) {
-                 string prodname = pname+ext;
+                 const auto prodname = names.producer_name(ext);
                  node.producers.push_back(prodname);
                  producer_set.schedule.push_back({prodname,pubkey});
                  ext += non_bios;
@@ -982,6 +1026,7 @@ launcher_def::write_config_file (tn_node_def &node) {
    cfg << "readonly = 0\n";
    cfg << "send-whole-blocks = true\n";
    cfg << "http-server-address = " << host->host_name << ":" << instance.http_port << "\n";
+   cfg << "http-validate-host = false\n";
    if (p2p == p2p_plugin::NET) {
       cfg << "p2p-listen-endpoint = " << host->listen_addr << ":" << instance.p2p_port << "\n";
       cfg << "p2p-server-address = " << host->public_name << ":" << instance.p2p_port << "\n";
@@ -1178,7 +1223,7 @@ launcher_def::write_bios_boot () {
          }
          else if (key == "prodkeys" ) {
             for (auto &node : network.nodes) {
-               brb << "wcmd import -n ignition " << string(node.second.keys[0]) << "\n";
+               brb << "wcmd import -n ignition --private-key " << string(node.second.keys[0]) << "\n";
             }
          }
          else if (key == "cacmd") {
@@ -1460,7 +1505,7 @@ launcher_def::launch (eosd_def &instance, string &gts) {
   }
 
   eosdcmd += " --config-dir " + instance.config_dir_name + " --data-dir " + instance.data_dir_name;
-  eosdcmd += " --genesis-json " + genesis.string();
+  eosdcmd += " --genesis-json " + instance.config_dir_name + "/genesis.json";
   if (gts.length()) {
     eosdcmd += " --genesis-timestamp " + gts;
   }
@@ -1607,8 +1652,8 @@ launcher_def::bounce (const string& node_numbers) {
       string node_num = node.name.substr( node.name.length() - 2 );
       string cmd = "cd " + host.eosio_home + "; "
                  + "export EOSIO_HOME=" + host.eosio_home + string("; ")
-                 + "export EOSIO_TN_NODE=" + node_num + "; "
-                 + "./scripts/eosio-tn_bounce.sh";
+                 + "export EOSIO_NODE=" + node_num + "; "
+                 + "./scripts/eosio-tn_bounce.sh " + eosd_extra_args;
       cout << "Bouncing " << node.name << endl;
       if (!do_ssh(cmd, host.host_name)) {
          cerr << "Unable to bounce " << node.name << endl;
@@ -1626,7 +1671,7 @@ launcher_def::down (const string& node_numbers) {
       string node_num = node.name.substr( node.name.length() - 2 );
       string cmd = "cd " + host.eosio_home + "; "
                  + "export EOSIO_HOME=" + host.eosio_home + "; "
-                 + "export EOSIO_TN_NODE=" + node_num + "; "
+                 + "export EOSIO_NODE=" + node_num + "; "
          + "export EOSIO_TN_RESTART_CONFIG_DIR=" + node.config_dir_name + "; "
                  + "./scripts/eosio-tn_down.sh";
       cout << "Taking down " << node.name << endl;

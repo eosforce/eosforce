@@ -63,7 +63,8 @@ namespace eosio { namespace chain {
       flat_set<public_key_type>  get_signature_keys( const vector<signature_type>& signatures,
                                                      const chain_id_type& chain_id,
                                                      const vector<bytes>& cfd = vector<bytes>(),
-                                                     bool allow_duplicate_keys = false )const;
+                                                     bool allow_duplicate_keys = false,
+                                                     bool use_cache = true )const;
 
       uint32_t total_actions()const { return context_free_actions.size() + actions.size(); }
       account_name first_authorizor()const {
@@ -93,7 +94,7 @@ namespace eosio { namespace chain {
 
       const signature_type&     sign(const private_key_type& key, const chain_id_type& chain_id);
       signature_type            sign(const private_key_type& key, const chain_id_type& chain_id)const;
-      flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, bool allow_duplicate_keys = false )const;
+      flat_set<public_key_type> get_signature_keys( const chain_id_type& chain_id, bool allow_duplicate_keys = false, bool use_cache = true )const;
    };
 
    struct packed_transaction {
@@ -133,7 +134,8 @@ namespace eosio { namespace chain {
 
       time_point_sec     expiration()const;
       transaction_id_type id()const;
-      bytes              get_raw_transaction()const;
+      transaction_id_type get_uncached_id()const; // thread safe
+      bytes              get_raw_transaction()const; // thread safe
       vector<bytes>      get_context_free_data()const;
       transaction        get_transaction()const;
       signed_transaction get_signed_transaction()const;

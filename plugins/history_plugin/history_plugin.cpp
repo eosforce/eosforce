@@ -1,4 +1,4 @@
-#include <eosio/history_plugin.hpp>
+#include <eosio/history_plugin/history_plugin.hpp>
 #include <eosio/history_plugin/account_control_history_object.hpp>
 #include <eosio/history_plugin/public_key_history_object.hpp>
 #include <eosio/chain/controller.hpp>
@@ -146,40 +146,69 @@ namespace eosio {
          bool bypass_filter = false;
          bool bypass_get_actions = false;
          std::set<filter_entry> filter_on;
+         std::set<filter_entry> filter_out;
          chain_plugin*          chain_plug = nullptr;
          fc::optional<scoped_connection> applied_transaction_connection;
 
-         bool filter( const action_trace& act ) {
-            if( bypass_filter )
-               return true;
-            if( filter_on.find({ act.receipt.receiver, act.act.name, 0 }) != filter_on.end() )
-               return true;
-            for( const auto& a : act.act.authorization )
-               if( filter_on.find({ act.receipt.receiver, act.act.name, a.actor }) != filter_on.end() )
-                  return true;
-            return false;
-         }
+          bool filter(const action_trace& act) {
+            bool pass_on = false;
+            if (bypass_filter) {
+              pass_on = true;
+            }
+            if (filter_on.find({ act.receipt.receiver, 0, 0 }) != filter_on.end()) {
+              pass_on = true;
+            }
+            if (filter_on.find({ act.receipt.receiver, act.act.name, 0 }) != filter_on.end()) {
+              pass_on = true;
+            }
+            for (const auto& a : act.act.authorization) {
+              if (filter_on.find({ act.receipt.receiver, 0, a.actor }) != filter_on.end()) {
+                pass_on = true;
+              }
+              if (filter_on.find({ act.receipt.receiver, act.act.name, a.actor }) != filter_on.end()) {
+                pass_on = true;
+              }
+            }
+
+            if (!pass_on) {  return false;  }
+
+            if (filter_out.find({ act.receipt.receiver, 0, 0 }) != filter_out.end()) {
+              return false;
+            }
+            if (filter_out.find({ act.receipt.receiver, act.act.name, 0 }) != filter_out.end()) {
+              return false;
+            }
+            for (const auto& a : act.act.authorization) {
+              if (filter_out.find({ act.receipt.receiver, 0, a.actor }) != filter_out.end()) {
+                return false;
+              }
+              if (filter_out.find({ act.receipt.receiver, act.act.name, a.actor }) != filter_out.end()) {
+                return false;
+              }
+            }
+
+            return true;
+          }
 
          set<account_name> account_set( const action_trace& act ) {
             set<account_name> result;
 
             result.insert( act.receipt.receiver );
-            for( const auto& a : act.act.authorization )
-            //if( bypass_filter || filter_on.find({ act.receipt.receiver, act.act.name, a.actor }) != filter_on.end() ) /*BM*/
-                /*zdd
-                if(act.act.name == N(transfer))
-                {
-                    if(act.receiver != N(eosio))
-                    {
-                        result.insert( a.actor );
-                    }
-                }
-               else */
-               if(act.act.name != N(onfee))
-               {
-                   result.insert( a.actor );
-               }
-
+            for( const auto& a : act.act.authorization ) {
+               /*if( bypass_filter ||
+                   filter_on.find({ act.receipt.receiver, 0, 0}) != filter_on.end() ||
+                   filter_on.find({ act.receipt.receiver, 0, a.actor}) != filter_on.end() ||
+                   filter_on.find({ act.receipt.receiver, act.act.name, 0}) != filter_on.end() ||
+                   filter_on.find({ act.receipt.receiver, act.act.name, a.actor }) != filter_on.end() ) {
+                 if ((filter_out.find({ act.receipt.receiver, 0, 0 }) == filter_out.end()) &&
+                     (filter_out.find({ act.receipt.receiver, 0, a.actor }) == filter_out.end()) &&
+                     (filter_out.find({ act.receipt.receiver, act.act.name, 0 }) == filter_out.end()) &&
+                     (filter_out.find({ act.receipt.receiver, act.act.name, a.actor }) == filter_out.end())) {*/
+                    if(act.act.name != N(onfee))
+                  {
+                      result.insert( a.actor );
+                  }
+            }
             return result;
          }
 
@@ -279,55 +308,71 @@ namespace eosio {
    void history_plugin::set_program_options(options_description& cli, options_description& cfg) {
       cfg.add_options()
             ("filter-on,f", bpo::value<vector<string>>()->composing(),
-             "Track actions which match receiver:action:actor. Actor may be blank to include all. Receiver and Action may not be blank.")
-              ("get-actions-on", bpo::bool_switch()->default_value(false),
+             "Track actions which match receiver:action:actor. Actor may be blank to include all. Action and Actor both blank allows all from Recieiver. Receiver may not be blank.")
+             ("get-actions-on", bpo::bool_switch()->default_value(false),
                "The switch of get actions;true/false")
+            ;
+      cfg.add_options()
+            ("filter-out,f", bpo::value<vector<string>>()->composing(),
+             "Do not track actions which match receiver:action:actor. Action and Actor both blank excludes all from Reciever. Actor blank excludes all from reciever:action. Receiver may not be blank.")
             ;
    }
 
    void history_plugin::plugin_initialize(const variables_map& options) {
-       if( options.count("get-actions-on") )
-       {
-          bool fo = options.at("get-actions-on").as<bool>();
-             if( fo)
-             {
-                my->bypass_get_actions = true;
-                wlog("--bypass_get_actions true enabled. This can get actions by accountname, Because it consumes a lot of memory and CPU when executing, it may cause a node failure.");
-             }
-          }
-
-      if( options.count("filter-on") )
-      {
-         auto fo = options.at("filter-on").as<vector<string>>();
-         for( auto& s : fo ) {
-            if( s == "*" ) {
-               my->bypass_filter = true;
-               wlog("--filter-on * enabled. This can fill shared_mem, causing nodeos to stop.");
-               break;
-            }
-            std::vector<std::string> v;
-            boost::split(v, s, boost::is_any_of(":"));
-            EOS_ASSERT(v.size() == 3, fc::invalid_arg_exception, "Invalid value ${s} for --filter-on", ("s",s));
-            filter_entry fe{ v[0], v[1], v[2] };
-            EOS_ASSERT(fe.receiver.value && fe.action.value, fc::invalid_arg_exception, "Invalid value ${s} for --filter-on", ("s",s));
-            my->filter_on.insert( fe );
+      try {
+         if( options.count("get-actions-on") ) {
+           bool fo = options.at("get-actions-on").as<bool>();
+              if( fo )
+              {
+                 my->bypass_get_actions = true;
+                 wlog("--bypass_get_actions true enabled. This can get actions by accountname, Because it consumes a lot of memory and CPU when executing, it may cause a node failure.");
+              }
          }
-      }
+         if( options.count( "filter-on" )) {
+            auto fo = options.at( "filter-on" ).as<vector<string>>();
+            for( auto& s : fo ) {
+               if( s == "*" ) {
+                  my->bypass_filter = true;
+                  wlog( "--filter-on * enabled. This can fill shared_mem, causing nodeos to stop." );
+                  break;
+               }
+               std::vector<std::string> v;
+               boost::split( v, s, boost::is_any_of( ":" ));
+               EOS_ASSERT( v.size() == 3, fc::invalid_arg_exception, "Invalid value ${s} for --filter-on", ("s", s));
+               filter_entry fe{v[0], v[1], v[2]};
+               EOS_ASSERT( fe.receiver.value, fc::invalid_arg_exception,
+                           "Invalid value ${s} for --filter-on", ("s", s));
+               my->filter_on.insert( fe );
+            }
+         }
+         if( options.count( "filter-out" )) {
+            auto fo = options.at( "filter-out" ).as<vector<string>>();
+            for( auto& s : fo ) {
+               std::vector<std::string> v;
+               boost::split( v, s, boost::is_any_of( ":" ));
+               EOS_ASSERT( v.size() == 3, fc::invalid_arg_exception, "Invalid value ${s} for --filter-out", ("s", s));
+               filter_entry fe{v[0], v[1], v[2]};
+               EOS_ASSERT( fe.receiver.value, fc::invalid_arg_exception,
+                           "Invalid value ${s} for --filter-out", ("s", s));
+               my->filter_out.insert( fe );
+            }
+         }
 
-      my->chain_plug = app().find_plugin<chain_plugin>();
-      auto& chain = my->chain_plug->chain();
+         my->chain_plug = app().find_plugin<chain_plugin>();
+         EOS_ASSERT( my->chain_plug, chain::missing_chain_plugin_exception, ""  );
+         auto& chain = my->chain_plug->chain();
 
-      chain.db().add_index<account_history_index>();
-      chain.db().add_index<action_history_index>();
-      chain.db().add_index<account_control_history_multi_index>();
-      chain.db().add_index<public_key_history_multi_index>();
+         chain.db().add_index<account_history_index>();
+         chain.db().add_index<action_history_index>();
+         chain.db().add_index<account_control_history_multi_index>();
+         chain.db().add_index<public_key_history_multi_index>();
 
-      my->applied_transaction_connection.emplace(chain.applied_transaction.connect( [&]( const transaction_trace_ptr& p ){
-            my->on_applied_transaction(p);
-      }));
-
+         my->applied_transaction_connection.emplace(
+               chain.applied_transaction.connect( [&]( const transaction_trace_ptr& p ) {
+                  my->on_applied_transaction( p );
+               } ));
+      } FC_LOG_AND_RETHROW()
    }
-
 
    bytes format_name(std::string name) {
      bytes namef;
@@ -346,7 +391,7 @@ namespace eosio {
        }
      }
      if (namef.size() < 12) {
-       FC_ASSERT(false, "initialize format name failed");
+       EOS_ASSERT(false,  name_type_exception, "initialize format name failed");
      }
      return namef;
    }
@@ -382,76 +427,8 @@ namespace eosio {
 
 
 
-   namespace history_apis {
-   /*
-      read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
-        //edump((params));
-        auto& chain = history->chain_plug->chain();
-        const auto& db = chain.db();
+   namespace history_apis { 
 
-        const auto& idx = db.get_index<account_history_index, by_account_action_seq>();
-
-        int32_t start = 0;
-        int32_t pos = params.pos ? *params.pos : -1;
-        int32_t end = 0;
-        int32_t offset = params.offset ? *params.offset : -20;
-        auto n = params.account_name;
-        idump((pos));
-        if( pos == -1 ) {
-            auto itr = idx.lower_bound( boost::make_tuple( name(n.value+1), 0 ) );
-            if( itr == idx.begin() ) {
-               if( itr->account == n )
-                  pos = itr->account_sequence_num+1;
-            } else if( itr != idx.begin() ) --itr;
-
-            if( itr->account == n )
-               pos = itr->account_sequence_num + 1;
-        }
-
-        if( pos== -1 ) pos = 0xfffffff;
-
-        if( offset > 0 ) {
-           start = pos;
-           end   = start + offset;
-        } else {
-           start = pos + offset;
-           if( start > pos ) start = 0;
-           end   = pos;
-        }
-        FC_ASSERT( end >= start );
-
-        idump((start)(end));
-
-        auto start_itr = idx.lower_bound( boost::make_tuple( n, start ) );
-        auto end_itr = idx.upper_bound( boost::make_tuple( n, end) );
-
-        auto start_time = fc::time_point::now();
-        auto end_time = start_time;
-
-        get_actions_result result;
-        result.last_irreversible_block = chain.last_irreversible_block_num();
-        while( start_itr != end_itr ) {
-           const auto& a = db.get<action_history_object, by_action_sequence_num>( start_itr->action_sequence_num );
-           fc::datastream<const char*> ds( a.packed_action_trace.data(), a.packed_action_trace.size() );
-           action_trace t;
-           fc::raw::unpack( ds, t );
-           result.actions.emplace_back( ordered_action_result{
-                                 start_itr->action_sequence_num,
-                                 start_itr->account_sequence_num,
-                                 a.block_num, a.block_time,
-                                 chain.to_variant_with_abi(t)
-                                 });
-
-           end_time = fc::time_point::now();
-           if( end_time - start_time > fc::microseconds(100000) ) {
-              result.time_limit_exceeded_error = true;
-              break;
-           }
-           ++start_itr;
-        }
-        return result;
-      }
-*/
       read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
           //edump((params));
           get_actions_result result;
@@ -461,6 +438,7 @@ namespace eosio {
           }
           auto& chain = history->chain_plug->chain();
           const auto& db = chain.db();
+          const auto abi_serializer_max_time = history->chain_plug->get_abi_serializer_max_time();
           auto index_account_name = params.account_name;
           int32_t offset_parm = *params.offset;
           if((nullptr == db.find<account_object,by_name>( index_account_name ))||(offset_parm <=0))
@@ -505,7 +483,7 @@ namespace eosio {
              if( start > pos ) start = 0;
              end   = pos;
           }
-          FC_ASSERT( end >= start );
+          EOS_ASSERT( end >= start, chain::plugin_exception, "end position is earlier than start position" );
 
 
           //edump((start)(end));
@@ -576,7 +554,7 @@ namespace eosio {
                               start_itr->action_sequence_num,
                               start_itr->account_sequence_num,
                               a.block_num, a.block_time,
-                              chain.to_variant_with_abi(t)
+                              chain.to_variant_with_abi(t, abi_serializer_max_time)
                       });
 
                       end_time = fc::time_point::now();
@@ -613,65 +591,109 @@ namespace eosio {
           }
           return result;
       }
+
       read_only::get_transaction_result read_only::get_transaction( const read_only::get_transaction_params& p )const {
          auto& chain = history->chain_plug->chain();
+         const auto abi_serializer_max_time = history->chain_plug->get_abi_serializer_max_time();
+         auto short_id = fc::variant(p.id).as_string().substr(0,8);
+
+         const auto& db = chain.db();
+         const auto& idx = db.get_index<action_history_index, by_trx_id>();
+         auto itr = idx.lower_bound( boost::make_tuple(p.id) );
+
+         bool in_history = (itr != idx.end() && fc::variant(itr->trx_id).as_string().substr(0,8) == short_id );
+
+         if( !in_history && !p.block_num_hint ) {
+            EOS_THROW(tx_not_found, "Transaction ${id} not found in history and no block hint was given", ("id",p.id));
+         }
 
          get_transaction_result result;
 
-         result.id = p.id;
-         result.last_irreversible_block = chain.last_irreversible_block_num();
+         if (in_history) {
+            result.id = p.id;
+            result.last_irreversible_block = chain.last_irreversible_block_num();
 
-         const auto& db = chain.db();
 
-         const auto& idx = db.get_index<action_history_index, by_trx_id>();
-         auto itr = idx.lower_bound( boost::make_tuple(p.id) );
-         if( itr == idx.end() ) {
-            return result;
-         }
-         result.id         = itr->trx_id;
-         result.block_num  = itr->block_num;
-         result.block_time = itr->block_time;
+            result.id         = itr->trx_id;
+            result.block_num  = itr->block_num;
+            result.block_time = itr->block_time;
 
-         if( fc::variant(result.id).as_string().substr(0,8) != fc::variant(p.id).as_string().substr(0,8) )
-            return result;
+            while( itr != idx.end() && itr->trx_id == result.id ) {
 
-         while( itr != idx.end() && itr->trx_id == result.id ) {
+              fc::datastream<const char*> ds( itr->packed_action_trace.data(), itr->packed_action_trace.size() );
+              action_trace t;
+              fc::raw::unpack( ds, t );
+              result.traces.emplace_back( chain.to_variant_with_abi(t, abi_serializer_max_time) );
 
-           fc::datastream<const char*> ds( itr->packed_action_trace.data(), itr->packed_action_trace.size() );
-           action_trace t;
-           fc::raw::unpack( ds, t );
-           result.traces.emplace_back( chain.to_variant_with_abi(t) );
+              ++itr;
+            }
 
-           ++itr;
-         }
-
-         auto blk = chain.fetch_block_by_number( result.block_num );
-         if( blk == nullptr ) { // still in pending
-             auto blk_state = chain.pending_block_state();
-             if( blk_state != nullptr ) {
-                 blk = blk_state->block;
-             }
-         }
-         if( blk != nullptr ) {
-             for (const auto &receipt: blk->transactions) {
-                 if (receipt.trx.contains<packed_transaction>()) {
-                     auto &pt = receipt.trx.get<packed_transaction>();
+            auto blk = chain.fetch_block_by_number( result.block_num );
+            if( blk == nullptr ) { // still in pending
+                auto blk_state = chain.pending_block_state();
+                if( blk_state != nullptr ) {
+                    blk = blk_state->block;
+                }
+            }
+            if( blk != nullptr ) {
+                for (const auto &receipt: blk->transactions) {
+                    if (receipt.trx.contains<packed_transaction>()) {
+                        auto &pt = receipt.trx.get<packed_transaction>();
+                        auto mtrx = transaction_metadata(pt);
+                        if (mtrx.id == result.id) {
+                            fc::mutable_variant_object r("receipt", receipt);
+                            r("trx", chain.to_variant_with_abi(mtrx.trx, abi_serializer_max_time));
+                            result.trx = move(r);
+                            break;
+                        }
+                    } else {
+                        auto &id = receipt.trx.get<transaction_id_type>();
+                        if (id == result.id) {
+                            fc::mutable_variant_object r("receipt", receipt);
+                            result.trx = move(r);
+                            break;
+                        }
+                    }
+                }
+            }
+         } else {
+            auto blk = chain.fetch_block_by_number(*p.block_num_hint);
+            bool found = false;
+            if (blk) {
+               for (const auto& receipt: blk->transactions) {
+                  if (receipt.trx.contains<packed_transaction>()) {
+                     auto& pt = receipt.trx.get<packed_transaction>();
                      auto mtrx = transaction_metadata(pt);
-                     if (mtrx.id == result.id) {
-                         fc::mutable_variant_object r("receipt", receipt);
-                         r("trx", chain.to_variant_with_abi(mtrx.trx));
-                         result.trx = move(r);
-                         break;
+                     if (fc::variant(mtrx.id).as_string().substr(0, 8) == short_id) {
+                        result.id = mtrx.id;
+                        result.last_irreversible_block = chain.last_irreversible_block_num();
+                        result.block_num = *p.block_num_hint;
+                        result.block_time = blk->timestamp;
+                        fc::mutable_variant_object r("receipt", receipt);
+                        r("trx", chain.to_variant_with_abi(mtrx.trx, abi_serializer_max_time));
+                        result.trx = move(r);
+                        found = true;
+                        break;
                      }
-                 } else {
-                     auto &id = receipt.trx.get<transaction_id_type>();
-                     if (id == result.id) {
-                         fc::mutable_variant_object r("receipt", receipt);
-                         result.trx = move(r);
-                         break;
+                  } else {
+                     auto& id = receipt.trx.get<transaction_id_type>();
+                     if (fc::variant(id).as_string().substr(0, 8) == short_id) {
+                        result.id = id;
+                        result.last_irreversible_block = chain.last_irreversible_block_num();
+                        result.block_num = *p.block_num_hint;
+                        result.block_time = blk->timestamp;
+                        fc::mutable_variant_object r("receipt", receipt);
+                        result.trx = move(r);
+                        found = true;
+                        break;
                      }
-                 }
-             }
+                  }
+               }
+            }
+
+            if (!found) {
+               EOS_THROW(tx_not_found, "Transaction ${id} not found in history or in block number ${n}", ("id",p.id)("n", *p.block_num_hint));
+            }
          }
 
          return result;

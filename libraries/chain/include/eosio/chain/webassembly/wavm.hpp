@@ -1,6 +1,7 @@
 #pragma once
 
 #include <eosio/chain/webassembly/common.hpp>
+#include <eosio/chain/exceptions.hpp>
 #include <eosio/chain/webassembly/runtime_interface.hpp>
 #include <softfloat.hpp>
 #include "Runtime/Runtime.h"
@@ -382,7 +383,7 @@ struct intrinsic_invoker_impl<Ret, std::tuple<array_ptr<T>, size_t, Inputs...>, 
       T* base = array_ptr_impl<T>(ctx, (U32)ptr, length);
       if ( reinterpret_cast<uintptr_t>(base) % alignof(T) != 0 ) {
          wlog( "misaligned array of const values" );
-         std::remove_const_t<T> copy[length];
+         std::vector<std::remove_const_t<T> > copy(length > 0 ? length : 1);
          T* copy_ptr = &copy[0];
          memcpy( (void*)copy_ptr, (void*)base, length * sizeof(T) );
          return Then(ctx, static_cast<array_ptr<T>>(copy_ptr), length, rest..., translated...);
@@ -397,7 +398,7 @@ struct intrinsic_invoker_impl<Ret, std::tuple<array_ptr<T>, size_t, Inputs...>, 
       T* base = array_ptr_impl<T>(ctx, (U32)ptr, length);
       if ( reinterpret_cast<uintptr_t>(base) % alignof(T) != 0 ) {
          wlog( "misaligned array of values" );
-         std::remove_const_t<T> copy[length];
+         std::vector<std::remove_const_t<T> > copy(length > 0 ? length : 1);
          T* copy_ptr = &copy[0];
          memcpy( (void*)copy_ptr, (void*)base, length * sizeof(T) );
          Ret ret = Then(ctx, static_cast<array_ptr<T>>(copy_ptr), length, rest..., translated...);  
@@ -580,7 +581,7 @@ struct intrinsic_invoker_impl<Ret, std::tuple<T &, Inputs...>, std::tuple<Transl
    template<then_type Then, typename U=T>
    static auto translate_one(running_instance_context& ctx, Inputs... rest, Translated... translated, I32 ptr) -> std::enable_if_t<std::is_const<U>::value, Ret> {
       // references cannot be created for null pointers
-      FC_ASSERT((U32)ptr != 0);
+      EOS_ASSERT((U32)ptr != 0, wasm_exception, "references cannot be created for null pointers");
       MemoryInstance* mem = ctx.memory;
       if(!mem || (U32)ptr+sizeof(T) >= IR::numBytesPerPage*Runtime::getMemoryNumPages(mem))
          Runtime::causeException(Exception::Cause::accessViolation);
@@ -598,7 +599,7 @@ struct intrinsic_invoker_impl<Ret, std::tuple<T &, Inputs...>, std::tuple<Transl
    template<then_type Then, typename U=T>
    static auto translate_one(running_instance_context& ctx, Inputs... rest, Translated... translated, I32 ptr) -> std::enable_if_t<!std::is_const<U>::value, Ret> {
       // references cannot be created for null pointers
-      FC_ASSERT((U32)ptr != 0);
+      EOS_ASSERT((U32)ptr != 0, wasm_exception, "reference cannot be created for null pointers");
       MemoryInstance* mem = ctx.memory;
       if(!mem || (U32)ptr+sizeof(T) >= IR::numBytesPerPage*Runtime::getMemoryNumPages(mem))
          Runtime::causeException(Exception::Cause::accessViolation);
@@ -630,6 +631,7 @@ struct intrinsic_function_invoker {
 
    template<MethodSig Method>
    static Ret wrapper(running_instance_context& ctx, Params... params) {
+      class_from_wasm<Cls>::value(*ctx.apply_ctx).checktime();
       return (class_from_wasm<Cls>::value(*ctx.apply_ctx).*Method)(params...);
    }
 
@@ -648,6 +650,7 @@ struct intrinsic_function_invoker<WasmSig, void, MethodSig, Cls, Params...> {
 
    template<MethodSig Method>
    static void_type wrapper(running_instance_context& ctx, Params... params) {
+      class_from_wasm<Cls>::value(*ctx.apply_ctx).checktime();
       (class_from_wasm<Cls>::value(*ctx.apply_ctx).*Method)(params...);
       return void_type();
    }

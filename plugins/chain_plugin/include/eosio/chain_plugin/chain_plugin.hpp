@@ -505,7 +505,9 @@ public:
             } else {
                result.rows.emplace_back(fc::variant(data));
             }
-
+            if(!p.table_key.empty()){
+              break;
+            }
             if (++count == p.limit || fc::time_point::now() > end) {
                ++itr;
                break;

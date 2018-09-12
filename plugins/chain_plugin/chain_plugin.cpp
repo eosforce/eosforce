@@ -221,6 +221,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
          ("chain-state-db-guard-size-mb", bpo::value<uint64_t>()->default_value(config::default_state_guard_size / (1024  * 1024)), "Safely shut down node when free space remaining in the chain state database drops below this size (in MiB).")
          ("reversible-blocks-db-size-mb", bpo::value<uint64_t>()->default_value(config::default_reversible_cache_size / (1024  * 1024)), "Maximum size (in MiB) of the reversible blocks database")
          ("reversible-blocks-db-guard-size-mb", bpo::value<uint64_t>()->default_value(config::default_reversible_guard_size / (1024  * 1024)), "Safely shut down node when free space remaining in the reverseible blocks database drops below this size (in MiB).")
+         ("System01-contract-block-num", bpo::value<uint32_t>()->default_value(100000000), "System01-contract-block-num")
          ("contracts-console", bpo::bool_switch()->default_value(false),
           "print contract's output to console")
          ("actor-whitelist", boost::program_options::value<vector<string>>()->composing()->multitoken(),
@@ -436,7 +437,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       my->chain_config->contracts_console = options.at( "contracts-console" ).as<bool>();
       my->chain_config->allow_ram_billing_in_notify = options.at( "disable-ram-billing-notify-checks" ).as<bool>();
       if(options.count("System01-contract-block-num"))
-         my->chain_config->System01_contract_block_num = fc::microseconds(options.at("System01-contract-block-num").as<uint32_t>());
+         my->chain_config->System01_contract_block_num = options.at("System01-contract-block-num").as<uint32_t>();
 
       if( options.count( "extract-genesis-json" ) || options.at( "print-genesis-json" ).as<bool>()) {
          genesis_state gs;

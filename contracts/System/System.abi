@@ -40,7 +40,7 @@
         {"name":"available",    "type":"asset"}
       ]
     },{
-      "name": "vote_parameter",
+      "name": "vote",
       "base": "",
       "fields": [
         {"name":"voter",     "type":"account_name"},
@@ -113,7 +113,7 @@
       "ricardian_contract": ""
     },{
       "name": "vote",
-      "type": "vote_parameter",
+      "type": "vote",
       "ricardian_contract": ""
     },{
       "name": "unfreeze",

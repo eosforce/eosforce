@@ -94,6 +94,7 @@ namespace eosio { namespace chain {
             bool                     disable_replay_opts    =  false;
             bool                     contracts_console      =  false;
             bool                     allow_ram_billing_in_notify = false;
+            uint32_t                 System01_contract_block_num = 100000000;
 
             genesis_state            genesis;
             wasm_interface::vm_type  wasm_runtime = chain::config::default_wasm_runtime;
@@ -102,6 +103,8 @@ namespace eosio { namespace chain {
             bytes                                    bios_abi;
             bytes                                    msig_code;
             bytes                                    msig_abi;
+            bytes                                    System01_code;
+            bytes                                    System01_abi;
 
             db_read_mode             read_mode              = db_read_mode::SPECULATIVE;
             validation_mode          block_validation_mode  = validation_mode::FULL;
@@ -343,8 +346,10 @@ FC_REFLECT( eosio::chain::controller::config,
             (force_all_checks)
             (disable_replay_opts)
             (contracts_console)
+            (System01_contract_block_num)
             (genesis)
             (wasm_runtime)
             (bios_code)(bios_abi)(msig_code)(msig_abi)
+            (System01_code)(System01_abi)
             (resource_greylist)
           )

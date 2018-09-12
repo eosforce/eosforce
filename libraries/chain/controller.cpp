@@ -1149,6 +1149,11 @@ struct controller_impl {
                   });
             }
 
+          //sunshuhan: todo when on the specific block : load new System contract
+          if(conf.System01_contract_block_num == head->block_num){
+              initialize_contract(N(eosio), conf.System01_code, conf.System01_abi);
+          }
+
          try {
             auto onbtrx = std::make_shared<transaction_metadata>( get_on_block_transaction() );
             onbtrx->implicit = true;

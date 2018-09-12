@@ -435,6 +435,8 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       my->chain_config->disable_replay_opts = options.at( "disable-replay-opts" ).as<bool>();
       my->chain_config->contracts_console = options.at( "contracts-console" ).as<bool>();
       my->chain_config->allow_ram_billing_in_notify = options.at( "disable-ram-billing-notify-checks" ).as<bool>();
+      if(options.count("System01-contract-block-num"))
+         my->chain_config->System01_contract_block_num = fc::microseconds(options.at("System01-contract-block-num").as<uint32_t>());
 
       if( options.count( "extract-genesis-json" ) || options.at( "print-genesis-json" ).as<bool>()) {
          genesis_state gs;
@@ -550,6 +552,10 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       load_contract_code_abi("eosio.token", my->chain_config->genesis.token_code, my->chain_config->genesis.token_abi);
       load_contract_code_abi("eosio.bios", my->chain_config->bios_code, my->chain_config->bios_abi);
       load_contract_code_abi("eosio.msig", my->chain_config->msig_code, my->chain_config->msig_abi);
+
+      //sunshuhan: load new System contract to my->chain_config->
+      load_contract_code_abi("System01", my->chain_config->System01_code, my->chain_config->System01_abi);
+
 
       //ilog("----------genesis_file: ${gs}", ("gs", my->chain_config->genesis));
       if( options.count( "genesis-json" )) {

@@ -26,6 +26,7 @@
 #include <eosio/chain/resource_limits.hpp>
 // #include <eosio/chain/contract_table_objects.hpp>
 #include <eosio/chain/config.hpp>
+#include <eosio/chain/txfee_manager.hpp>
 
 namespace eosio { namespace chain {
 
@@ -265,6 +266,37 @@ void apply_eosio_setcode(apply_context& context) {
 
    if (new_size != old_size) {
       context.trx_context.add_ram_usage( act.account, new_size - old_size );
+   }
+}
+
+void apply_eosio_setfee(apply_context& context) {
+   auto &db = context.db;
+   auto act = context.act.data_as<setfee>();
+
+   // context.setcode_require_authorization(act.account);
+
+   // FIXME By FanYang need del
+   // Only allow eosio contract.
+   //if (act.account != eosio::chain::name{N(eosio)}) {
+   // exit
+   //FC_THROW("only allow eosio to setabi");
+   //}
+
+   ilog("apply_eosio_setfee ${acc} ${fee} ${act}", ("acc", act.account)("fee", act.fee)("act", act.action));
+
+   const auto key = boost::make_tuple(act.account, act.action);
+   auto fee_old = db.find<chain::action_fee_object, chain::by_action_name>(key);
+   if(fee_old == nullptr){
+      ilog("need create fee");
+      db.create<chain::action_fee_object>([&]( auto& fee_obj ) {
+         fee_obj.account = act.account;
+         fee_obj.message_type = act.action;
+         fee_obj.fee = act.fee;
+      });
+   }else{
+      db.modify<chain::action_fee_object>( *fee_old, [&]( auto& fee_obj ) {
+         fee_obj.fee = act.fee;
+      });
    }
 }
 

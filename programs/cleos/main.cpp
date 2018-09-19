@@ -586,6 +586,17 @@ chain::action create_setabi(const name& account, const abi_def& abi) {
    };
 }
 
+chain::action create_setfee(const name& account, const name &act, const asset fee) {
+   return action {
+         tx_permission.empty() ? vector<chain::permission_level>{{account,config::active_name}} : get_account_permissions(tx_permission),
+         setfee{
+               .account   = account,
+               .action    = act,
+               .fee       = fee
+         }
+   };
+}
+
 chain::action create_setcode(const name& account, const bytes& code) {
    return action {
       tx_permission.empty() ? vector<chain::permission_level>{{account,config::active_name}} : get_account_permissions(tx_permission),
@@ -2269,6 +2280,8 @@ int main( int argc, char** argv ) {
 
    // set contract subcommand
    string account;
+   string action_to_set_fee;
+   string fee_to_set;
    string contractPath;
    string wasmPath;
    string abiPath;
@@ -2280,6 +2293,18 @@ int main( int argc, char** argv ) {
    auto abiSubcommand = setSubcommand->add_subcommand("abi", localized("Create or update the abi on an account"));
    abiSubcommand->add_option("account", account, localized("The account to set the ABI for"))->required();
    abiSubcommand->add_option("abi-file", abiPath, localized("The fullpath containing the contract ABI"))->required();
+
+   auto feeSubcommand = setSubcommand->add_subcommand("setfee", localized("Set Fee need to action"));
+   feeSubcommand->add_option("account", account, localized("The account to set the Fee for"))->required();
+   feeSubcommand->add_option("action", action_to_set_fee, localized("The action to set the Fee for"))->required();
+   feeSubcommand->add_option("fee", fee_to_set, localized("The Fee to set to action"))->required();
+   feeSubcommand->set_callback([&] {
+      asset a;
+      a = a.from_string(fee_to_set);
+      ilog("set fee ${act}, ${fee}", ("act", action_to_set_fee)("fee", a));
+      send_actions({create_setfee(account, action_to_set_fee, a)});
+   });
+
 
    auto contractSubcommand = setSubcommand->add_subcommand("contract", localized("Create or update the contract on an account"));
    contractSubcommand->add_option("account", account, localized("The account to publish a contract for"))

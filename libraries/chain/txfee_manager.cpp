@@ -27,8 +27,9 @@ namespace eosio { namespace chain {
         fee_map[N(create)]          = asset(10*10000);
 
         //contract add set code tmp imp
-        fee_map[N(setabi)]  = asset(10*10000);
-        fee_map[N(setcode)] = asset(10*10000);
+        fee_map[N(setabi)]  = asset(1000);
+        fee_map[N(setfee)]  = asset(1000);
+        fee_map[N(setcode)] = asset(1000);
 
         //eosio.msig
         // fee_map[N(propose)]         = asset(1000);
@@ -50,13 +51,37 @@ namespace eosio { namespace chain {
       return true;
    }
 
-   asset txfee_manager::get_required_fee( const transaction& trx)const
+   asset txfee_manager::get_required_fee( const chainbase::database& db, const transaction& trx)const
    {
       auto fee = asset(0);
+
       for (const auto& act : trx.actions ) {
-        auto it = fee_map.find(act.name);
-        EOS_ASSERT(it != fee_map.end(), action_validate_exception, "action name not include in feemap");
-        fee += it->second;
+         auto it = fee_map.find(act.name);
+         if(it != fee_map.end()) {
+            // fee in fee_map for system contract
+            fee += it->second;
+            continue;
+         }
+
+         // try to found fee for action in db
+         try {
+            auto key = boost::make_tuple(act.account, act.name);
+            const auto &fee_in_db = db.get<action_fee_object, by_action_name>(key);
+
+            ilog("get fee from db ${fee} ${act} ${msg}",
+                  ("fee", fee_in_db.fee)("act", fee_in_db.account)("msg", fee_in_db.message_type));
+
+            fee += fee_in_db.fee;
+            continue;
+         } catch (fc::exception &exp){
+            elog("catch exp ${e}", ("e", exp.what()));
+         } catch (...){
+
+         }
+
+         // no fee found throw err
+         EOS_ASSERT(false, action_validate_exception,
+               "action ${acc} ${act} name not include in feemap or db", ("acc", act.account)("act", act.name));
       }
 
       return fee;

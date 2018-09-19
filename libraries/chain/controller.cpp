@@ -168,6 +168,7 @@ struct controller_impl {
 
    SET_APP_HANDLER( eosio, eosio, newaccount );
    SET_APP_HANDLER( eosio, eosio, setcode );
+   SET_APP_HANDLER( eosio, eosio, setfee );
    SET_APP_HANDLER( eosio, eosio, setabi );
    SET_APP_HANDLER( eosio, eosio, updateauth );
    SET_APP_HANDLER( eosio, eosio, deleteauth );
@@ -362,6 +363,8 @@ struct controller_impl {
       db.add_index<block_summary_multi_index>();
       db.add_index<transaction_multi_index>();
       db.add_index<generated_transaction_multi_index>();
+
+      db.add_index<action_fee_object_index>();
 
       authorization.add_indices();
       resource_limits.add_indices();
@@ -805,7 +808,7 @@ struct controller_impl {
         check_action(dtrx.actions);
         
         //check and filter by fee
-        EOS_ASSERT(dtrx.fee == txfee.get_required_fee(dtrx), transaction_exception, "set tx fee failed");
+        EOS_ASSERT(dtrx.fee == txfee.get_required_fee(self.db(), dtrx), transaction_exception, "set tx fee failed");
         EOS_ASSERT(txfee.check_transaction((transaction)dtrx) == true, transaction_exception, "transaction include actor more than one");
                 
         //push onfee trx
@@ -1017,7 +1020,7 @@ struct controller_impl {
                        false
                );
 
-               EOS_ASSERT(trx->trx.fee == txfee.get_required_fee(trx->trx), transaction_exception, "set tx fee failed");
+               EOS_ASSERT(trx->trx.fee == txfee.get_required_fee(self.db(), trx->trx), transaction_exception, "set tx fee failed");
                EOS_ASSERT(txfee.check_transaction(trx->trx) == true, transaction_exception, "transaction include actor more than one");
                try {
                   auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor) );

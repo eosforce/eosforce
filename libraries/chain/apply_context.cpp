@@ -121,6 +121,8 @@ bool apply_context::is_account( const account_name& account )const {
    return nullptr != db.find<account_object,by_name>( account );
 }
 
+// setcode_require_authorization add by eosforce, setcode need spec authorization in eosforce
+// now test mode will just for one account
 void apply_context::setcode_require_authorization( const account_name& account ) {
    for( uint32_t i=0; i < act.authorization.size(); i++ ) {
      auto producers = get_active_producers();
@@ -129,9 +131,13 @@ void apply_context::setcode_require_authorization( const account_name& account )
      for (auto j:producers) {
        if (act.authorization[i].actor == j) {
          used_authorizations[i] = true;
-         return;
+         // now bp cannot set code
+         // return;
        }
      }
+
+     // for test FIXME By FanYang need to del this
+     return;
 
      // do not allow eosio account to authorize it.
      //if( act.authorization[i].actor == account ) {

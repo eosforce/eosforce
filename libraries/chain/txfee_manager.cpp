@@ -26,6 +26,10 @@ namespace eosio { namespace chain {
         fee_map[N(issue)]           = asset(100);
         fee_map[N(create)]          = asset(10*10000);
 
+        //contract add set code tmp imp
+        fee_map[N(setabi)]  = asset(10*10000);
+        fee_map[N(setcode)] = asset(10*10000);
+
         //eosio.msig
         // fee_map[N(propose)]         = asset(1000);
         // fee_map[N(approve)]         = asset(1000);

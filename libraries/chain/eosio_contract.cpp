@@ -228,11 +228,12 @@ void apply_eosio_setcode(apply_context& context) {
    int64_t old_size  = (int64_t)account.code.size() * config::setcode_ram_bytes_multiplier;
    int64_t new_size  = code_size * config::setcode_ram_bytes_multiplier;
 
+   // FIXME By FanYang need del
    // Only allow eosio contract to setcode
-   if (act.account != eosio::chain::name{N(eosio)}) {
+   //if (act.account != eosio::chain::name{N(eosio)}) {
      // exit
-     FC_THROW("only allow eosio to setcode");
-   }
+     //FC_THROW("only allow eosio to setcode");
+   //}
 
    // Not first time setcode
    if (account.code_version != fc::sha256()) {
@@ -273,11 +274,12 @@ void apply_eosio_setabi(apply_context& context) {
 
    context.setcode_require_authorization(act.account);
 
+   // FIXME By FanYang need del
    // Only allow eosio contract.
-   if (act.account != eosio::chain::name{N(eosio)}) {
+   //if (act.account != eosio::chain::name{N(eosio)}) {
      // exit
-     FC_THROW("only allow eosio to setabi");
-   }
+     //FC_THROW("only allow eosio to setabi");
+   //}
 
    auto abi_id = fc::sha256::hash(act.abi.data(), (uint32_t)act.abi.size());
 

@@ -235,7 +235,7 @@ void apply_eosio_setcode(apply_context& context) {
    }
 
    // Not first time setcode
-   if (account.code_version != fc::sha256::sha256()) {
+   if (account.code_version != fc::sha256()) {
      // get allow_setcode from system contract table
      if (!allow_setcode(context, code_id.str())) {
        // exit
@@ -289,7 +289,7 @@ void apply_eosio_setabi(apply_context& context) {
    int64_t new_size = abi_size;
 
    // Not first time setabi
-   if (account.abi_version != fc::sha256::sha256()) {
+   if (account.abi_version != fc::sha256()) {
       // get allow_setabi from system contract table
       if (!allow_setabi(context, abi_id.str())) {
         // exit

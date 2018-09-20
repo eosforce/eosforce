@@ -824,6 +824,7 @@ struct controller_impl {
         }
 
          trx_context.init_for_deferred_trx( gtrx.published );
+         trx_context.make_limit_by_contract();
          trx_context.exec();
          trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
 
@@ -1035,9 +1036,11 @@ struct controller_impl {
             }
 
             try {
-              if(explicit_billed_cpu_time && billed_cpu_time_us == 0){
-                EOS_ASSERT(false, transaction_exception, "billed_cpu_time_us is 0");
-              }
+               if(explicit_billed_cpu_time && billed_cpu_time_us == 0){
+                  EOS_ASSERT(false, transaction_exception, "billed_cpu_time_us is 0");
+               }
+
+               trx_context.make_limit_by_contract();
                trx_context.exec();
                trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
              } catch (const fc::exception &e) {

@@ -282,7 +282,9 @@ void apply_eosio_setfee(apply_context& context) {
    //FC_THROW("only allow eosio to setabi");
    //}
 
-   ilog("apply_eosio_setfee ${acc} ${fee} ${act}", ("acc", act.account)("fee", act.fee)("act", act.action));
+   ilog("apply_eosio_setfee ${acc} ${fee} ${act} limit ${cpu},${net},${ram}",
+         ("acc", act.account)("fee", act.fee)("act", act.action)
+         ("cpu", act.cpu_limit)("net", act.net_limit)("ram", act.ram_limit));
 
    const auto key = boost::make_tuple(act.account, act.action);
    auto fee_old = db.find<chain::action_fee_object, chain::by_action_name>(key);
@@ -292,10 +294,16 @@ void apply_eosio_setfee(apply_context& context) {
          fee_obj.account = act.account;
          fee_obj.message_type = act.action;
          fee_obj.fee = act.fee;
+         fee_obj.cpu_limit = act.cpu_limit;
+         fee_obj.net_limit = act.net_limit;
+         fee_obj.ram_limit = act.ram_limit;
       });
    }else{
       db.modify<chain::action_fee_object>( *fee_old, [&]( auto& fee_obj ) {
          fee_obj.fee = act.fee;
+         fee_obj.cpu_limit = act.cpu_limit;
+         fee_obj.net_limit = act.net_limit;
+         fee_obj.ram_limit = act.ram_limit;
       });
    }
 }

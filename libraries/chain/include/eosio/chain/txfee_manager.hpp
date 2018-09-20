@@ -45,6 +45,10 @@ namespace eosio { namespace chain {
       account_name account;
       action_name  message_type;
       asset        fee;
+
+      uint32_t cpu_limit = 0;
+      uint32_t net_limit = 0;
+      uint32_t ram_limit = 0;
    };
 
    struct by_action_name;

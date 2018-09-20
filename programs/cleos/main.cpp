@@ -2063,7 +2063,22 @@ int main( int argc, char** argv ) {
          tx_force_unique = false;
       }
 
-      send_actions({create_transfer(con,sender, recipient, to_asset(amount), memo)});
+      auto a = asset::from_string( amount );
+      auto expected_symbol = eosio::chain::EOS_SYMBOL;
+      if (con == "eosio" || a.get_symbol().to_symbol_code() == expected_symbol.to_symbol_code()) {
+         con = "eosio";
+         if ( a.decimals() < expected_symbol.decimals() ) {
+             auto factor = expected_symbol.precision() / a.precision();
+             auto a_old = a;
+             a = asset( a.get_amount() * factor, expected_symbol );
+         } else if ( a.decimals() > expected_symbol.decimals() ) {
+             FC_THROW("Too many decimal digits in ${a}, only ${d} supported", ("a", a)("d", expected_symbol.decimals()));
+         } // else precision matches
+         send_actions({create_transfer(con,sender, recipient, a, memo)});
+      } else {
+         send_actions({create_transfer(con,sender, recipient, to_asset(amount), memo)});
+      }
+
    });
 
    // Net subcommand

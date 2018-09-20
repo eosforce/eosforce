@@ -285,6 +285,13 @@ namespace eosio { namespace chain {
 
       validate_cpu_usage_to_bill( billed_cpu_time_us );
 
+      if(use_limit_by_contract) {
+         EOS_ASSERT(billed_cpu_time_us <= cpu_limit_by_contract, transaction_exception,
+               "cpu limit by contract ${c} ${m}", ("c", billed_cpu_time_us)("m", cpu_limit_by_contract));
+         EOS_ASSERT(net_limit <= net_limit_by_contract, transaction_exception,
+               "net limit by contract ${c} ${m}", ("c", net_limit)("m", net_limit_by_contract));
+      }
+
       for(const auto &bill : bill_to_accounts) {
          dlog("use res ${acc} ${cpu} ${net}", ("acc", bill)("cpu", billed_cpu_time_us)("net", net_usage));
       }
@@ -416,6 +423,15 @@ namespace eosio { namespace chain {
       dlog("add_ram_usage ${acc} ${delta}", ("acc", account)("delta", ram_delta));
       if( ram_delta > 0 ) {
          validate_ram_usage.insert( account );
+      }
+
+      // for ram test one trx
+      ram_used_by_trx += ram_delta;
+
+      if(use_limit_by_contract){
+         EOS_ASSERT(ram_used_by_trx <= ram_limit_by_contract, ram_usage_exceeded,
+               "account ${acc} limit contract use too much ram ${r} ${m}",
+               ("acc", account)("r", ram_used_by_trx)("m", ram_limit_by_contract));
       }
    }
 

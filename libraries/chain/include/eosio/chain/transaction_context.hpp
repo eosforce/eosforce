@@ -114,6 +114,7 @@ namespace eosio { namespace chain {
          uint64_t cpu_limit_by_contract = 0;
          uint64_t net_limit_by_contract = 0;
          uint64_t ram_limit_by_contract = 0;
+         int64_t ram_used_by_trx = 0;
          bool use_limit_by_contract = false;
 
          void make_limit_by_contract();

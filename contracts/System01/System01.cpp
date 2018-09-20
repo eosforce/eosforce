@@ -288,7 +288,7 @@ void system_contract::reward_bps(account_name block_producers[]){
   //reward bps, (bp_reward => bp_account_reward + bp_rewards_pool + eosfund_reward;)
   auto sum_bps_reward = 0;
   for (auto it = bps_tbl.cbegin(); it != bps_tbl.cend(); ++it){
-    if (it->total_staked <= rewarding_bp_staked_threshold || it->commission_rate < 1 || it->commission_rate > 10000)){
+    if (it->total_staked <= rewarding_bp_staked_threshold || it->commission_rate < 1 || it->commission_rate > 10000){
       continue;
     }
 

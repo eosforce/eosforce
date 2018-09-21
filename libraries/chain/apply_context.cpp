@@ -121,7 +121,15 @@ bool apply_context::is_account( const account_name& account )const {
    return nullptr != db.find<account_object,by_name>( account );
 }
 
+// setcode_require_authorization add by eosforce, setcode need spec authorization in eosforce
+// now test mode will just for one account
 void apply_context::setcode_require_authorization( const account_name& account ) {
+   // TODO add power Invalid block number
+   require_authorization(account);
+
+   return;
+
+   /*
    for( uint32_t i=0; i < act.authorization.size(); i++ ) {
      auto producers = get_active_producers();
 
@@ -129,7 +137,8 @@ void apply_context::setcode_require_authorization( const account_name& account )
      for (auto j:producers) {
        if (act.authorization[i].actor == j) {
          used_authorizations[i] = true;
-         return;
+         // now bp cannot set code
+         // return;
        }
      }
 
@@ -140,6 +149,7 @@ void apply_context::setcode_require_authorization( const account_name& account )
      //}
    }
    EOS_ASSERT(false, missing_auth_exception, "missing authority of one of the BPs");
+    */
 }
 
 void apply_context::require_authorization( const account_name& account ) {
@@ -390,6 +400,7 @@ void apply_context::update_db_usage( const account_name& payer, int64_t delta ) 
          require_authorization( payer );
       }
    }
+   dlog("update_db_usage ${acc} ${d}", ("acc", payer)("d", delta));
    trx_context.add_ram_usage(payer, delta);
 }
 

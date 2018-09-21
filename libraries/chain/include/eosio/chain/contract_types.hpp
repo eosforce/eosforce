@@ -39,6 +39,24 @@ struct setcode {
    }
 };
 
+struct setfee{
+   account_name  account;
+   action_name   action;
+   asset         fee;
+
+   uint32_t      cpu_limit = 0;
+   uint32_t      net_limit = 0;
+   uint32_t      ram_limit = 0;
+
+   static account_name get_account() {
+      return config::system_account_name;
+   }
+
+   static action_name get_name() {
+      return N(setfee);
+   }
+};
+
 struct setabi {
    account_name                     account;
    bytes                            abi;
@@ -158,6 +176,7 @@ struct onerror {
 
 FC_REFLECT( eosio::chain::newaccount                       , (creator)(name)(owner)(active) )
 FC_REFLECT( eosio::chain::setcode                          , (account)(vmtype)(vmversion)(code) )
+FC_REFLECT( eosio::chain::setfee                           , (account)(action)(fee)(cpu_limit)(net_limit)(ram_limit) )
 FC_REFLECT( eosio::chain::setabi                           , (account)(abi) )
 FC_REFLECT( eosio::chain::updateauth                       , (account)(permission)(parent)(auth) )
 FC_REFLECT( eosio::chain::deleteauth                       , (account)(permission) )

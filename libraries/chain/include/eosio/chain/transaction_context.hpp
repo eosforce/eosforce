@@ -108,6 +108,16 @@ namespace eosio { namespace chain {
          fc::time_point                pseudo_start;
          fc::microseconds              billed_time;
          fc::microseconds              billing_timer_duration_limit;
+
+
+         // limit by contract tmp imp, will del when new res manager complate
+         uint64_t cpu_limit_by_contract = 0;
+         uint64_t net_limit_by_contract = 0;
+         uint64_t ram_limit_by_contract = 0;
+         int64_t ram_used_by_trx = 0;
+         bool use_limit_by_contract = false;
+
+         void make_limit_by_contract();
    };
 
 } }

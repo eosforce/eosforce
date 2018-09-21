@@ -6,6 +6,7 @@
 #include <eosio/chain/generated_transaction_object.hpp>
 #include <eosio/chain/transaction_object.hpp>
 #include <eosio/chain/global_property_object.hpp>
+#include <eosio/chain/txfee_manager.hpp>
 
 namespace eosio { namespace chain {
 
@@ -185,6 +186,34 @@ namespace eosio { namespace chain {
       init( 0 );
    }
 
+   // limit by contract from actions
+   void transaction_context::make_limit_by_contract(){
+      // now one trx just has one action in eosforce, so it can no include system contract
+
+      auto &db = control.db();
+
+      use_limit_by_contract = false;
+      cpu_limit_by_contract = 0;
+      net_limit_by_contract = 0;
+      ram_limit_by_contract = 0;
+
+      for( const auto& act : trx.actions ) {
+         const auto key = boost::make_tuple(act.account, act.name);
+         auto info = db.find<action_fee_object, by_action_name>(key);
+         if(info != nullptr){
+            dlog("get limit by contract ${con} ${cpu} ${net} ${ram}",
+                  ("con", act.name)("cpu", info->cpu_limit)("net", info->net_limit)("ram", info->ram_limit));
+            use_limit_by_contract = true;
+            cpu_limit_by_contract += info->cpu_limit;
+            net_limit_by_contract += info->net_limit;
+            ram_limit_by_contract += info->ram_limit;
+         }
+      }
+
+      dlog("limit by contract ${cpu} ${net} ${ram}",
+            ("cpu", cpu_limit_by_contract)("net", net_limit_by_contract)("ram", ram_limit_by_contract));
+   }
+
    void transaction_context::exec() {
       EOS_ASSERT( is_initialized, transaction_exception, "must first initialize" );
 
@@ -255,6 +284,17 @@ namespace eosio { namespace chain {
       update_billed_cpu_time( now );
 
       validate_cpu_usage_to_bill( billed_cpu_time_us );
+
+      if(use_limit_by_contract) {
+         EOS_ASSERT(billed_cpu_time_us <= cpu_limit_by_contract, transaction_exception,
+               "cpu limit by contract ${c} ${m}", ("c", billed_cpu_time_us)("m", cpu_limit_by_contract));
+         EOS_ASSERT(net_limit <= net_limit_by_contract, transaction_exception,
+               "net limit by contract ${c} ${m}", ("c", net_limit)("m", net_limit_by_contract));
+      }
+
+      for(const auto &bill : bill_to_accounts) {
+         dlog("use res ${acc} ${cpu} ${net}", ("acc", bill)("cpu", billed_cpu_time_us)("net", net_usage));
+      }
 
       rl.add_transaction_usage( bill_to_accounts, static_cast<uint64_t>(billed_cpu_time_us), net_usage,
                                 block_timestamp_type(control.pending_block_time()).slot ); // Should never fail
@@ -380,8 +420,18 @@ namespace eosio { namespace chain {
    void transaction_context::add_ram_usage( account_name account, int64_t ram_delta ) {
       auto& rl = control.get_mutable_resource_limits_manager();
       rl.add_pending_ram_usage( account, ram_delta );
+      dlog("add_ram_usage ${acc} ${delta}", ("acc", account)("delta", ram_delta));
       if( ram_delta > 0 ) {
          validate_ram_usage.insert( account );
+      }
+
+      // for ram test one trx
+      ram_used_by_trx += ram_delta;
+
+      if(use_limit_by_contract){
+         EOS_ASSERT(ram_used_by_trx <= ram_limit_by_contract, ram_usage_exceeded,
+               "account ${acc} limit contract use too much ram ${r} ${m}",
+               ("acc", account)("r", ram_used_by_trx)("m", ram_limit_by_contract));
       }
    }
 

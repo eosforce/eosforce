@@ -17,9 +17,9 @@
 namespace eosio { namespace chain {
 
 struct account_tuple {
-    public_key_type key;
-    asset           asset;
-    account_name    name = N(a);
+    public_key_type     key;
+    eosio::chain::asset asset;
+    account_name        name = N(a);
 };
 
 struct producer_tuple {

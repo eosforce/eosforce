@@ -211,7 +211,6 @@ void apply_eosio_setcode(apply_context& context) {
    auto& db = context.db;
    auto  act = context.act.data_as<setcode>();
    context.setcode_require_authorization(act.account);
-  //  context.require_authorization(act.account);
 
    EOS_ASSERT( act.vmtype == 0, invalid_contract_vm_type, "code should be 0" );
    EOS_ASSERT( act.vmversion == 0, invalid_contract_vm_version, "version should be 0" );
@@ -229,21 +228,16 @@ void apply_eosio_setcode(apply_context& context) {
    int64_t old_size  = (int64_t)account.code.size() * config::setcode_ram_bytes_multiplier;
    int64_t new_size  = code_size * config::setcode_ram_bytes_multiplier;
 
-   // FIXME By FanYang need del
-   // Only allow eosio contract to setcode
-   //if (act.account != eosio::chain::name{N(eosio)}) {
-     // exit
-     //FC_THROW("only allow eosio to setcode");
-   //}
-
    // Not first time setcode
    if (account.code_version != fc::sha256()) {
+      // eosforce now no allow update code
+      FC_THROW("eosforce now no allow update code");
+
      // get allow_setcode from system contract table
-     if (!allow_setcode(context, code_id.str())) {
+     //if (!allow_setcode(context, code_id.str())) {
        // exit
-       FC_THROW("The code_id '${code_id}' is not approved by the system contract", ("code_id", code_id));
-     }
-     // FC_THROW("setcode twice is not allowed");
+       //FC_THROW("The code_id '${code_id}' is not approved by the system contract", ("code_id", code_id));
+     //}
    }
 
    EOS_ASSERT( account.code_version != code_id, set_exact_code, "contract is already running this version of code" );
@@ -269,27 +263,30 @@ void apply_eosio_setcode(apply_context& context) {
    }
 }
 
+// setfee just for test imp contracts
 void apply_eosio_setfee(apply_context& context) {
    auto &db = context.db;
    auto act = context.act.data_as<setfee>();
 
-   // context.setcode_require_authorization(act.account);
-
-   // FIXME By FanYang need del
-   // Only allow eosio contract.
-   //if (act.account != eosio::chain::name{N(eosio)}) {
-   // exit
-   //FC_THROW("only allow eosio to setabi");
-   //}
+   // need force.test
+   // TODO add power Invalid block number
+   idump((context.act.authorization));
+   EOS_ASSERT((
+              context.act.authorization.size() == 1
+           && context.act.authorization[0].actor == N(force.test)
+           && context.act.authorization[0].permission == config::owner_name),
+   invalid_permission,
+   "setfee just can call by force.test" );
 
    ilog("apply_eosio_setfee ${acc} ${fee} ${act} limit ${cpu},${net},${ram}",
          ("acc", act.account)("fee", act.fee)("act", act.action)
          ("cpu", act.cpu_limit)("net", act.net_limit)("ram", act.ram_limit));
 
+   // warning
    const auto key = boost::make_tuple(act.account, act.action);
    auto fee_old = db.find<chain::action_fee_object, chain::by_action_name>(key);
    if(fee_old == nullptr){
-      ilog("need create fee");
+      //dlog("need create fee");
       db.create<chain::action_fee_object>([&]( auto& fee_obj ) {
          fee_obj.account = act.account;
          fee_obj.message_type = act.action;
@@ -313,13 +310,6 @@ void apply_eosio_setabi(apply_context& context) {
    auto  act = context.act.data_as<setabi>();
 
    context.setcode_require_authorization(act.account);
-
-   // FIXME By FanYang need del
-   // Only allow eosio contract.
-   //if (act.account != eosio::chain::name{N(eosio)}) {
-     // exit
-     //FC_THROW("only allow eosio to setabi");
-   //}
 
    auto abi_id = fc::sha256::hash(act.abi.data(), (uint32_t)act.abi.size());
 

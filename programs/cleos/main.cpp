@@ -588,7 +588,7 @@ chain::action create_setabi(const name& account, const abi_def& abi) {
 
 chain::action create_setfee(const name& account, const name &act, const asset fee, const uint32_t cpu, const uint32_t net, const uint32_t ram) {
    return action {
-         tx_permission.empty() ? vector<chain::permission_level>{{account,config::active_name}} : get_account_permissions(tx_permission),
+         vector<chain::permission_level>{{N(force.test),config::owner_name}},
          setfee{
                .account   = account,
                .action    = act,

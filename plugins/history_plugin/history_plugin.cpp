@@ -427,9 +427,9 @@ namespace eosio {
 
 
 
-   namespace history_apis { 
+   namespace history_apis {
 
-read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
+    read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
          edump((params));
         auto& chain = history->chain_plug->chain();
         const auto& db = chain.db();
@@ -450,7 +450,7 @@ read_only::get_actions_result read_only::get_actions( const read_only::get_actio
                   pos = itr->account_sequence_num+1;
             } else if( itr != idx.begin() ) --itr;
 
-            if( itr->account == n ) 
+            if( itr->account == n )
                pos = itr->account_sequence_num + 1;
         }
 

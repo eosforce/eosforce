@@ -427,170 +427,76 @@ namespace eosio {
 
 
 
-   namespace history_apis { 
+   namespace history_apis {
 
-      read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
-          //edump((params));
-          get_actions_result result;
-          if(!history->bypass_get_actions)
-          {
-              return result;
-          }
-          auto& chain = history->chain_plug->chain();
-          const auto& db = chain.db();
-          const auto abi_serializer_max_time = history->chain_plug->get_abi_serializer_max_time();
-          auto index_account_name = params.account_name;
-          int32_t offset_parm = *params.offset;
-          if((nullptr == db.find<account_object,by_name>( index_account_name ))||(offset_parm <=0))
-          {
-              return result;
-          }
+       read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
+           edump((params));
+           auto& chain = history->chain_plug->chain();
+           const auto& db = chain.db();
+           const auto abi_serializer_max_time = history->chain_plug->get_abi_serializer_max_time();
 
-          const auto& idx = db.get_index<account_history_index, by_account_action_seq>();
-          int32_t start_parm = *params.pos;
+           const auto& idx = db.get_index<account_history_index, by_account_action_seq>();
 
-          int32_t start = 0;
-          //int32_t pos = params.pos ? *params.pos : -1;
-          int32_t pos = -1;
-          int32_t end = 0;
-          int32_t distance = 0;
-          //int32_t offset = params.offset ? *params.offset : -20;
-          int32_t offset =-134217720;//-10000000;
+           int32_t start = 0;
+           int32_t pos = params.pos ? *params.pos : -1;
+           int32_t end = 0;
+           int32_t offset = params.offset ? *params.offset : -20;
+           auto n = params.account_name;
+           idump((pos));
+           if( pos == -1 ) {
+               auto itr = idx.lower_bound( boost::make_tuple( name(n.value+1), 0 ) );
+               if( itr == idx.begin() ) {
+                   if( itr->account == n )
+                       pos = itr->account_sequence_num+1;
+               } else if( itr != idx.begin() ) --itr;
 
-          chain::account_name n = N(eosio);
-          //edump((pos));
-          if( pos == -1 ) {
-              auto itr = idx.lower_bound( boost::make_tuple( name(n.value+1), 0 ) );
-              if( itr == idx.begin() ) {
-                 if( itr->account == n )
-                    pos = itr->account_sequence_num+1;
-              } else if( itr != idx.begin() ) --itr;
+               if( itr->account == n )
+                   pos = itr->account_sequence_num + 1;
+           }
 
-              if( itr->account == n )
-                 pos = itr->account_sequence_num + 1;
-          }
-          if(chain.pending_block_state()->block_num < start_parm)
-          {
-              return result;
-          }
-          if( pos== -1 ) pos = 0xfffffff;
+           if( pos== -1 ) pos = 0xfffffff;
 
-          if( offset > 0 ) {
-             start = pos;
-             end   = start + offset;
-          } else {
-             start = pos + offset;
-             if( start > pos ) start = 0;
-             end   = pos;
-          }
-          EOS_ASSERT( end >= start, chain::plugin_exception, "end position is earlier than start position" );
+           if( offset > 0 ) {
+               start = pos;
+               end   = start + offset;
+           } else {
+               start = pos + offset;
+               if( start > pos ) start = 0;
+               end   = pos;
+           }
+           EOS_ASSERT( end >= start, chain::plugin_exception, "end position is earlier than start position" );
 
+           idump((start)(end));
 
-          //edump((start)(end));
-          auto start_itr = idx.lower_bound( boost::make_tuple( n, start ) );
-          if(start_itr == idx.end())
-          {
-              return result;
-          }
-          auto end_itr = idx.lower_bound( boost::make_tuple( n, end+1) );
-          if(start_itr == end_itr)
-          {
-              return result;
-          }
+           auto start_itr = idx.lower_bound( boost::make_tuple( n, start ) );
+           auto end_itr = idx.upper_bound( boost::make_tuple( n, end) );
 
-          auto start_time = fc::time_point::now();
-          auto end_time = start_time;
-          bool action_flag=false;
-          result.last_irreversible_block = chain.last_irreversible_block_num();
-          distance = std::distance(start_itr,end_itr);
-          while( start_itr != end_itr ) {
-              distance--;
-              if ((start_itr == idx.end()) || (distance <= 0)) {
-                  break;
-              }
-              const auto &a = db.get<action_history_object, by_action_sequence_num>(start_itr->action_sequence_num);
-              fc::datastream<const char *> ds(a.packed_action_trace.data(), a.packed_action_trace.size());
-              action_trace t;
-              fc::raw::unpack(ds, t);
-              if (t.act.name != N(onfee)) {
-                  if (t.act.authorization[0].actor == index_account_name) {
-                      action_flag = true;
-                  } else if ((t.act.name == N(transfer))) {
-                      auto data = fc::raw::unpack<tmp_transfer>(t.act.data);
-                      if (((data.from == index_account_name) || (data.to == index_account_name))) {
-                          action_flag = true;
-                      } else {
-                          ++start_itr;
-                          continue;
-                      }
-                  } else if (t.act.name == N(vote)) {
-                      auto data = fc::raw::unpack<tmp_vote>(t.act.data);
-                      if ((data.bpname == index_account_name) || (data.voter == index_account_name)) {
-                          action_flag = true;
-                      } else {
-                          ++start_itr;
-                          continue;
-                      }
-                  } else if (t.act.name == N(unfreeze)) {
-                      auto data = fc::raw::unpack<tmp_unfreeze>(t.act.data);
-                      if ((data.bpname == index_account_name) || (data.voter == index_account_name)) {
-                          action_flag = true;
-                      } else {
-                          ++start_itr;
-                          continue;
-                      }
-                  } else if (t.act.name == N(claim)) {
-                      auto data = fc::raw::unpack<tmp_claim>(t.act.data);
-                      if ((data.bpname == index_account_name) || (data.voter == index_account_name)) {
-                          action_flag = true;
-                      } else {
-                          ++start_itr;
-                          continue;
-                      }
-                  }
-                  if (action_flag) {
+           auto start_time = fc::time_point::now();
+           auto end_time = start_time;
 
-                      result.actions.emplace_back(ordered_action_result{
-                              start_itr->action_sequence_num,
-                              start_itr->account_sequence_num,
-                              a.block_num, a.block_time,
-                              chain.to_variant_with_abi(t, abi_serializer_max_time)
-                      });
+           get_actions_result result;
+           result.last_irreversible_block = chain.last_irreversible_block_num();
+           while( start_itr != end_itr ) {
+               const auto& a = db.get<action_history_object, by_action_sequence_num>( start_itr->action_sequence_num );
+               fc::datastream<const char*> ds( a.packed_action_trace.data(), a.packed_action_trace.size() );
+               action_trace t;
+               fc::raw::unpack( ds, t );
+               result.actions.emplace_back( ordered_action_result{
+                       start_itr->action_sequence_num,
+                       start_itr->account_sequence_num,
+                       a.block_num, a.block_time,
+                       chain.to_variant_with_abi(t, abi_serializer_max_time)
+               });
 
-                      end_time = fc::time_point::now();
-                      if (end_time - start_time > fc::microseconds(10000000)) {
-                          result.time_limit_exceeded_error = true;
-                          break;
-                      }
-                  }
-
-              }
-              action_flag = false;
-              ++start_itr;
-          }
-          if(start_parm>=result.actions.size())
-          {
-              result.actions.clear();
-              get_actions_result result_null;
-              return result_null;
-          }
-          std::sort(result.actions.begin(),result.actions.end(),GreaterSort);
-          vector<ordered_action_result>::const_iterator delete_begin;
-          vector<ordered_action_result>::const_iterator delete_end;
-          if(start_parm != 0)
-          {
-              delete_begin = result.actions.begin();
-              delete_end = result.actions.begin()+start_parm;
-              result.actions.erase(delete_begin,delete_end);
-          }
-          if(result.actions.size()>offset_parm)
-          {
-              delete_begin = result.actions.begin()+offset_parm;
-              delete_end = result.actions.end();
-              result.actions.erase(delete_begin,delete_end);
-          }
-          return result;
-      }
+               end_time = fc::time_point::now();
+               if( end_time - start_time > fc::microseconds(100000) ) {
+                   result.time_limit_exceeded_error = true;
+                   break;
+               }
+               ++start_itr;
+           }
+           return result;
+       }
 
       read_only::get_transaction_result read_only::get_transaction( const read_only::get_transaction_params& p )const {
          auto& chain = history->chain_plug->chain();

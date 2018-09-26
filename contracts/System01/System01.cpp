@@ -13,6 +13,9 @@ void system_contract::transfer( const account_name from, const account_name to, 
   eosio_assert( 0 <= quantity.amount && quantity.amount <= from_act.available.amount, "need 0.0000 EOS < quantity < available balance" );
   eosio_assert( memo.size() <= 256, "memo has more than 256 bytes" );
 
+  require_recipient( from );
+  require_recipient( to );
+
   acnts_tbl.modify( from_act, 0, [&]( account_info & a ) {
     a.available -= quantity;
   });

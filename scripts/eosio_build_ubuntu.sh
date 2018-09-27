@@ -203,7 +203,6 @@
 		printf "\\tBoost found at %s.\\n" "${BOOST_ROOT}"
 	fi
 
-if false;then
 	printf "\\n\\tChecking MongoDB installation.\\n"
     if [ ! -e "${MONGOD_CONF}" ]; then
 		printf "\\n\\tInstalling MongoDB 3.6.3.\\n"
@@ -421,7 +420,6 @@ mongodconf
 	else
 		printf "\\tMongo C++ driver found at /usr/local/lib/libmongocxx-static.a.\\n"
 	fi
-fi
 
 	printf "\\n\\tChecking secp256k1-zkp installation.\\n"
     # install secp256k1-zkp (Cryptonomex branch)

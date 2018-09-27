@@ -1155,6 +1155,12 @@ struct controller_impl {
                   });
             }
 
+          //sunshuhan: todo when on the specific block : load new System contract
+          if(conf.System01_contract_block_num == head->block_num){
+              ilog(" ---- update System contract ----");
+              initialize_contract(N(eosio), conf.System01_code, conf.System01_abi);
+          }
+
          try {
             auto onbtrx = std::make_shared<transaction_metadata>( get_on_block_transaction() );
             onbtrx->implicit = true;
@@ -1190,9 +1196,6 @@ struct controller_impl {
    } /// sign_block
 
    void apply_block( const signed_block_ptr& b, controller::block_status s ) { try {
-
-     dlog(" ---- apply_block: ${b}", ("b", b->block_num()));
-
       try {
          EOS_ASSERT( b->block_extensions.size() == 0, block_validate_exception, "no supported extensions" );
          start_block( b->timestamp, b->confirmed, s );

@@ -231,7 +231,7 @@ void apply_eosio_setcode(apply_context& context) {
    // Not first time setcode
    if (account.code_version != fc::sha256()) {
       // eosforce now no allow update code
-      FC_THROW("eosforce now no allow update code");
+      // FC_THROW("eosforce now no allow update code");
 
      // get allow_setcode from system contract table
      //if (!allow_setcode(context, code_id.str())) {

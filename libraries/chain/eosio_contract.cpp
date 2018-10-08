@@ -203,7 +203,30 @@ bool allow_setabi(apply_context& context, std::string abi_id) {
   return false;
 }
 
+// clean_action_fee_for_account clean all fee setting for a account,
+// call it when account code or abi update
+void clean_action_fee_for_account(apply_context& context, const account_name &acc) {
+   auto& db = context.db;
 
+   auto &idx = db.get_mutable_index<action_fee_object_index>();
+   auto &acc_idx = idx.indices().get<by_contract_account>();
+
+   std::vector<action_name> actions;
+   for( auto itr = acc_idx.find(acc); itr != acc_idx.end() && (itr->account == acc); itr++ ) {
+      ilog("clean action fee itr ${acc} ${act} ${fee}",
+           ("acc", itr->account)("act", itr->message_type)("fee", itr->fee));
+      actions.push_back(itr->message_type);
+   }
+
+   // remove all fee setting
+   for( const auto &act : actions ) {
+      auto fee_setting = db.find<action_fee_object, by_action_name>(std::make_tuple(acc, act));
+      EOS_ASSERT(fee_setting != nullptr,
+            action_validate_exception,
+            "Find Fee Action to clean, but no found in db");
+      db.remove(*fee_setting);
+   }
+}
 
 void apply_eosio_setcode(apply_context& context) {
    const auto& cfg = context.control.get_global_properties().configuration;
@@ -230,14 +253,7 @@ void apply_eosio_setcode(apply_context& context) {
 
    // Not first time setcode
    if (account.code_version != fc::sha256()) {
-      // eosforce now no allow update code
-      FC_THROW("eosforce now no allow update code");
-
-     // get allow_setcode from system contract table
-     //if (!allow_setcode(context, code_id.str())) {
-       // exit
-       //FC_THROW("The code_id '${code_id}' is not approved by the system contract", ("code_id", code_id));
-     //}
+      clean_action_fee_for_account(context, act.account);
    }
 
    EOS_ASSERT( account.code_version != code_id, set_exact_code, "contract is already running this version of code" );
@@ -322,12 +338,7 @@ void apply_eosio_setabi(apply_context& context) {
 
    // Not first time setabi
    if (account.abi_version != fc::sha256()) {
-      // get allow_setabi from system contract table
-      if (!allow_setabi(context, abi_id.str())) {
-        // exit
-        FC_THROW("The abi_id '${abi_id}' is not approved by the system contract", ("abi_id", abi_id));
-      }
-      // FC_THROW("setabi twice is not allowed");
+      clean_action_fee_for_account(context, act.account);
    }
 
    FC_ASSERT(account.abi_version != abi_id, "contract is already running this version of abi");

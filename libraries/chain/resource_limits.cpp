@@ -96,7 +96,7 @@ void resource_limits_manager::add_transaction_usage(const flat_set<account_name>
 
    for( const auto& a : accounts ) {
 
-      dlog("add_transaction_usage ${acc} ${cpu} ${net}", ("acc", a)("cpu", cpu_usage)("net", net_usage));
+      //dlog("add_transaction_usage ${acc} ${cpu} ${net}", ("acc", a)("cpu", cpu_usage)("net", net_usage));
 
       const auto& usage = _db.get<resource_usage_object,by_owner>( a );
       int64_t unused;

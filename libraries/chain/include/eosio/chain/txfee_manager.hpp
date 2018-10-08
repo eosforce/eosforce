@@ -52,6 +52,7 @@ namespace eosio { namespace chain {
    };
 
    struct by_action_name;
+   struct by_contract_account;
    using action_fee_object_index = chainbase::shared_multi_index_container<
             action_fee_object,
             indexed_by<
@@ -63,6 +64,9 @@ namespace eosio { namespace chain {
                               BOOST_MULTI_INDEX_MEMBER(action_fee_object, account_name, account),
                               BOOST_MULTI_INDEX_MEMBER(action_fee_object, action_name, message_type)
                         >
+                  >,
+                  ordered_non_unique< tag<by_contract_account>,
+                        BOOST_MULTI_INDEX_MEMBER(action_fee_object, account_name, account)
                   >
             >
       >;

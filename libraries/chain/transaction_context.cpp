@@ -201,8 +201,8 @@ namespace eosio { namespace chain {
          const auto key = boost::make_tuple(act.account, act.name);
          auto info = db.find<action_fee_object, by_action_name>(key);
          if(info != nullptr){
-            dlog("get limit by contract ${con} ${cpu} ${net} ${ram}",
-                  ("con", act.name)("cpu", info->cpu_limit)("net", info->net_limit)("ram", info->ram_limit));
+            //dlog("get limit by contract ${con} ${cpu} ${net} ${ram}",
+            //      ("con", act.name)("cpu", info->cpu_limit)("net", info->net_limit)("ram", info->ram_limit));
             use_limit_by_contract = true;
             cpu_limit_by_contract += info->cpu_limit;
             net_limit_by_contract += info->net_limit;
@@ -210,8 +210,8 @@ namespace eosio { namespace chain {
          }
       }
 
-      dlog("limit by contract ${cpu} ${net} ${ram}",
-            ("cpu", cpu_limit_by_contract)("net", net_limit_by_contract)("ram", ram_limit_by_contract));
+      //dlog("limit by contract ${cpu} ${net} ${ram}",
+      //      ("cpu", cpu_limit_by_contract)("net", net_limit_by_contract)("ram", ram_limit_by_contract));
    }
 
    void transaction_context::exec() {
@@ -292,9 +292,9 @@ namespace eosio { namespace chain {
                "net limit by contract ${c} ${m}", ("c", net_limit)("m", net_limit_by_contract));
       }
 
-      for(const auto &bill : bill_to_accounts) {
-         dlog("use res ${acc} ${cpu} ${net}", ("acc", bill)("cpu", billed_cpu_time_us)("net", net_usage));
-      }
+      //for(const auto &bill : bill_to_accounts) {
+      //   dlog("use res ${acc} ${cpu} ${net}", ("acc", bill)("cpu", billed_cpu_time_us)("net", net_usage));
+      //}
 
       rl.add_transaction_usage( bill_to_accounts, static_cast<uint64_t>(billed_cpu_time_us), net_usage,
                                 block_timestamp_type(control.pending_block_time()).slot ); // Should never fail

@@ -27,9 +27,9 @@ namespace eosio { namespace chain {
         fee_map[N(create)]          = asset(10*10000);
 
         //contract add set code tmp imp
-        fee_map[N(setabi)]  = asset(1000);
-        fee_map[N(setfee)]  = asset(1000);
-        fee_map[N(setcode)] = asset(1000);
+        fee_map[N(setabi)]  = asset(50 * 10000); // 50 EOS
+        fee_map[N(setfee)]  = asset(1000);       // 0.1 EOS
+        fee_map[N(setcode)] = asset(50 * 10000); // 50 EOS
 
         //eosio.msig
         // fee_map[N(propose)]         = asset(1000);
@@ -76,7 +76,6 @@ namespace eosio { namespace chain {
          } catch (fc::exception &exp){
             elog("catch exp ${e}", ("e", exp.what()));
          } catch (...){
-
          }
 
          // no fee found throw err

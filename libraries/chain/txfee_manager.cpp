@@ -68,8 +68,13 @@ namespace eosio { namespace chain {
             auto key = boost::make_tuple(act.account, act.name);
             const auto &fee_in_db = db.get<action_fee_object, by_action_name>(key);
 
-            ilog("get fee from db ${fee} ${act} ${msg}",
-                  ("fee", fee_in_db.fee)("act", fee_in_db.account)("msg", fee_in_db.message_type));
+            //ilog("get fee from db ${fee} ${act} ${msg}",
+            //      ("fee", fee_in_db.fee)("act", fee_in_db.account)("msg", fee_in_db.message_type));
+
+            // no allow zero fee
+            EOS_ASSERT(fee_in_db.fee != asset(0), action_validate_exception,
+                  "action ${acc} ${act} name fee zero in db!",
+                  ("acc", act.account)("act", act.name));
 
             fee += fee_in_db.fee;
             continue;

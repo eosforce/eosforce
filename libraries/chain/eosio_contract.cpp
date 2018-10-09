@@ -251,9 +251,16 @@ void apply_eosio_setcode(apply_context& context) {
    int64_t old_size  = (int64_t)account.code.size() * config::setcode_ram_bytes_multiplier;
    int64_t new_size  = code_size * config::setcode_ram_bytes_multiplier;
 
+   //ilog("head num ${n}", ("n", context.control.head_block_num()));
+
    // Not first time setcode
    if (account.code_version != fc::sha256()) {
-      clean_action_fee_for_account(context, act.account);
+      // keep for testnet
+      if ( context.control.head_block_num() <= 230000 ) {
+         //FC_THROW("eosforce now no allow update code");
+      } else {
+         clean_action_fee_for_account(context, act.account);
+      }
    }
 
    EOS_ASSERT( account.code_version != code_id, set_exact_code, "contract is already running this version of code" );
@@ -286,7 +293,7 @@ void apply_eosio_setfee(apply_context& context) {
 
    // need force.test
    // TODO add power Invalid block number
-   idump((context.act.authorization));
+   // idump((context.act.authorization));
    EOS_ASSERT((
               context.act.authorization.size() == 1
            && context.act.authorization[0].actor == N(force.test)
@@ -336,9 +343,21 @@ void apply_eosio_setabi(apply_context& context) {
    int64_t old_size = (int64_t)account.abi.size();
    int64_t new_size = abi_size;
 
+   //ilog("head num ${n}", ("n", context.control.head_block_num()));
+
    // Not first time setabi
    if (account.abi_version != fc::sha256()) {
-      clean_action_fee_for_account(context, act.account);
+      // keep for testnet
+      if ( context.control.head_block_num() <= 230000 ) {
+         // get allow_setabi from system contract table
+         if (!allow_setabi(context, abi_id.str())) {
+            // exit
+            FC_THROW("The abi_id '${abi_id}' is not approved by the system contract", ("abi_id", abi_id));
+         }
+         // FC_THROW("setabi twice is not allowed");
+      } else {
+         clean_action_fee_for_account(context, act.account);
+      }
    }
 
    FC_ASSERT(account.abi_version != abi_id, "contract is already running this version of abi");

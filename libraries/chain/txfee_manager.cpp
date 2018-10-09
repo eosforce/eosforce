@@ -27,9 +27,13 @@ namespace eosio { namespace chain {
         fee_map[N(create)]          = asset(10*10000);
 
         //contract add set code tmp imp
-        fee_map[N(setabi)]  = asset(50 * 10000); // 50 EOS
+        fee_map[N(setabi)]  = asset(1000); // 50 EOS
         fee_map[N(setfee)]  = asset(1000);       // 0.1 EOS
-        fee_map[N(setcode)] = asset(50 * 10000); // 50 EOS
+        fee_map[N(setcode)] = asset(1000); // 50 EOS
+
+        //fee_map[N(setabi)]  = asset(50 * 10000); // 50 EOS
+        //fee_map[N(setfee)]  = asset(1000);       // 0.1 EOS
+        //fee_map[N(setcode)] = asset(50 * 10000); // 50 EOS
 
         //eosio.msig
         // fee_map[N(propose)]         = asset(1000);
@@ -63,24 +67,19 @@ namespace eosio { namespace chain {
             continue;
          }
 
-         // try to found fee for action in db
-         try {
-            auto key = boost::make_tuple(act.account, act.name);
-            const auto &fee_in_db = db.get<action_fee_object, by_action_name>(key);
-
-            //ilog("get fee from db ${fee} ${act} ${msg}",
-            //      ("fee", fee_in_db.fee)("act", fee_in_db.account)("msg", fee_in_db.message_type));
-
-            // no allow zero fee
-            EOS_ASSERT(fee_in_db.fee != asset(0), action_validate_exception,
-                  "action ${acc} ${act} name fee zero in db!",
-                  ("acc", act.account)("act", act.name));
-
-            fee += fee_in_db.fee;
-            continue;
+         // first check if changed fee
+         try{
+            const auto fee_in_db = db.find<action_fee_object, by_action_name>(
+                  boost::make_tuple(act.account, act.name));
+            if(    ( fee_in_db != nullptr )
+                && ( fee_in_db->fee != asset(0) ) ){
+               fee += fee_in_db->fee;
+               continue;
+            }
          } catch (fc::exception &exp){
             elog("catch exp ${e}", ("e", exp.what()));
          } catch (...){
+            elog("catch unknown exp in get_required_fee");
          }
 
          // no fee found throw err

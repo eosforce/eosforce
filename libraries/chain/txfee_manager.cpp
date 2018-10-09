@@ -62,7 +62,7 @@ namespace eosio { namespace chain {
       for (const auto& act : trx.actions ) {
          // keep consensus for test net
          // Just for test net, will delete before to main net
-         if (act.account == N(diceonlineon)){
+         if (act.account == N(diceonlineon)) {
             auto it = fee_map.find(std::make_pair(N(eosio), act.name));
             if(it != fee_map.end()) {
                // fee in fee_map for system contract
@@ -75,6 +75,34 @@ namespace eosio { namespace chain {
                // fee in fee_map for system contract
                fee += it->second;
                continue;
+            }
+         }
+
+         // keep consensus for main net, some action in main net exec action
+         // like newaccount in diff account
+         {
+            if ((act.name == N(newaccount)) &&
+                ((act.account == N(eosio.bios))
+                 || (act.account == N(eosio.token))
+                )) {
+               auto it = fee_map.find(std::make_pair(N(eosio), act.name));
+               if (it != fee_map.end()) {
+                  // fee in fee_map for system contract
+                  fee += it->second;
+                  continue;
+               }
+            }
+
+            if ((act.name == N(transfer)) &&
+                (   (act.account == N(victor))
+                 || (act.account == N(eosvictor))
+                )) {
+               auto it = fee_map.find(std::make_pair(N(eosio), act.name));
+               if (it != fee_map.end()) {
+                  // fee in fee_map for system contract
+                  fee += it->second;
+                  continue;
+               }
             }
          }
 

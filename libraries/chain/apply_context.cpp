@@ -400,7 +400,7 @@ void apply_context::update_db_usage( const account_name& payer, int64_t delta ) 
          require_authorization( payer );
       }
    }
-   dlog("update_db_usage ${acc} ${d}", ("acc", payer)("d", delta));
+   //dlog("update_db_usage ${acc} ${d}", ("acc", payer)("d", delta));
    trx_context.add_ram_usage(payer, delta);
 }
 

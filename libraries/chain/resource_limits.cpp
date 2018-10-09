@@ -164,7 +164,7 @@ void resource_limits_manager::add_pending_ram_usage( const account_name account,
    }
 
 
-   dlog("add_pending_ram_usage ${acc} ${ram}", ("acc", account)("ram", ram_delta));
+   //dlog("add_pending_ram_usage ${acc} ${ram}", ("acc", account)("ram", ram_delta));
 
    const auto& usage  = _db.get<resource_usage_object,by_owner>( account );
 

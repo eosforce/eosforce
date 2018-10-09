@@ -25,7 +25,12 @@ namespace eosio { namespace chain {
 
 
       private:
-        std::map<action_name, asset> fee_map;
+
+        inline void init_fee(const account_name &acc, const action_name &act, const asset &fee) {
+           fee_map[std::make_pair(acc, act)] = fee;
+        }
+
+        std::map<std::pair<account_name, action_name>, asset> fee_map;
    };
 
 

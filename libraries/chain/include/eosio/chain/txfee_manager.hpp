@@ -21,7 +21,7 @@ namespace eosio { namespace chain {
 
          bool check_transaction( const transaction& trx)const;
 
-         asset get_required_fee( const chainbase::database& db, const transaction& trx)const;
+         asset get_required_fee( const controller& ctl, const transaction& trx)const;
 
 
       private:

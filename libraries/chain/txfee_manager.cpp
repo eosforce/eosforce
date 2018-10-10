@@ -5,6 +5,7 @@
 
 #include <eosio/chain/exceptions.hpp>
 #include <eosio/chain/txfee_manager.hpp>
+#include <eosio/chain/controller.hpp>
 
 namespace eosio { namespace chain {
 
@@ -55,8 +56,9 @@ namespace eosio { namespace chain {
       return true;
    }
 
-   asset txfee_manager::get_required_fee( const chainbase::database& db, const transaction& trx)const
+   asset txfee_manager::get_required_fee( const controller& ctl, const transaction& trx)const
    {
+      const auto &db = ctl.db();
       auto fee = asset(0);
 
       for (const auto& act : trx.actions ) {

@@ -10,38 +10,38 @@
 namespace eosio { namespace chain {
 
    txfee_manager::txfee_manager(){
-        const auto eosio_acc = N(eosio);
-        const auto token_acc = N(eosio.token);
+      const auto eosio_acc = N(eosio);
+      const auto token_acc = N(eosio.token);
 
-        init_fee(eosio_acc, N(newaccount), asset(1000));
-        init_fee(eosio_acc, N(updateauth), asset(1000));
-        init_fee(eosio_acc, N(deleteauth), asset(1000));
+      init_native_fee(eosio_acc, N(newaccount), asset(1000));
+      init_native_fee(eosio_acc, N(updateauth), asset(1000));
+      init_native_fee(eosio_acc, N(deleteauth), asset(1000));
 
-        init_fee(eosio_acc, N(transfer),     asset(100));
-        init_fee(eosio_acc, N(vote),         asset(500));
-        init_fee(eosio_acc, N(unfreeze),     asset(100));
-        init_fee(eosio_acc, N(claim),        asset(300));
-        init_fee(eosio_acc, N(updatebp),     asset(100*10000));
-        init_fee(eosio_acc, N(setemergency), asset(10*10000));
+      init_native_fee(eosio_acc, N(transfer),     asset(100));
+      init_native_fee(eosio_acc, N(vote),         asset(500));
+      init_native_fee(eosio_acc, N(unfreeze),     asset(100));
+      init_native_fee(eosio_acc, N(claim),        asset(300));
+      init_native_fee(eosio_acc, N(updatebp),     asset(100*10000));
+      init_native_fee(eosio_acc, N(setemergency), asset(10*10000));
 
-        init_fee(token_acc, N(transfer), asset(100));
-        init_fee(token_acc, N(issue),    asset(100));
-        init_fee(token_acc, N(create),   asset(10*10000));
+      init_native_fee(token_acc, N(transfer), asset(100));
+      init_native_fee(token_acc, N(issue),    asset(100));
+      init_native_fee(token_acc, N(create),   asset(10*10000));
 
-        init_fee(eosio_acc, N(setabi),  asset(1000));
-        init_fee(eosio_acc, N(setfee),  asset(1000));
-        init_fee(eosio_acc, N(setcode), asset(1000));
+      init_native_fee(eosio_acc, N(setabi),  asset(1000));
+      init_native_fee(eosio_acc, N(setfee),  asset(1000));
+      init_native_fee(eosio_acc, N(setcode), asset(1000));
 
-        //fee_map[N(setabi)]  = asset(50 * 10000); // 50 EOS
-        //fee_map[N(setfee)]  = asset(1000);       // 0.1 EOS
-        //fee_map[N(setcode)] = asset(50 * 10000); // 50 EOS
+      //fee_map[N(setabi)]  = asset(50 * 10000); // 50 EOS
+      //fee_map[N(setfee)]  = asset(1000);       // 0.1 EOS
+      //fee_map[N(setcode)] = asset(50 * 10000); // 50 EOS
 
-        //eosio.msig
-        // fee_map[N(propose)]         = asset(1000);
-        // fee_map[N(approve)]         = asset(1000);
-        // fee_map[N(unapprove)]       = asset(1000);
-        // fee_map[N(cancel)]          = asset(1000);
-        // fee_map[N(exec)]            = asset(1000);
+      //eosio.msig
+      // fee_map[N(propose)]         = asset(1000);
+      // fee_map[N(approve)]         = asset(1000);
+      // fee_map[N(unapprove)]       = asset(1000);
+      // fee_map[N(cancel)]          = asset(1000);
+      // fee_map[N(exec)]            = asset(1000);
    }
 
    bool txfee_manager::check_transaction( const transaction& trx)const
@@ -60,23 +60,26 @@ namespace eosio { namespace chain {
    {
       const auto &db = ctl.db();
       auto fee = asset(0);
+      const auto block_num = ctl.head_block_num();
 
       for (const auto& act : trx.actions ) {
          // keep consensus for test net
          // Just for test net, will delete before to main net
          if (act.account == N(diceonlineon)) {
-            auto it = fee_map.find(std::make_pair(N(eosio), act.name));
-            if(it != fee_map.end()) {
-               // fee in fee_map for system contract
-               fee += it->second;
-               continue;
+            {
+               const auto native_fee = get_native_fee(block_num, N(eosio), act.name);
+               if (native_fee != asset(0)) {
+                  fee += native_fee;
+                  continue;
+               }
             }
 
-            it = fee_map.find(std::make_pair(N(eosio.token), act.name));
-            if(it != fee_map.end()) {
-               // fee in fee_map for system contract
-               fee += it->second;
-               continue;
+            {
+               const auto native_fee = get_native_fee(block_num, N(eosio.token), act.name);
+               if (native_fee != asset(0)) {
+                  fee += native_fee;
+                  continue;
+               }
             }
          }
 
@@ -87,10 +90,9 @@ namespace eosio { namespace chain {
                 ((act.account == N(eosio.bios))
                  || (act.account == N(eosio.token))
                 )) {
-               auto it = fee_map.find(std::make_pair(N(eosio), act.name));
-               if (it != fee_map.end()) {
-                  // fee in fee_map for system contract
-                  fee += it->second;
+               const auto native_fee = get_native_fee(block_num, N(eosio), act.name);
+               if (native_fee != asset(0)) {
+                  fee += native_fee;
                   continue;
                }
             }
@@ -99,10 +101,9 @@ namespace eosio { namespace chain {
                 (   (act.account == N(victor))
                  || (act.account == N(eosvictor))
                 )) {
-               auto it = fee_map.find(std::make_pair(N(eosio), act.name));
-               if (it != fee_map.end()) {
-                  // fee in fee_map for system contract
-                  fee += it->second;
+               const auto native_fee = get_native_fee(block_num, N(eosio), act.name);
+               if (native_fee != asset(0)) {
+                  fee += native_fee;
                   continue;
                }
             }
@@ -123,16 +124,16 @@ namespace eosio { namespace chain {
             elog("catch unknown exp in get_required_fee");
          }
 
-         auto it = fee_map.find(std::make_pair(act.account, act.name));
-         if(it != fee_map.end()) {
-            // fee in fee_map for system contract
-            fee += it->second;
+         const auto native_fee = get_native_fee(block_num, act.account, act.name);
+         if (native_fee != asset(0)) {
+            fee += native_fee;
             continue;
          }
 
          // no fee found throw err
          EOS_ASSERT(false, action_validate_exception,
-               "action ${acc} ${act} name not include in feemap or db", ("acc", act.account)("act", act.name));
+               "action ${acc} ${act} name not include in feemap or db",
+               ("acc", act.account)("act", act.name));
       }
 
       return fee;

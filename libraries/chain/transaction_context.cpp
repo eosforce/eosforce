@@ -429,7 +429,7 @@ namespace eosio { namespace chain {
       ram_used_by_trx += ram_delta;
 
       if(use_limit_by_contract){
-         EOS_ASSERT(ram_used_by_trx <= ram_limit_by_contract, ram_usage_exceeded,
+         EOS_ASSERT(((ram_used_by_trx < 0) || (static_cast<uint64_t >(ram_used_by_trx) <= ram_limit_by_contract)), ram_usage_exceeded,
                "account ${acc} limit contract use too much ram ${r} ${m}",
                ("acc", account)("r", ram_used_by_trx)("m", ram_limit_by_contract));
       }

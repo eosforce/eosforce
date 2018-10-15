@@ -255,12 +255,7 @@ void apply_eosio_setcode(apply_context& context) {
 
    // Not first time setcode
    if (account.code_version != fc::sha256()) {
-      // keep for testnet
-      if ( context.control.head_block_num() <= 230000 ) {
-         //FC_THROW("eosforce now no allow update code");
-      } else {
-         clean_action_fee_for_account(context, act.account);
-      }
+      clean_action_fee_for_account(context, act.account);
    }
 
    EOS_ASSERT( account.code_version != code_id, set_exact_code, "contract is already running this version of code" );
@@ -347,17 +342,7 @@ void apply_eosio_setabi(apply_context& context) {
 
    // Not first time setabi
    if (account.abi_version != fc::sha256()) {
-      // keep for testnet
-      if ( context.control.head_block_num() <= 230000 ) {
-         // get allow_setabi from system contract table
-         if (!allow_setabi(context, abi_id.str())) {
-            // exit
-            FC_THROW("The abi_id '${abi_id}' is not approved by the system contract", ("abi_id", abi_id));
-         }
-         // FC_THROW("setabi twice is not allowed");
-      } else {
-         clean_action_fee_for_account(context, act.account);
-      }
+      clean_action_fee_for_account(context, act.account);
    }
 
    FC_ASSERT(account.abi_version != abi_id, "contract is already running this version of abi");

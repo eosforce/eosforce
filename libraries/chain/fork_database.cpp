@@ -148,7 +148,14 @@ namespace eosio { namespace chain {
       EOS_ASSERT( existing == by_id_idx.end(), fork_database_exception, "we already know about this block" );
 
       auto prior = by_id_idx.find( b->previous );
-      EOS_ASSERT( prior != by_id_idx.end(), unlinkable_block_exception, "unlinkable block", ("id", string(b->id()))("previous", string(b->previous)) );
+      if (prior == by_id_idx.end()){
+         elog("unlinkable block ${num} ${id} ${previous}",
+               ("num", b->block_num())("id", string(b->id()))("previous", string(b->previous)));
+
+         EOS_ASSERT( false, unlinkable_block_exception,
+                     "unlinkable block",
+                     ("num", b->block_num())("id", string(b->id()))("previous", string(b->previous)) );
+      }
 
       auto result = std::make_shared<block_state>( **prior, move(b), trust );
       EOS_ASSERT( result, fork_database_exception , "fail to add new block state" );

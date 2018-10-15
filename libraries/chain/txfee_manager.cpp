@@ -63,26 +63,6 @@ namespace eosio { namespace chain {
       const auto block_num = ctl.head_block_num();
 
       for (const auto& act : trx.actions ) {
-         // keep consensus for test net
-         // Just for test net, will delete before to main net
-         if (act.account == N(diceonlineon)) {
-            {
-               const auto native_fee = get_native_fee(block_num, N(eosio), act.name);
-               if (native_fee != asset(0)) {
-                  fee += native_fee;
-                  continue;
-               }
-            }
-
-            {
-               const auto native_fee = get_native_fee(block_num, N(eosio.token), act.name);
-               if (native_fee != asset(0)) {
-                  fee += native_fee;
-                  continue;
-               }
-            }
-         }
-
          // keep consensus for main net, some action in main net exec action
          // like newaccount in diff account
          {

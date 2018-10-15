@@ -1037,6 +1037,8 @@ struct controller_impl {
 
             try {
                if(explicit_billed_cpu_time && billed_cpu_time_us == 0){
+                  elog("billed_cpu_time_us is 0 : ${trx}", ("trx", trx->id));
+                  edump((trx->packed_trx.get_transaction()));
                   EOS_ASSERT(false, transaction_exception, "billed_cpu_time_us is 0");
                }
 

@@ -286,7 +286,7 @@ void system_contract::reward_bps(account_name block_producers[]){
     return;
   }
   //0.5% of staked_all_bps
-  const auto rewarding_bp_staked_threshold = staked_all_bps / 200;//TODO: mv 200 to config
+  const auto rewarding_bp_staked_threshold = staked_all_bps / 200;
   
   //reward bps, (bp_reward => bp_account_reward + bp_rewards_pool + eosfund_reward;)
   auto sum_bps_reward = 0;
@@ -316,9 +316,12 @@ void system_contract::reward_bps(account_name block_producers[]){
 
     sum_bps_reward += (bp_account_reward + bp_rewards_pool);
 
-    print(" bp: ", eosio::name{.value=it->name}, ", staked:", it->total_staked, ", bp_stake_rate:", double(it->total_staked) / double(staked_all_bps), 
-    ", is_super_bp: ", is_super_bp(block_producers, it->name), ", commission_rate:", it->commission_rate, ", bp_reward: ", bp_reward, 
-    ", bp_account_reward+=", bp_account_reward, ", bp_rewards_pool+=", bp_rewards_pool, "\n");
+    if( current_block_num() % 100 == 0 ){
+      print(" bp: ", eosio::name{.value=it->name}, ", staked:", it->total_staked, ", bp_stake_rate:", double(it->total_staked) / double(staked_all_bps),
+            ", is_super_bp: ", is_super_bp(block_producers, it->name), ", commission_rate:", it->commission_rate, ", bp_reward: ", bp_reward,
+            ", bp_account_reward+=", bp_account_reward, ", bp_rewards_pool+=", bp_rewards_pool, "\n");
+    }
+
   }
 
   //reward eosfund
@@ -327,7 +330,6 @@ void system_contract::reward_bps(account_name block_producers[]){
   acnts_tbl.modify(eosfund, 0, [&](account_info &a) {
     a.available += asset(total_eosfund_reward, SYMBOL);
   });
-  print("---- total_eosfund_reward+= ", total_eosfund_reward, "\n");
 }
 
 bool system_contract::is_super_bp(account_name block_producers[], account_name name)

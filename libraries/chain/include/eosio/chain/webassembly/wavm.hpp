@@ -605,7 +605,7 @@ struct intrinsic_invoker_impl<Ret, std::tuple<T &, Inputs...>, std::tuple<Transl
          Runtime::causeException(Exception::Cause::accessViolation);
       T &base = *(T*)(getMemoryBaseAddress(mem)+(U32)ptr);
       if ( reinterpret_cast<uintptr_t>(&base) % alignof(T) != 0 ) {
-         wlog( "misaligned reference" );
+         //wlog( "misaligned reference" );
          std::remove_const_t<T> copy;
          T* copy_ptr = &copy;
          memcpy( (void*)copy_ptr, (void*)&base, sizeof(T) );

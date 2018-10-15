@@ -251,6 +251,8 @@ void apply_eosio_setcode(apply_context& context) {
    int64_t old_size  = (int64_t)account.code.size() * config::setcode_ram_bytes_multiplier;
    int64_t new_size  = code_size * config::setcode_ram_bytes_multiplier;
 
+   //ilog("head num ${n}", ("n", context.control.head_block_num()));
+
    // Not first time setcode
    if (account.code_version != fc::sha256()) {
       clean_action_fee_for_account(context, act.account);
@@ -286,7 +288,7 @@ void apply_eosio_setfee(apply_context& context) {
 
    // need force.test
    // TODO add power Invalid block number
-   idump((context.act.authorization));
+   // idump((context.act.authorization));
    EOS_ASSERT((
               context.act.authorization.size() == 1
            && context.act.authorization[0].actor == N(force.test)
@@ -335,6 +337,8 @@ void apply_eosio_setabi(apply_context& context) {
 
    int64_t old_size = (int64_t)account.abi.size();
    int64_t new_size = abi_size;
+
+   //ilog("head num ${n}", ("n", context.control.head_block_num()));
 
    // Not first time setabi
    if (account.abi_version != fc::sha256()) {

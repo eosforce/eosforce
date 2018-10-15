@@ -6,13 +6,13 @@
 
 #include <eosio/chain/types.hpp>
 #include <eosio/chain/asset.hpp>
-#include <eosio/chain/transaction.hpp>
 
 #include "multi_index_includes.hpp"
 
 namespace eosio { namespace chain {
 
    class controller;
+   struct transaction;
 
    class txfee_manager {
       public:
@@ -21,11 +21,26 @@ namespace eosio { namespace chain {
 
          bool check_transaction( const transaction& trx)const;
 
-         asset get_required_fee( const chainbase::database& db, const transaction& trx)const;
+         asset get_required_fee( const controller& ctl, const transaction& trx)const;
 
 
       private:
-        std::map<action_name, asset> fee_map;
+
+        inline void init_native_fee(const account_name &acc, const action_name &act, const asset &fee) {
+           fee_map[std::make_pair(acc, act)] = fee;
+        }
+
+        inline asset get_native_fee(const uint32_t block_num, const account_name &acc, const action_name &act) const {
+           const auto itr = fee_map.find(std::make_pair(acc, act));
+           if( itr != fee_map.end() ){
+              return itr->second;
+           }
+
+           // no find
+           return asset(0);
+        }
+
+        std::map<std::pair<account_name, action_name>, asset> fee_map;
    };
 
 

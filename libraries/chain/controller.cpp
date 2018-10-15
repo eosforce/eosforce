@@ -808,7 +808,7 @@ struct controller_impl {
         check_action(dtrx.actions);
         
         //check and filter by fee
-        EOS_ASSERT(dtrx.fee == txfee.get_required_fee(self.db(), dtrx), transaction_exception, "set tx fee failed");
+        EOS_ASSERT(dtrx.fee == txfee.get_required_fee(self, dtrx), transaction_exception, "set tx fee failed");
         EOS_ASSERT(txfee.check_transaction((transaction)dtrx) == true, transaction_exception, "transaction include actor more than one");
                 
         //push onfee trx
@@ -1021,7 +1021,7 @@ struct controller_impl {
                        false
                );
 
-               EOS_ASSERT(trx->trx.fee == txfee.get_required_fee(self.db(), trx->trx), transaction_exception, "set tx fee failed");
+               EOS_ASSERT(trx->trx.fee == txfee.get_required_fee(self, trx->trx), transaction_exception, "set tx fee failed");
                EOS_ASSERT(txfee.check_transaction(trx->trx) == true, transaction_exception, "transaction include actor more than one");
                try {
                   auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor) );
@@ -1037,6 +1037,8 @@ struct controller_impl {
 
             try {
                if(explicit_billed_cpu_time && billed_cpu_time_us == 0){
+                  elog("billed_cpu_time_us is 0 : ${trx}", ("trx", trx->id));
+                  edump((trx->packed_trx.get_transaction()));
                   EOS_ASSERT(false, transaction_exception, "billed_cpu_time_us is 0");
                }
 

@@ -35,29 +35,30 @@ action_trace apply_context::exec_one()
 
    const auto& cfg = control.get_global_properties().configuration;
    try {
-      const auto &a = control.get_account(receiver);
+      const auto& a = control.get_account( receiver );
       privileged = a.privileged;
-      auto native = control.find_apply_handler(receiver, act.account, act.name);
+      auto native = control.find_apply_handler( receiver, act.account, act.name );
       if( native ) {
-         if( control.is_producing_block() ) {
+         if( trx_context.can_subjectively_fail && control.is_producing_block()) {
             control.check_contract_list( receiver );
+            control.check_action_list( act.account, act.name );
          }
-         (*native)(*this);
+         (*native)( *this );
       }
 
       if( a.code.size() > 0
-          && !(act.account == config::system_account_name && act.name == N(setcode) && receiver == config::system_account_name) )
-      {
-         if( control.is_producing_block() ) {
+          && !(act.account == config::system_account_name && act.name == N( setcode ) &&
+               receiver == config::system_account_name)) {
+         if( trx_context.can_subjectively_fail && control.is_producing_block()) {
             control.check_contract_list( receiver );
+            control.check_action_list( act.account, act.name );
          }
          try {
-            control.get_wasm_interface().apply(a.code_version, a.code, *this);
-         } catch ( const wasm_exit& ){}
+            control.get_wasm_interface().apply( a.code_version, a.code, *this );
+         } catch( const wasm_exit& ) {}
       }
 
-
-   } FC_CAPTURE_AND_RETHROW((_pending_console_output.str()));
+   } FC_RETHROW_EXCEPTIONS(warn, "pending console output: ${console}", ("console", _pending_console_output.str()))
 
    action_receipt r;
    r.receiver         = receiver;
@@ -120,7 +121,15 @@ bool apply_context::is_account( const account_name& account )const {
    return nullptr != db.find<account_object,by_name>( account );
 }
 
+// setcode_require_authorization add by eosforce, setcode need spec authorization in eosforce
+// now test mode will just for one account
 void apply_context::setcode_require_authorization( const account_name& account ) {
+   // TODO add power Invalid block number
+   require_authorization(account);
+
+   return;
+
+   /*
    for( uint32_t i=0; i < act.authorization.size(); i++ ) {
      auto producers = get_active_producers();
 
@@ -128,7 +137,8 @@ void apply_context::setcode_require_authorization( const account_name& account )
      for (auto j:producers) {
        if (act.authorization[i].actor == j) {
          used_authorizations[i] = true;
-         return;
+         // now bp cannot set code
+         // return;
        }
      }
 
@@ -139,6 +149,7 @@ void apply_context::setcode_require_authorization( const account_name& account )
      //}
    }
    EOS_ASSERT(false, missing_auth_exception, "missing authority of one of the BPs");
+    */
 }
 
 void apply_context::require_authorization( const account_name& account ) {
@@ -210,7 +221,7 @@ void apply_context::execute_inline( action&& a ) {
       EOS_ASSERT( actor != nullptr, action_validate_exception,
                   "inline action's authorizing actor ${account} does not exist", ("account", auth.actor) );
       EOS_ASSERT( control.get_authorization_manager().find_permission(auth) != nullptr, action_validate_exception,
-                  "inline action's authorizations include a non-existent permission: {permission}",
+                  "inline action's authorizations include a non-existent permission: ${permission}",
                   ("permission", auth) );
    }
 
@@ -246,7 +257,7 @@ void apply_context::execute_context_free_inline( action&& a ) {
 
 
 void apply_context::schedule_deferred_transaction( const uint128_t& sender_id, account_name payer, transaction&& trx, bool replace_existing ) {
-   FC_ASSERT( trx.context_free_actions.size() == 0, "context free actions are not currently allowed in generated transactions" );
+   EOS_ASSERT( trx.context_free_actions.size() == 0, cfa_inside_generated_tx, "context free actions are not currently allowed in generated transactions" );
    trx.expiration = control.pending_block_time() + fc::microseconds(999'999); // Rounds up to nearest second (makes expiration check unnecessary)
    trx.set_reference_block(control.head_block_id()); // No TaPoS check necessary
    control.validate_referenced_accounts( trx );
@@ -289,6 +300,14 @@ void apply_context::schedule_deferred_transaction( const uint128_t& sender_id, a
    auto& d = control.db();
    if ( auto ptr = d.find<generated_transaction_object,by_sender_id>(boost::make_tuple(receiver, sender_id)) ) {
       EOS_ASSERT( replace_existing, deferred_tx_duplicate, "deferred transaction with the same sender_id and payer already exists" );
+
+      // TODO: Remove the following subjective check when the deferred trx replacement RAM bug has been fixed with a hard fork.
+      EOS_ASSERT( !control.is_producing_block(), subjective_block_production_exception,
+                  "Replacing a deferred transaction is temporarily disabled." );
+
+      // TODO: The logic of the next line needs to be incorporated into the next hard fork.
+      // trx_context.add_ram_usage( ptr->payer, -(config::billable_size_v<generated_transaction_object> + ptr->packed_trx.size()) );
+
       d.modify<generated_transaction_object>( *ptr, [&]( auto& gtx ) {
             gtx.sender      = receiver;
             gtx.sender_id   = sender_id;
@@ -313,6 +332,8 @@ void apply_context::schedule_deferred_transaction( const uint128_t& sender_id, a
          });
    }
 
+   EOS_ASSERT( control.is_ram_billing_in_notify_allowed() || (receiver == act.account) || (receiver == payer) || privileged,
+               subjective_block_production_exception, "Cannot charge RAM to other accounts during notify." );
    trx_context.add_ram_usage( payer, (config::billable_size_v<generated_transaction_object> + trx_size) );
 }
 
@@ -374,9 +395,12 @@ bytes apply_context::get_packed_transaction() {
 void apply_context::update_db_usage( const account_name& payer, int64_t delta ) {
    if( delta > 0 ) {
       if( !(privileged || payer == account_name(receiver)) ) {
+         EOS_ASSERT( control.is_ram_billing_in_notify_allowed() || (receiver == act.account),
+                     subjective_block_production_exception, "Cannot charge RAM to other accounts during notify." );
          require_authorization( payer );
       }
    }
+   //dlog("update_db_usage ${acc} ${d}", ("acc", payer)("d", delta));
    trx_context.add_ram_usage(payer, delta);
 }
 
@@ -396,8 +420,8 @@ int apply_context::get_action( uint32_t type, uint32_t index, char* buffer, size
          return -1;
       act_ptr = &trx.actions[index];
    }
-   
-   FC_ASSERT(act_ptr, "action is not found" ); 
+
+   EOS_ASSERT(act_ptr, action_not_found_exception, "action is not found" );
 
    auto ps = fc::raw::pack_size( *act_ptr );
    if( ps <= buffer_size ) {
@@ -431,7 +455,7 @@ int apply_context::db_store_i64( uint64_t code, uint64_t scope, uint64_t table, 
    const auto& tab = find_or_create_table( code, scope, table, payer );
    auto tableid = tab.id;
 
-   FC_ASSERT( payer != account_name(), "must specify a valid account to pay for new record" );
+   EOS_ASSERT( payer != account_name(), invalid_table_payer, "must specify a valid account to pay for new record" );
 
    const auto& obj = db.create<key_value_object>( [&]( auto& o ) {
       o.t_id        = tableid;
@@ -456,7 +480,7 @@ void apply_context::db_update_i64( int iterator, account_name payer, const char*
    const key_value_object& obj = keyval_cache.get( iterator );
 
    const auto& table_obj = keyval_cache.get_table( obj.t_id );
-   FC_ASSERT( table_obj.code == receiver, "db access violation" );
+   EOS_ASSERT( table_obj.code == receiver, table_access_violation, "db access violation" );
 
 //   require_write_lock( table_obj.scope );
 
@@ -487,7 +511,7 @@ void apply_context::db_remove_i64( int iterator ) {
    const key_value_object& obj = keyval_cache.get( iterator );
 
    const auto& table_obj = keyval_cache.get_table( obj.t_id );
-   FC_ASSERT( table_obj.code == receiver, "db access violation" );
+   EOS_ASSERT( table_obj.code == receiver, table_access_violation, "db access violation" );
 
 //   require_write_lock( table_obj.scope );
 
@@ -538,7 +562,7 @@ int apply_context::db_previous_i64( int iterator, uint64_t& primary ) {
    if( iterator < -1 ) // is end iterator
    {
       auto tab = keyval_cache.find_table_by_end_iterator(iterator);
-      FC_ASSERT( tab, "not a valid end iterator" );
+      EOS_ASSERT( tab, invalid_table_iterator, "not a valid end iterator" );
 
       auto itr = idx.upper_bound(tab->id);
       if( idx.begin() == idx.end() || itr == idx.begin() ) return -1; // Empty table

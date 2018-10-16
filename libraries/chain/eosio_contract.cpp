@@ -25,6 +25,8 @@
 #include <eosio/chain/authorization_manager.hpp>
 #include <eosio/chain/resource_limits.hpp>
 // #include <eosio/chain/contract_table_objects.hpp>
+#include <eosio/chain/config.hpp>
+#include <eosio/chain/txfee_manager.hpp>
 
 namespace eosio { namespace chain {
 
@@ -56,6 +58,12 @@ void validate_authority_precondition( const apply_context& context, const author
                     "permission '${perm}' does not exist",
                     ("perm", a.permission)
                   );
+      }
+   }
+
+   if( context.control.is_producing_block() ) {
+      for( const auto& p : auth.keys ) {
+         context.control.check_key_list( p.key );
       }
    }
 }
@@ -94,13 +102,13 @@ void apply_eosio_newaccount(apply_context& context) {
    // Check if the creator is privileged
    const auto &creator = db.get<account_object, by_name>(create.creator);
    EOS_ASSERT(!creator.privileged, action_validate_exception, "not support privileged accounts");
-   /*if( !creator.privileged ) {
-      EOS_ASSERT( name_str.find( "eosio." ) != 0, action_validate_exception,
-                  "only privileged accounts can have names that start with 'eosio.'" );
-   }*/
+  //  if( !creator.privileged ) {
+  //     EOS_ASSERT( name_str.find( "eosio." ) != 0, action_validate_exception,
+  //                 "only privileged accounts can have names that start with 'eosio.'" );
+  //  }
 
    auto existing_account = db.find<account_object, by_name>(create.name);
-   EOS_ASSERT(existing_account == nullptr, action_validate_exception,
+   EOS_ASSERT(existing_account == nullptr, account_name_exists_exception,
               "Cannot create account named ${name}, as that name is already taken",
               ("name", create.name));
 
@@ -145,7 +153,7 @@ bool allow_setcode(apply_context& context, std::string code_id) {
   const auto& code_account = context.db.get<account_object,by_name>(N(eosio));
   chain::abi_def abi;
   if(abi_serializer::to_abi(code_account.abi, abi)) {
-    abi_serializer abis(abi);
+    abi_serializer abis(abi, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
     const auto* t_id = context.db.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(config::system_account_name, config::system_account_name, N(contractstat)));
     if (t_id != nullptr) {
       const auto &idx = context.db.get_index<key_value_index, by_scope_primary>();
@@ -153,7 +161,7 @@ bool allow_setcode(apply_context& context, std::string code_id) {
       if (it != idx.end()) {
         vector<char> data;
         copy_inline_row(*it, data);
-        auto ct = abis.binary_to_variant("contractstat_info", data);
+        auto ct = abis.binary_to_variant("contractstat_info", data, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
         auto& obj = ct.get_object();
         auto code_obj = obj["code"].get_object();
         auto cid = code_obj["code_id"].as_string();
@@ -172,7 +180,7 @@ bool allow_setabi(apply_context& context, std::string abi_id) {
   const auto& code_account = context.db.get<account_object,by_name>(N(eosio));
   chain::abi_def abi;
   if(abi_serializer::to_abi(code_account.abi, abi)) {
-    abi_serializer abis(abi);
+    abi_serializer abis(abi, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
     const auto* t_id = context.db.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(config::system_account_name, config::system_account_name, N(contractstat)));
     if (t_id != nullptr) {
       const auto &idx = context.db.get_index<key_value_index, by_scope_primary>();
@@ -180,7 +188,7 @@ bool allow_setabi(apply_context& context, std::string abi_id) {
       if (it != idx.end()) {
         vector<char> data;
         copy_inline_row(*it, data);
-        auto ct = abis.binary_to_variant("contractstat_info", data);
+        auto ct = abis.binary_to_variant("contractstat_info", data, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
         auto& obj = ct.get_object();
         auto code_obj = obj["code"].get_object();
         auto aid = code_obj["abi_id"].as_string();
@@ -195,23 +203,46 @@ bool allow_setabi(apply_context& context, std::string abi_id) {
   return false;
 }
 
+// clean_action_fee_for_account clean all fee setting for a account,
+// call it when account code or abi update
+void clean_action_fee_for_account(apply_context& context, const account_name &acc) {
+   auto& db = context.db;
+
+   auto &idx = db.get_mutable_index<action_fee_object_index>();
+   auto &acc_idx = idx.indices().get<by_contract_account>();
+
+   std::vector<action_name> actions;
+   for( auto itr = acc_idx.find(acc); itr != acc_idx.end() && (itr->account == acc); itr++ ) {
+      ilog("clean action fee itr ${acc} ${act} ${fee}",
+           ("acc", itr->account)("act", itr->message_type)("fee", itr->fee));
+      actions.push_back(itr->message_type);
+   }
+
+   // remove all fee setting
+   for( const auto &act : actions ) {
+      auto fee_setting = db.find<action_fee_object, by_action_name>(std::make_tuple(acc, act));
+      EOS_ASSERT(fee_setting != nullptr,
+            action_validate_exception,
+            "Find Fee Action to clean, but no found in db");
+      db.remove(*fee_setting);
+   }
+}
+
 void apply_eosio_setcode(apply_context& context) {
    const auto& cfg = context.control.get_global_properties().configuration;
 
    auto& db = context.db;
-
    auto  act = context.act.data_as<setcode>();
    context.setcode_require_authorization(act.account);
-//   context.require_write_lock( config::eosio_auth_scope );
 
-   FC_ASSERT( act.vmtype == 0 );
-   FC_ASSERT( act.vmversion == 0 );
+   EOS_ASSERT( act.vmtype == 0, invalid_contract_vm_type, "code should be 0" );
+   EOS_ASSERT( act.vmversion == 0, invalid_contract_vm_version, "version should be 0" );
 
    fc::sha256 code_id; /// default ID == 0
 
    if( act.code.size() > 0 ) {
      code_id = fc::sha256::hash( act.code.data(), (uint32_t)act.code.size() );
-     wasm_interface::validate(act.code);
+     wasm_interface::validate(context.control, act.code);
    }
 
    const auto& account = db.get<account_object,by_name>(act.account);
@@ -220,23 +251,14 @@ void apply_eosio_setcode(apply_context& context) {
    int64_t old_size  = (int64_t)account.code.size() * config::setcode_ram_bytes_multiplier;
    int64_t new_size  = code_size * config::setcode_ram_bytes_multiplier;
 
-   // Only allow eosio contract to setcode
-   if (act.account != eosio::chain::name{N(eosio)}) {
-     // exit
-     FC_THROW("only allow eosio to setcode");
-   }
+   //ilog("head num ${n}", ("n", context.control.head_block_num()));
 
    // Not first time setcode
-   if (account.code_version != fc::sha256::sha256()) {
-     // get allow_setcode from system contract table
-     if (!allow_setcode(context, code_id.str())) {
-       // exit
-       FC_THROW("The code_id '${code_id}' is not approved by the system contract", ("code_id", code_id));
-     }
-     // FC_THROW("setcode twice is not allowed");
+   if (account.code_version != fc::sha256()) {
+      clean_action_fee_for_account(context, act.account);
    }
 
-   FC_ASSERT( account.code_version != code_id, "contract is already running this version of code" );
+   EOS_ASSERT( account.code_version != code_id, set_exact_code, "contract is already running this version of code" );
 
    db.modify( account, [&]( auto& a ) {
       /** TODO: consider whether a microsecond level local timestamp is sufficient to detect code version changes*/
@@ -259,17 +281,53 @@ void apply_eosio_setcode(apply_context& context) {
    }
 }
 
+// setfee just for test imp contracts
+void apply_eosio_setfee(apply_context& context) {
+   auto &db = context.db;
+   auto act = context.act.data_as<setfee>();
+
+   // need force.test
+   // TODO add power Invalid block number
+   // idump((context.act.authorization));
+   EOS_ASSERT((
+              context.act.authorization.size() == 1
+           && context.act.authorization[0].actor == N(force.test)
+           && context.act.authorization[0].permission == config::owner_name),
+   invalid_permission,
+   "setfee just can call by force.test" );
+
+   ilog("apply_eosio_setfee ${acc} ${fee} ${act} limit ${cpu},${net},${ram}",
+         ("acc", act.account)("fee", act.fee)("act", act.action)
+         ("cpu", act.cpu_limit)("net", act.net_limit)("ram", act.ram_limit));
+
+   // warning
+   const auto key = boost::make_tuple(act.account, act.action);
+   auto fee_old = db.find<chain::action_fee_object, chain::by_action_name>(key);
+   if(fee_old == nullptr){
+      //dlog("need create fee");
+      db.create<chain::action_fee_object>([&]( auto& fee_obj ) {
+         fee_obj.account = act.account;
+         fee_obj.message_type = act.action;
+         fee_obj.fee = act.fee;
+         fee_obj.cpu_limit = act.cpu_limit;
+         fee_obj.net_limit = act.net_limit;
+         fee_obj.ram_limit = act.ram_limit;
+      });
+   }else{
+      db.modify<chain::action_fee_object>( *fee_old, [&]( auto& fee_obj ) {
+         fee_obj.fee = act.fee;
+         fee_obj.cpu_limit = act.cpu_limit;
+         fee_obj.net_limit = act.net_limit;
+         fee_obj.ram_limit = act.ram_limit;
+      });
+   }
+}
+
 void apply_eosio_setabi(apply_context& context) {
    auto& db  = context.db;
    auto  act = context.act.data_as<setabi>();
 
    context.setcode_require_authorization(act.account);
-
-   // Only allow eosio contract.
-   if (act.account != eosio::chain::name{N(eosio)}) {
-     // exit
-     FC_THROW("only allow eosio to setabi");
-   }
 
    auto abi_id = fc::sha256::hash(act.abi.data(), (uint32_t)act.abi.size());
 
@@ -280,14 +338,11 @@ void apply_eosio_setabi(apply_context& context) {
    int64_t old_size = (int64_t)account.abi.size();
    int64_t new_size = abi_size;
 
+   //ilog("head num ${n}", ("n", context.control.head_block_num()));
+
    // Not first time setabi
-   if (account.abi_version != fc::sha256::sha256()) {
-      // get allow_setabi from system contract table
-      if (!allow_setabi(context, abi_id.str())) {
-        // exit
-        FC_THROW("The abi_id '${abi_id}' is not approved by the system contract", ("abi_id", abi_id));
-      }
-      // FC_THROW("setabi twice is not allowed");
+   if (account.abi_version != fc::sha256()) {
+      clean_action_fee_for_account(context, act.account);
    }
 
    FC_ASSERT(account.abi_version != abi_id, "contract is already running this version of abi");
@@ -391,7 +446,8 @@ void apply_eosio_deleteauth(apply_context& context) {
       const auto& index = db.get_index<permission_link_index, by_permission_name>();
       auto range = index.equal_range(boost::make_tuple(remove.account, remove.permission));
       EOS_ASSERT(range.first == range.second, action_validate_exception,
-                 "Cannot delete a linked authority. Unlink the authority first");
+                 "Cannot delete a linked authority. Unlink the authority first. This authority is linked to ${code}::${type}.", 
+                 ("code", string(range.first->code))("type", string(range.first->message_type)));
    }
 
    const auto& permission = authorization.get_permission({remove.account, remove.permission});

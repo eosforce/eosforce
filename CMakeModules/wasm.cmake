@@ -22,7 +22,7 @@ macro(compile_wast)
   endif()
   set(outfiles "")
   foreach(srcfile ${SOURCE_FILES})
-    
+
     get_filename_component(outfile ${srcfile} NAME)
     get_filename_component(extension ${srcfile} EXT)
     get_filename_component(infile ${srcfile} ABSOLUTE)
@@ -75,10 +75,6 @@ macro(compile_wast)
        list(APPEND WASM_COMMAND -isystem ${folder})
     endforeach()
 
-    foreach(folder ${ARG_SYSTEM_INCLUDE_FOLDERS})
-       list(APPEND WASM_COMMAND -isystem ${folder})
-    endforeach()
-
     add_custom_command(OUTPUT ${outfile}.bc
       DEPENDS ${infile}
       COMMAND ${WASM_COMMAND}
@@ -111,8 +107,6 @@ macro(add_wast_library)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     VERBATIM
   )
-  #TODO: Fix this path on pending cmake install changes
-  install(FILES ${${ARG_TARGET}_BC_FILENAME} DESTINATION usr/share/eosio/contractsdk/lib)
 
 endmacro(add_wast_library)
 
@@ -177,7 +171,7 @@ macro(add_wast_executable)
     COMMENT "Generating ${target}.wast.hpp"
     VERBATIM
   )
-  
+
   if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target}.abi )
     add_custom_command(OUTPUT ${DESTINATION_FOLDER}/${target}.abi.hpp
       DEPENDS ${DESTINATION_FOLDER}/${target}.abi
@@ -191,9 +185,9 @@ macro(add_wast_executable)
     set(extra_target_dependency   ${DESTINATION_FOLDER}/${target}.abi.hpp)
   else()
   endif()
-  
+
   add_custom_target(${target} ALL DEPENDS ${DESTINATION_FOLDER}/${target}.wast.hpp ${extra_target_dependency} ${DESTINATION_FOLDER}/${target}.wasm)
-  
+
   set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${DESTINATION_FOLDER}/${target}.wast.hpp)
 
   set_property(TARGET ${target} PROPERTY INCLUDE_DIRECTORIES ${ARG_INCLUDE_FOLDERS})
@@ -201,7 +195,11 @@ macro(add_wast_executable)
   set(extra_target_dependency)
 
   # For CLion code insight
-  include_directories(..)
+  foreach(folder ${ARG_INCLUDE_FOLDERS})
+    include_directories(${folder})
+  endforeach()
+  include_directories(${Boost_INCLUDE_DIR})
+
   if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target}.hpp)
     set(HEADER_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${target}.hpp)
   endif()

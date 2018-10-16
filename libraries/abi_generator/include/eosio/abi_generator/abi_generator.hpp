@@ -89,7 +89,7 @@ namespace eosio {
          inline string is_clause_decl( string line ) {
             smatch match;
             if ( regex_match( line, match, regex("(###[ ]+CLAUSE[ ]+NAME[ ]*:[ ]*)(.*)", regex_constants::ECMAScript) ) ) {
-               FC_ASSERT( match.size() == 3, "Error, malformed clause declaration" );
+               EOS_ASSERT( match.size() == 3, invalid_ricardian_clause_exception, "Error, malformed clause declaration" );
                return match[2].str();
             }
             return {};
@@ -98,7 +98,7 @@ namespace eosio {
          inline string is_action_decl( string line ) {
             smatch match;
             if ( regex_match( line, match, regex("(##[ ]+ACTION[ ]+NAME[ ]*:[ ]*)(.*)", regex_constants::ECMAScript) ) ) {
-               FC_ASSERT( match.size() == 3, "Error, malformed action declaration" );
+               EOS_ASSERT( match.size() == 3,  invalid_ricardian_action_exception, "Error, malformed action declaration" );
                return match[2].str();
             }
             return {};
@@ -137,7 +137,7 @@ namespace eosio {
                if ( !(_name = is_clause_decl( line )).empty() ) {
                   if ( !first_time ) {
                      if (body.str().empty() ) {
-                        FC_ASSERT( false, "Error, invalid input in ricardian clauses, no body found" );
+                        EOS_ASSERT( false, invalid_ricardian_clause_exception, "Error, invalid input in ricardian clauses, no body found" );
                      }
                      _clauses.emplace_back( name, body.str() );
                      body.str("");
@@ -343,6 +343,25 @@ namespace eosio {
             callback_handler(CompilerInstance& compiler_instance, find_eosio_abi_macro_action& act)
             : compiler_instance(compiler_instance), act(act) {}
 
+            string remove_namespace(const string& full_name) {
+               int i = full_name.size();
+               int on_spec = 0;
+               int colons = 0;
+               while( --i >= 0 ) {
+                  if( full_name[i] == '>' ) {
+                     ++on_spec; colons=0;
+                  } else if( full_name[i] == '<' ) {
+                     --on_spec; colons=0;
+                  } else if( full_name[i] == ':' && !on_spec) {
+                     if (++colons == 2)
+                        return full_name.substr(i+2);
+                  } else {
+                     colons = 0;
+                  }
+               }
+               return full_name;
+            }
+
             void MacroExpands (const Token &token, const MacroDefinition &md, SourceRange range, const MacroArgs *args) override {
 
                auto* id = token.getIdentifierInfo();
@@ -366,7 +385,7 @@ namespace eosio {
                auto res = regex_search(macrostr, smatch, r);
                ABI_ASSERT( res );
 
-               act.contract = smatch[1].str();
+               act.contract = remove_namespace(smatch[1].str());
 
                auto actions_str = smatch[2].str();
                boost::trim(actions_str);

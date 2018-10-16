@@ -1,33 +1,28 @@
 #!/usr/bin/env python3
 
-import testUtils
+from testUtils import Utils
+from Cluster import Cluster
+from TestHelper import TestHelper
 
-import argparse
 import subprocess
 
-Print=testUtils.Utils.Print
+###############################################################
+# nodeos_run_remote_test
+#  Tests remote capability of the nodeos_run_test. Test will setup cluster and pass nodes info to nodeos_run_test. E.g.
+#  nodeos_run_remote_test.py -v --clean-run --dump-error-detail
+###############################################################
 
-def errorExit(msg="", errorCode=1):
-    Print("ERROR:", msg)
-    exit(errorCode)
+Print=Utils.Print
+errorExit=Utils.errorExit
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-v", help="verbose", action='store_true')
-parser.add_argument("--dont-kill", help="Leave cluster running after test finishes", action='store_true')
-parser.add_argument("--only-bios", help="Limit testing to bios node.", action='store_true')
-parser.add_argument("--dump-error-details",
-                    help="Upon error print etc/eosio/node_*/config.ini and var/lib/node_*/stderr.log to stdout",
-                    action='store_true')
-parser.add_argument("--kill-all", help="Kill all nodeos and kleos instances", action='store_true')
-
-args = parser.parse_args()
+args = TestHelper.parse_args({"--dump-error-details","-v","--leave-running","--only-bios","--clean-run"})
 debug=args.v
-dontKill=args.dont_kill
+dontKill=args.leave_running
 dumpErrorDetails=args.dump_error_details
 onlyBios=args.only_bios
-killAll=args.kill_all
+killAll=args.clean_run
 
-testUtils.Utils.Debug=debug
+Utils.Debug=debug
 
 killEosInstances=not dontKill
 topo="mesh"
@@ -38,7 +33,7 @@ total_nodes=pnodes
 actualTest="tests/nodeos_run_test.py"
 testSuccessful=False
 
-cluster=testUtils.Cluster()
+cluster=Cluster()
 try:
     Print("BEGIN")
     cluster.killall(allInstances=killAll)
@@ -55,7 +50,7 @@ try:
     if not cluster.waitOnClusterBlockNumSync(3):
         errorExit("Cluster never stabilized")
 
-    producerKeys=testUtils.Cluster.parseClusterKeys(1)
+    producerKeys=Cluster.parseClusterKeys(1)
     defproduceraPrvtKey=producerKeys["defproducera"]["private"]
     defproducerbPrvtKey=producerKeys["defproducerb"]["private"]
 
@@ -67,18 +62,6 @@ try:
 
     testSuccessful=True
 finally:
-    if testSuccessful:
-        Print("Test succeeded.")
-    else:
-        Print("Test failed.")
-
-    if not testSuccessful and dumpErrorDetails:
-        cluster.dumpErrorDetails()
-        Print("== Errors see above ==")
-
-    if killEosInstances:
-        Print("Shut down the cluster and cleanup.")
-        cluster.killall(allInstances=killAll)
-        cluster.cleanup()
+    TestHelper.shutdown(cluster, None, testSuccessful, killEosInstances, False, False, killAll, dumpErrorDetails)
 
 exit(0)

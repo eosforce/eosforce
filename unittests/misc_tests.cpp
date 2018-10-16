@@ -110,16 +110,16 @@ BOOST_AUTO_TEST_CASE(asset_from_string_overflow)
    asset a;
 
    // precision = 19, magnitude < 2^61
-   BOOST_CHECK_EXCEPTION( asset::from_string("0.1000000000000000000 CUR") , assert_exception, [](const assert_exception& e) {
+   BOOST_CHECK_EXCEPTION( asset::from_string("0.1000000000000000000 CUR") , symbol_type_exception, [](const auto& e) {
       return expect_assert_message(e, "precision 19 should be <= 18");
    });
-   BOOST_CHECK_EXCEPTION( asset::from_string("-0.1000000000000000000 CUR") , assert_exception, [](const assert_exception& e) {
+   BOOST_CHECK_EXCEPTION( asset::from_string("-0.1000000000000000000 CUR") , symbol_type_exception, [](const auto& e) {
       return expect_assert_message(e, "precision 19 should be <= 18");
    });
-   BOOST_CHECK_EXCEPTION( asset::from_string("1.0000000000000000000 CUR") , assert_exception, [](const assert_exception& e) {
+   BOOST_CHECK_EXCEPTION( asset::from_string("1.0000000000000000000 CUR") , symbol_type_exception, [](const auto& e) {
       return expect_assert_message(e, "precision 19 should be <= 18");
    });
-   BOOST_CHECK_EXCEPTION( asset::from_string("-1.0000000000000000000 CUR") , assert_exception, [](const assert_exception& e) {
+   BOOST_CHECK_EXCEPTION( asset::from_string("-1.0000000000000000000 CUR") , symbol_type_exception, [](const auto& e) {
       return expect_assert_message(e, "precision 19 should be <= 18");
    });
 
@@ -188,10 +188,10 @@ BOOST_AUTO_TEST_CASE(asset_from_string_overflow)
    });
 
    // precision = 20, magnitude > 2^142
-   BOOST_CHECK_EXCEPTION( asset::from_string("100000000000000000000000.00000000000000000000 CUR") , assert_exception, [](const assert_exception& e) {
+   BOOST_CHECK_EXCEPTION( asset::from_string("100000000000000000000000.00000000000000000000 CUR") , symbol_type_exception, [](const auto& e) {
       return expect_assert_message(e, "precision 20 should be <= 18");
    });
-   BOOST_CHECK_EXCEPTION( asset::from_string("-100000000000000000000000.00000000000000000000 CUR") , assert_exception, [](const assert_exception& e) {
+   BOOST_CHECK_EXCEPTION( asset::from_string("-100000000000000000000000.00000000000000000000 CUR") , symbol_type_exception, [](const auto& e) {
       return expect_assert_message(e, "precision 20 should be <= 18");
    });
 }
@@ -614,16 +614,16 @@ BOOST_AUTO_TEST_CASE(transaction_test) { try {
          })
       );
 
-   abi_serializer::from_variant(pretty_trx, trx, test.get_resolver());
+   abi_serializer::from_variant(pretty_trx, trx, test.get_resolver(), test.abi_serializer_max_time);
 
    test.set_transaction_headers(trx);
 
    trx.expiration = fc::time_point::now();
    trx.validate();
    BOOST_CHECK_EQUAL(0, trx.signatures.size());
-   ((const signed_transaction &)trx).sign( test.get_private_key( N(eosio), "active" ), test.control->get_chain_id());
+   ((const signed_transaction &)trx).sign( test.get_private_key( config::system_account_name, "active" ), test.control->get_chain_id());
    BOOST_CHECK_EQUAL(0, trx.signatures.size());
-   trx.sign( test.get_private_key( N(eosio), "active" ), test.control->get_chain_id()  );
+   trx.sign( test.get_private_key( config::system_account_name, "active" ), test.control->get_chain_id()  );
    BOOST_CHECK_EQUAL(1, trx.signatures.size());
    trx.validate();
 

@@ -94,7 +94,7 @@ namespace eosio { namespace chain {
             bool                     disable_replay_opts    =  false;
             bool                     contracts_console      =  false;
             bool                     allow_ram_billing_in_notify = false;
-            uint32_t                 System01_contract_block_num = 100000000;
+            uint32_t                 System01_contract_block_num = 3385100;
 
             genesis_state            genesis;
             wasm_interface::vm_type  wasm_runtime = chain::config::default_wasm_runtime;

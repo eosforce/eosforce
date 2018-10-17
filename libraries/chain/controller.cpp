@@ -1157,9 +1157,9 @@ struct controller_impl {
                   });
             }
 
-          //sunshuhan: todo when on the specific block : load new System contract
+          // when on the specific block : load new System contract
           if(conf.System01_contract_block_num == head->block_num){
-              ilog(" ---- update System contract ----");
+              ilog(" ---- update System contract ---- ");
               initialize_contract(N(eosio), conf.System01_code, conf.System01_abi);
           }
 

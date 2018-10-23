@@ -187,7 +187,8 @@ namespace eosio { namespace chain {
    }
 
    // limit by contract from actions
-   void transaction_context::make_limit_by_contract(){
+   // fee_ext ext fee for ext res
+   void transaction_context::make_limit_by_contract(const asset &fee_ext){
       // now one trx just has one action in eosforce, so it can no include system contract
 
       auto &db = control.db();

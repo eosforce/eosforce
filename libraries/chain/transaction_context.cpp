@@ -193,6 +193,10 @@ namespace eosio { namespace chain {
 
       auto &db = control.db();
 
+      if (fee_ext > asset(0)){
+         ilog("use fee ext ${f} to x ${c}", ("f", fee_ext)("c", fee_ext.get_amount() / 100));
+      }
+
       use_limit_by_contract = false;
       cpu_limit_by_contract = 0;
       net_limit_by_contract = 0;
@@ -202,8 +206,8 @@ namespace eosio { namespace chain {
          const auto key = boost::make_tuple(act.account, act.name);
          auto info = db.find<action_fee_object, by_action_name>(key);
          if(info != nullptr){
-            //dlog("get limit by contract ${con} ${cpu} ${net} ${ram}",
-            //      ("con", act.name)("cpu", info->cpu_limit)("net", info->net_limit)("ram", info->ram_limit));
+            dlog("get limit by contract ${con} ${cpu} ${net} ${ram}",
+                  ("con", act.name)("cpu", info->cpu_limit)("net", info->net_limit)("ram", info->ram_limit));
             use_limit_by_contract = true;
             cpu_limit_by_contract += info->cpu_limit;
             net_limit_by_contract += info->net_limit;
@@ -211,8 +215,15 @@ namespace eosio { namespace chain {
          }
       }
 
-      //dlog("limit by contract ${cpu} ${net} ${ram}",
-      //      ("cpu", cpu_limit_by_contract)("net", net_limit_by_contract)("ram", ram_limit_by_contract));
+      if ((fee_ext > asset(0)) && use_limit_by_contract) {
+         const auto m = fee_ext.get_amount() / 100; // 100 mine 0.01 eos
+         cpu_limit_by_contract += m * 1000; // TODO use num in state db
+         net_limit_by_contract += m * 100000;
+         ram_limit_by_contract += m * 100;
+      }
+
+      dlog("limit by contract ${cpu} ${net} ${ram}",
+            ("cpu", cpu_limit_by_contract)("net", net_limit_by_contract)("ram", ram_limit_by_contract));
    }
 
    void transaction_context::exec() {

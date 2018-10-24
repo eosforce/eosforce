@@ -810,18 +810,6 @@ struct controller_impl {
         //check and filter by fee
         EOS_ASSERT(dtrx.fee == txfee.get_required_fee(self, dtrx), transaction_exception, "set tx fee failed");
         EOS_ASSERT(txfee.check_transaction((transaction)dtrx) == true, transaction_exception, "transaction include actor more than one");
-                
-        //push onfee trx
-        try{
-          auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(dtrx.fee, dtrx.actions[0].authorization[0].actor) );
-          onftrx->implicit = true;
-          auto onftrace = push_transaction( onftrx, fc::time_point::maximum(), config::default_min_transaction_cpu_usage, true);
-          if( onftrace->except ) throw *onftrace->except;
-        } catch (const fc::exception &e) {
-          EOS_ASSERT(false, transaction_exception, "on fee transaction failed, exception: ${e}", ("e", e));
-        } catch( ... ) {
-          EOS_ASSERT(false, transaction_exception, "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
-        }
 
          trx_context.init_for_deferred_trx( gtrx.published );
          trx_context.make_limit_by_contract();
@@ -976,7 +964,6 @@ struct controller_impl {
                                            bool explicit_billed_cpu_time = false )
    {
       EOS_ASSERT(deadline != fc::time_point(), transaction_exception, "deadline cannot be uninitialized");
-      EOS_ASSERT(trx->trx.delay_sec.value == 0UL, transaction_exception, "delay,transaction failed");
       EOS_ASSERT(trx->trx.context_free_actions.size()==0, transaction_exception, "context free actions size should be zero!");
       check_action(trx->trx.actions);
 

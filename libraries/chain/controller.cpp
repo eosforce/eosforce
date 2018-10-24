@@ -804,13 +804,6 @@ struct controller_impl {
       trx_context.billed_cpu_time_us = billed_cpu_time_us;
       trace = trx_context.trace;
       try {
-        //action check
-        check_action(dtrx.actions);
-        
-        //check and filter by fee
-        EOS_ASSERT(dtrx.fee == txfee.get_required_fee(self, dtrx), transaction_exception, "set tx fee failed");
-        EOS_ASSERT(txfee.check_transaction((transaction)dtrx) == true, transaction_exception, "transaction include actor more than one");
-
          trx_context.init_for_deferred_trx( gtrx.published );
          trx_context.make_limit_by_contract();
          trx_context.exec();

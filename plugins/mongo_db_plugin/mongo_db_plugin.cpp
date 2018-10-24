@@ -31,6 +31,7 @@
 #include <mongocxx/instance.hpp>
 #include <mongocxx/exception/operation_exception.hpp>
 #include <mongocxx/exception/logic_error.hpp>
+#include <eosio/chain/genesis_state.hpp>
 
 namespace fc { class variant; }
 
@@ -102,6 +103,10 @@ public:
                              const account_name& name, const permission_name& permission,
                              const std::chrono::milliseconds& now );
    void remove_account_control( const account_name& name, const permission_name& permission );
+
+   void insert_default_abi();
+   bool b_insert_default_abi = false;
+   bool b_use_system01 = false;
 
    /// @return true if act should be added to mongodb, false to skip it
    bool filter_include( const chain::action_trace& action_trace ) const;
@@ -1244,6 +1249,105 @@ void mongo_db_plugin_impl::wipe_database() {
    account_controls.drop();
 }
 
+chain::private_key_type get_private_key( name keyname, string role ) {
+   return chain::private_key_type::regenerate<fc::ecc::private_key_shim>(fc::sha256::hash(string(keyname)+role));
+}
+
+chain::public_key_type  get_public_key( name keyname, string role ) {
+   return get_private_key( keyname, role ).get_public_key();
+}
+
+
+
+void mongo_db_plugin_impl::insert_default_abi()
+{
+   using bsoncxx::builder::basic::kvp;
+   using bsoncxx::builder::basic::make_document;
+   using namespace bsoncxx::types;
+   if (b_insert_default_abi) return ;
+      std::chrono::milliseconds now = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::microseconds{fc::time_point::now().time_since_epoch().count()} );
+      account_name name_account = N(eosio.token);
+      {
+         abi_cache_index.erase( name_account );
+         chain::newaccount newacc{
+                                 .creator  = N(eosio),
+                                 .name     = name_account,
+                                 .owner    = authority( get_public_key( name_account, "owner" ) ),
+                                 .active   = authority( get_public_key( name_account, "active" ) )
+                                 };
+         create_account( accounts, name_account, now );
+         add_pub_keys( newacc.owner.keys, name_account, owner, now );
+         add_account_control( newacc.owner.accounts, name_account, owner, now );
+         add_pub_keys( newacc.active.keys, name_account, active, now );
+         add_account_control( newacc.active.accounts, name_account, active, now ); 
+
+         auto account = find_account( accounts, name_account );
+         auto abiPath = app().config_dir() / "eosio.token" += ".abi";
+         FC_ASSERT( fc::exists( abiPath ), "no abi file found ");
+         auto abijson = fc::json::from_file(abiPath).as<abi_def>();
+         auto abi = fc::raw::pack(abijson);
+         abi_def abi_def = fc::raw::unpack<chain::abi_def>( abi );
+         const string json_str = fc::json::to_string( abi_def );
+         try{
+               auto update_from = make_document(
+                     kvp( "$set", make_document( kvp( "abi", bsoncxx::from_json( json_str )),
+                                                 kvp( "updatedAt", b_date{now} ))));
+
+               try {
+                  if( !accounts.update_one( make_document( kvp( "_id", account->view()["_id"].get_oid())),
+                                            update_from.view())) {
+                     EOS_ASSERT( false, chain::mongo_db_update_fail, "Failed to udpdate account ${n}", ("n", name_account));
+                  }
+               } catch( ... ) {
+                  handle_mongo_exception( "account update", __LINE__ );
+               }
+            } catch( bsoncxx::exception& e ) {
+               elog( "Unable to convert abi JSON to MongoDB JSON: ${e}", ("e", e.what()));
+               elog( "  JSON: ${j}", ("j", json_str));
+            }
+      }
+      get_abi_serializer(name_account);
+      name_account = N(eosio);
+      {
+         abi_cache_index.erase( name_account );
+         //std::string strContract01("System01");
+         //std::string strContract("System");   
+         auto account = find_account( accounts, name_account );
+         fc::path abiPath;
+         if(b_use_system01)
+         { abiPath = app().config_dir() / "System01" += ".abi"; }
+         else
+         { abiPath = app().config_dir() / "System" += ".abi"; }
+         
+         FC_ASSERT( fc::exists( abiPath ), "no abi file found ");
+         auto abijson = fc::json::from_file(abiPath).as<abi_def>();
+         auto abi = fc::raw::pack(abijson);
+         abi_def abi_def = fc::raw::unpack<chain::abi_def>( abi );
+         const string json_str = fc::json::to_string( abi_def );
+         try{
+               auto update_from = make_document(
+                     kvp( "$set", make_document( kvp( "abi", bsoncxx::from_json( json_str )),
+                                                 kvp( "updatedAt", b_date{now} ))));
+
+               try {
+                  if( !accounts.update_one( make_document( kvp( "_id", account->view()["_id"].get_oid())),
+                                            update_from.view())) {
+                     EOS_ASSERT( false, chain::mongo_db_update_fail, "Failed to udpdate account ${n}", ("n", name_account));
+                  }
+               } catch( ... ) {
+                  handle_mongo_exception( "account update", __LINE__ );
+               }
+            } catch( bsoncxx::exception& e ) {
+               elog( "Unable to convert abi JSON to MongoDB JSON: ${e}", ("e", e.what()));
+               elog( "  JSON: ${j}", ("j", json_str));
+            }
+
+      }
+      get_abi_serializer(name_account);
+      b_insert_default_abi = true;
+}
+
 void mongo_db_plugin_impl::init() {
    using namespace bsoncxx::types;
    using bsoncxx::builder::basic::make_document;
@@ -1308,7 +1412,7 @@ void mongo_db_plugin_impl::init() {
    }
 
    ilog("starting db plugin thread");
-
+   insert_default_abi();
    consume_thread = boost::thread([this] { consume_blocks(); });
 
    startup = false;

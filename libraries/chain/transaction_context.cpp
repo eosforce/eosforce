@@ -187,10 +187,15 @@ namespace eosio { namespace chain {
    }
 
    // limit by contract from actions
-   void transaction_context::make_limit_by_contract(){
+   // fee_ext ext fee for ext res
+   void transaction_context::make_limit_by_contract(const asset &fee_ext){
       // now one trx just has one action in eosforce, so it can no include system contract
 
       auto &db = control.db();
+
+      if (fee_ext > asset(0)){
+         ilog("use fee ext ${f} to x ${c}", ("f", fee_ext)("c", fee_ext.get_amount() / 100));
+      }
 
       use_limit_by_contract = false;
       cpu_limit_by_contract = 0;
@@ -210,8 +215,20 @@ namespace eosio { namespace chain {
          }
       }
 
-      //dlog("limit by contract ${cpu} ${net} ${ram}",
-      //      ("cpu", cpu_limit_by_contract)("net", net_limit_by_contract)("ram", ram_limit_by_contract));
+      if ((fee_ext > asset(0)) && use_limit_by_contract) {
+         const auto m = fee_ext.get_amount() / 100; // 100 mine 0.01 eos
+         //
+         // For First version we just use const value for main net stable
+         //
+         cpu_limit_by_contract += m * 100; // TODO use num in state db
+         net_limit_by_contract += m * 10000;
+         ram_limit_by_contract += m * 10;
+      }
+
+      if (use_limit_by_contract) {
+         dlog("limit by contract ${cpu} ${net} ${ram}",
+              ("cpu", cpu_limit_by_contract)("net", net_limit_by_contract)("ram", ram_limit_by_contract));
+      }
    }
 
    void transaction_context::exec() {

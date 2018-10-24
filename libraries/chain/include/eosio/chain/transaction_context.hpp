@@ -117,7 +117,7 @@ namespace eosio { namespace chain {
          int64_t ram_used_by_trx = 0;
          bool use_limit_by_contract = false;
 
-         void make_limit_by_contract();
+         void make_limit_by_contract(const asset &fee_ext);
    };
 
 } }

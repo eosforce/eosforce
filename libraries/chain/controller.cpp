@@ -806,11 +806,14 @@ struct controller_impl {
       try {
         //action check
         check_action(dtrx.actions);
-        
+
+        asset fee_ext(0);
+        const auto fee_required = txfee.get_required_fee(self, dtrx);
         //check and filter by fee
-        EOS_ASSERT(dtrx.fee == txfee.get_required_fee(self, dtrx), transaction_exception, "set tx fee failed");
+        EOS_ASSERT(dtrx.fee >= fee_required, transaction_exception, "set tx fee failed");
         EOS_ASSERT(txfee.check_transaction((transaction)dtrx) == true, transaction_exception, "transaction include actor more than one");
-                
+
+        fee_ext = dtrx.fee - fee_required;
         //push onfee trx
         try{
           auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(dtrx.fee, dtrx.actions[0].authorization[0].actor) );
@@ -824,7 +827,7 @@ struct controller_impl {
         }
 
          trx_context.init_for_deferred_trx( gtrx.published );
-         trx_context.make_limit_by_contract();
+         trx_context.make_limit_by_contract( fee_ext );
          trx_context.exec();
          trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
 
@@ -1009,6 +1012,7 @@ struct controller_impl {
 
             trx_context.delay = fc::seconds(trx->trx.delay_sec);
 
+            asset fee_ext(0); // fee ext to get more res
             if( !trx->implicit ) {
                authorization.check_authorization(
                        trx->trx.actions,
@@ -1021,8 +1025,10 @@ struct controller_impl {
                        false
                );
 
-               EOS_ASSERT(trx->trx.fee == txfee.get_required_fee(self, trx->trx), transaction_exception, "set tx fee failed");
+               const auto fee_required = txfee.get_required_fee(self, trx->trx);
+               EOS_ASSERT(trx->trx.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
                EOS_ASSERT(txfee.check_transaction(trx->trx) == true, transaction_exception, "transaction include actor more than one");
+               fee_ext = trx->trx.fee - fee_required;
                try {
                   auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor) );
                   onftrx->implicit = true;
@@ -1042,7 +1048,7 @@ struct controller_impl {
                   EOS_ASSERT(false, transaction_exception, "billed_cpu_time_us is 0");
                }
 
-               trx_context.make_limit_by_contract();
+               trx_context.make_limit_by_contract(fee_ext);
                trx_context.exec();
                trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
              } catch (const fc::exception &e) {

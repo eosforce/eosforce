@@ -932,8 +932,11 @@ struct controller_impl {
       return r;
    }
 
-    bool check_chainstatus(){
-      const auto * cstatus_tid = db.find<table_id_object, by_code_scope_table>(boost::make_tuple(N(eosio), N(eosio), N(chainstatus)));
+    bool check_chainstatus() const
+    {
+      const auto *cstatus_tid = db.find<table_id_object, by_code_scope_table>(
+            boost::make_tuple(N(eosio), N(eosio), N(chainstatus)));
+
       FC_ASSERT((cstatus_tid != nullptr),"get chainstatus fatal");
 
       const auto &idx = db.get_index<key_value_index, by_scope_primary>();
@@ -941,32 +944,27 @@ struct controller_impl {
       FC_ASSERT((it != idx.end()),"get chainstatus fatal");
 
       vector<char> data(it->value.size());
-      memcpy(data.data(),it->value.data(),it->value.size());
+      memcpy(data.data(), it->value.data(), it->value.size());
 
       auto cstatus = fc::raw::unpack<memory_db::chain_status>(data);
       return cstatus.emergency;
     }
 
-    void check_action(vector<action>& actions)
-    {
-        FC_ASSERT(actions.size() == 1, "action size not equal 1");
-        action _a = actions.at(0) ;
-        FC_ASSERT(_a.data.size() < config::default_trx_size, "must less than 100 * 1024 bytes");
-        FC_ASSERT((check_chainstatus() ? (_a.name.to_string() == "setemergency" || _a.name.to_string() == "onblock" || _a.name.to_string() == "onfee") : true),
-                  "chain is in emergency now !" );
-
-        if ( "transfer" == _a.name.to_string() ) {
-          FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
-          auto _v =  fc::raw::unpack<tmp_transfer >(_a.data);
-          FC_ASSERT(_v.memo.size() <= 256, "memo has more than 256 bytes!");
-        }
-
-        if ( "issue" == _a.name.to_string() ) {
-          FC_ASSERT(_a.data.size() != 0, "action bytes should not be zero!");
-          auto _v = fc::raw::unpack<tmp_issue >(_a.data);
-          FC_ASSERT(_v.memo.size() <= 256, "memo has more than 256 bytes!");
-        }
-     }
+   void check_action(const vector<action>& actions) const
+   {
+      const auto chain_status = check_chainstatus();
+      for(const auto &_a : actions){
+         EOS_ASSERT(_a.data.size() < config::default_trx_size,
+               invalid_action_args_exception,
+               "must less than 100 * 1024 bytes");
+         EOS_ASSERT((!chain_status
+                    || _a.name == N(setemergency)
+                    || _a.name == N(onblock)
+                    || _a.name == N(onfee)),
+               invalid_action_args_exception,
+               "chain is in emergency now !" );
+      }
+   }
 
    /**
     *  This is the entry point for new transactions to the block state. It will check authorization and

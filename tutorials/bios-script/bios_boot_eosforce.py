@@ -10,6 +10,14 @@ import time
 args = None
 logFile = None
 
+datas = {
+      'initAccounts':[],
+      'initProducers':[],
+      'initProducerSigKeys':[],
+      'initAccountsKeys':[],
+      'maxClients':0
+}
+
 unlockTimeout = 999999999
 
 relayPriKey = '5JbykKocbS8Hj3s4xokv5Ej3iXqrSqdwxBcHQFXf5DwUmGELxTi'
@@ -51,32 +59,8 @@ def sleep(t):
     time.sleep(t)
     print('resume')
 
-def makeGenesis():
-    run('rm -rf ' + os.path.abspath(args.config_dir))
-    run('mkdir -p ' + os.path.abspath(args.config_dir))
-    run('mkdir -p ' + os.path.abspath(args.config_dir) + '/keys/' )
-
-    run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System/System.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System/System.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System01/System01.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System01/System01.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.wasm ' + os.path.abspath(args.config_dir))
-
-    run('echo "System01-contract-block-num=5" > ' + os.path.abspath(args.config_dir) + '/config.ini')
-
-    run(args.root + 'build/programs/genesis/genesis')
-    run('mv ./genesis.json ' + os.path.abspath(args.config_dir))
-
-    run('mv ./key.json ' + os.path.abspath(args.config_dir) + '/keys/')
-    run('mv ./sigkey.json ' + os.path.abspath(args.config_dir) + '/keys/')
-
 def addB1Account():
-    run(args.cleos + 'create account eosforce b1 ' + initAccounts[len(initAccounts) - 1]['key'] + " -p eosforce")
+    run(args.cleos + 'create account eosforce b1 ' + datas["initAccounts"][len(datas["initAccounts"]) - 1]['key'] + " -p eosforce")
 
 def addRelayAccount():
     for a in relayAccounts:
@@ -94,7 +78,7 @@ def startWallet():
 def importKeys():
     keys = {}
     run(args.cleos + 'wallet import --private-key ' + relayPriKey)
-    for a in initAccountsKeys:
+    for a in datas["initAccountsKeys"]:
         key = a[1]
         if not key in keys:
             keys[key] = True
@@ -102,10 +86,17 @@ def importKeys():
             # so need change this cmd
             run(args.cleos + 'wallet import --private-key ' + key)
 
-def startNode(nodeIndex, bpaccount, key):
+def createNodeDir(nodeIndex, bpaccount, key):
     dir = args.nodes_dir + ('%02d-' % nodeIndex) + bpaccount['name'] + '/'
     run('rm -rf ' + dir)
     run('mkdir -p ' + dir)
+
+def createNodeDirs(inits, keys):
+    for i in range(0, len(inits)):
+        createNodeDir(i + 1, datas["initProducers"][i], keys[i])
+
+def startNode(nodeIndex, bpaccount, key):
+    dir = args.nodes_dir + ('%02d-' % nodeIndex) + bpaccount['name'] + '/'
     otherOpts = ''.join(list(map(lambda i: '    --p2p-peer-address 0.0.0.0:' + str(9001 + i), range(24 - 1))))
     if not nodeIndex: otherOpts += (
         '    --plugin eosio::history_plugin'
@@ -122,8 +113,8 @@ def startNode(nodeIndex, bpaccount, key):
         '    --data-dir ' + os.path.abspath(dir) +
         '    --http-server-address 0.0.0.0:' + str(8000 + nodeIndex) +
         '    --p2p-listen-endpoint 0.0.0.0:' + str(9000 + nodeIndex) +
-        '    --max-clients ' + str(maxClients) +
-        '    --p2p-max-nodes-per-host ' + str(maxClients) +
+        '    --max-clients ' + str(datas["maxClients"]) +
+        '    --p2p-max-nodes-per-host ' + str(datas["maxClients"]) +
         '    --enable-stale-production'
         '    --producer-name ' + bpaccount['name'] +
         '    --signature-provider=' + bpaccount['bpkey'] + '=KEY:' + key[1] +
@@ -137,7 +128,7 @@ def startNode(nodeIndex, bpaccount, key):
 
 def startProducers(inits, keys):
     for i in range(0, len(inits)):
-        startNode(i + 1, initProducers[i], keys[i])
+        startNode(i + 1, datas["initProducers"][i], keys[i])
 
 def listProducers():
     run(args.cleos + 'get table eosio eosio bps')
@@ -148,34 +139,90 @@ def stepKillAll():
 
 def stepStartWallet():
     startWallet()
-    importKeys()
 
 def stepStartProducers():
-    startProducers(initProducers, initProducerSigKeys)
+    startProducers(datas["initProducers"], datas["initProducerSigKeys"])
+    sleep(8)
+
+def stepAddAccounts():
     sleep(3)
     addB1Account()
     addRelayAccount()
-    sleep(args.producer_sync_delay)
+    sleep(5)
 
 def stepLog():
     run('tail -n 1000 ' + args.nodes_dir + 'biosbpa.log')
     listProducers()
 
+def stepMkConfig():
+    with open(os.path.abspath(args.config_dir) + '/genesis.json') as f:
+        a = json.load(f)
+        datas["initAccounts"] = a['initial_account_list']
+        datas["initProducers"] = a['initial_producer_list']
+    with open(os.path.abspath(args.config_dir) + '/keys/sigkey.json') as f:
+        a = json.load(f)
+        datas["initProducerSigKeys"] = a['keymap']
+    with open(os.path.abspath(args.config_dir) + '/keys/key.json') as f:
+        a = json.load(f)
+        datas["initAccountsKeys"] = a['keymap']
+    datas["maxClients"] = len(datas["initProducers"]) + 10
 
+def stepMakeGenesis():
+    run('rm -rf ' + os.path.abspath(args.config_dir))
+    run('mkdir -p ' + os.path.abspath(args.config_dir))
+    run('mkdir -p ' + os.path.abspath(args.config_dir) + '/keys/' )
 
+    run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/System/System.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/System/System.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/System01/System01.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/System01/System01.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.wasm ' + os.path.abspath(args.config_dir))
+
+    run(args.root + 'build/programs/genesis/genesis')
+    run('mv ./genesis.json ' + os.path.abspath(args.config_dir))
+
+    run('mv ./key.json ' + os.path.abspath(args.config_dir) + '/keys/')
+    run('mv ./sigkey.json ' + os.path.abspath(args.config_dir) + '/keys/')
+
+    createNodeDirs(datas["initProducers"], datas["initProducerSigKeys"])
+
+def clearData():
+    stepKillAll()
+    run('rm -rf ' + args.config_dir)
+    run('rm -rf ' + args.wallet_dir)
+    sleep(1)
+
+def restart():
+    stepKillAll()
+    stepMkConfig()
+    stepStartWallet()
+    importKeys()
+    stepStartProducers()
+    stepLog()
 
 # =======================================================================================================================
 # Command Line Arguments
 parser = argparse.ArgumentParser()
 
 commands = [
-    # ('k', 'kill',           stepKillAll,                True,    "Kill all nodeos and keosd processes"),
+    ('k', 'kill',           stepKillAll,                False,   "Kill all nodeos and keosd processes"),
+    ('c', 'clearData',      clearData,                  False,   "Clear all Data, del ./nodes and ./wallet"),
+    ('r', 'restart',        restart,                    False,   "Restart all nodeos and keosd processes"),
+    ('g', 'mkGenesis',      stepMakeGenesis,            True,    "Make Genesis"),
+    ('m', 'mkConfig',       stepMkConfig,               True,    "Make Configs"),
     ('w', 'wallet',         stepStartWallet,            True,    "Start keosd, create wallet, fill with keys"),
+    ('i', 'importKeys',     importKeys,                 True,    "importKeys"),
     ('P', 'start-prod',     stepStartProducers,         True,    "Start producers"),
+    ('C', 'createAccs',     stepAddAccounts,            True,    "Create some Accounts"),
     ('l', 'log',            stepLog,                    True,    "Show tail of node's log"),
 ]
 
-parser.add_argument('--root', metavar='', help="EOSIO Public Key", default='../../')
+parser.add_argument('--root', metavar='', help="Eosforce root dir from git", default='../../')
 parser.add_argument('--contracts-dir', metavar='', help="Path to contracts directory", default='build/contracts/')
 parser.add_argument('--cleos', metavar='', help="Cleos command", default='build/programs/cleos/cleos --wallet-url http://0.0.0.0:6666 ')
 parser.add_argument('--nodeos', metavar='', help="Path to nodeos binary", default='build/programs/nodeos/nodeos')
@@ -184,9 +231,7 @@ parser.add_argument('--keosd', metavar='', help="Path to keosd binary", default=
 parser.add_argument('--log-path', metavar='', help="Path to log file", default='./output.log')
 parser.add_argument('--wallet-dir', metavar='', help="Path to wallet directory", default='./wallet/')
 parser.add_argument('--config-dir', metavar='', help="Path to config directory", default='./config')
-parser.add_argument('--producer-sync-delay', metavar='', help="Time (s) to sleep to allow producers to sync", type=int, default=10)
 parser.add_argument('-a', '--all', action='store_true', help="Do everything marked with (*)")
-parser.add_argument('-H', '--http-port', type=int, default=8001, metavar='', help='HTTP port for cleos')
 
 for (flag, command, function, inAll, help) in commands:
     prefix = ''
@@ -199,7 +244,7 @@ for (flag, command, function, inAll, help) in commands:
 
 args = parser.parse_args()
 
-args.cleos += '--url http://127.0.0.1:%d ' % args.http_port
+args.cleos += '--url http://127.0.0.1:%d ' % 8001
 
 args.cleos = args.root + args.cleos
 args.nodeos = args.root + args.nodeos
@@ -209,23 +254,6 @@ args.contracts_dir = args.root + args.contracts_dir
 logFile = open(args.log_path, 'a')
 
 logFile.write('\n\n' + '*' * 80 + '\n\n\n')
-
-makeGenesis()
-
-with open(os.path.abspath(args.config_dir) + '/genesis.json') as f:
-    a = json.load(f)
-    initAccounts = a['initial_account_list']
-    initProducers = a['initial_producer_list']
-
-with open(os.path.abspath(args.config_dir) + '/keys/sigkey.json') as f:
-    a = json.load(f)
-    initProducerSigKeys = a['keymap']
-
-with open(os.path.abspath(args.config_dir) + '/keys/key.json') as f:
-    a = json.load(f)
-    initAccountsKeys = a['keymap']
-
-maxClients = len(initProducers) + 10
 
 haveCommand = False
 for (flag, command, function, inAll, help) in commands:

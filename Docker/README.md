@@ -1,5 +1,7 @@
 # Run in docker
 
+[中文](https://github.com/eosforce/eosforce/blob/master/Docker/README_zh.md)
+
 Simple and fast setup of Eosforce on Docker is also available.
 
 ## Install Dependencies

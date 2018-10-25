@@ -1,6 +1,6 @@
 # Run in docker
 
-Simple and fast setup of EOS.IO on Docker is also available.
+Simple and fast setup of Eosforce on Docker is also available.
 
 ## Install Dependencies
 
@@ -12,50 +12,81 @@ Simple and fast setup of EOS.IO on Docker is also available.
 - At least 7GB RAM (Docker -> Preferences -> Advanced -> Memory -> 7GB or above)
 - If the build below fails, make sure you've adjusted Docker Memory settings and try again.
 
-## Build eos image
+## Build eosforce image
 
 ```bash
-git clone https://github.com/EOSIO/eos.git --recursive  --depth 1
-cd eos/Docker
-docker build . -t eosio/eos
+git clone https://github.com/eosforce/eosforce.git --recursive  --depth 1
+cd eosforce/Docker
+docker build . -t eosforce/eos
 ```
 
 The above will build off the most recent commit to the master branch by default. If you would like to target a specific branch/tag, you may use a build argument. For example, if you wished to generate a docker image based off of the v1.2.3 tag, you could do the following:
 
 ```bash
-docker build -t eosio/eos:v1.2.3 --build-arg branch=v1.2.3 .
-```
-
-By default, the symbol in eosio.system is set to SYS. You can override this using the symbol argument while building the docker image.
-
-```bash
-docker build -t eosio/eos --build-arg symbol=<symbol> .
+docker build -t eosforce/eos:v1.2.3 --build-arg branch=v1.2.3 .
 ```
 
 ## Start nodeos docker container only
 
-```bash
-docker run --name nodeos -p 8888:8888 -p 9876:9876 -t eosio/eos nodeosd.sh -e --http-alias=nodeos:8888 --http-alias=127.0.0.1:8888 --http-alias=localhost:8888 arg1 arg2
+At First, we need to make a config.ini, A simple config.ini is in https://github.com/eosforce/eosforce/blob/master/Docker/config.ini.
+
+Some config need change:
+
+```ini
+# some key config need to change:
+
+# The local IP and port to listen for incoming http connections; set blank to disable. (eosio::http_plugin)
+http-server-address = 0.0.0.0:9001 # http server address if use eosio::http_plugin
+
+# The actual host:port used to listen for incoming p2p connections. (eosio::net_plugin)
+p2p-listen-endpoint = 0.0.0.0:9876
+
+# The public endpoint of a peer node to connect to. Use multiple p2p-peer-address options as needed to compose a network. (eosio::net_plugin)
+# An externally accessible host:port for identifying this node. Defaults to p2p-listen-endpoint. (eosio::net_plugin)
+#p2p-server-address = 172.16.196.158:7891
+p2p-peer-address = 127.0.0.1:7891
+
+# Key=Value pairs in the form <public-key>=<provider-spec>
+# Where:
+#    <public-key>    	is a string form of a vaild EOSIO public key
+#    <provider-spec> 	is a string in the form <provider-type>:<data>
+#    <provider-type> 	is KEY, or KEOSD
+#    KEY:<data>      	is a string form of a valid EOSIO private key which maps to the provided public key
+#    KEOSD:<data>    	is the URL where keosd is available and the approptiate wallet(s) are unlocked (eosio::producer_plugin)
+#signature-provider = EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV=KEY:5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
+
+# Plugin(s) to enable, may be specified multiple times
+plugin = eosio::chain_api_plugin
+#plugin = eosio::history_plugin
+#plugin = eosio::http_plugin
+
+# other configs
+
+...
+
 ```
 
-By default, all data is persisted in a docker volume. It can be deleted if the data is outdated or corrupted:
+Then we need to make a config folder and data folder for nodeos run in docker, and copy config.ini to config folder:
 
 ```bash
-$ docker inspect --format '{{ range .Mounts }}{{ .Name }} {{ end }}' nodeos
-fdc265730a4f697346fa8b078c176e315b959e79365fc9cbd11f090ea0cb5cbc
-$ docker volume rm fdc265730a4f697346fa8b078c176e315b959e79365fc9cbd11f090ea0cb5cbc
+mkdir ./nodeos
+mkdir ./nodeos/config
+mkdir ./nodeos/data
+cp config.ini ./nodeos/config/
 ```
 
-Alternately, you can directly mount host directory into the container
+start nodeos:
 
 ```bash
-docker run --name nodeos -v /path-to-data-dir:/opt/eosio/bin/data-dir -p 8888:8888 -p 9876:9876 -t eosio/eos nodeosd.sh -e --http-alias=nodeos:8888 --http-alias=127.0.0.1:8888 --http-alias=localhost:8888 arg1 arg2
+sudo docker run -d --name eosforcenode -v ./nodeos/config:/opt/eosforce/config -v ./nodeos/data:/opt/eosforce/data  -p 9001:9001 -p 9876:9876 eosforce/eostest nodeosd.sh
 ```
+
+if you have no config.ini in config folder, the docker image will copy a common config to the path and exit, you need change config and start again.
 
 ## Get chain info
 
 ```bash
-curl http://127.0.0.1:8888/v1/chain/get_info
+curl http://127.0.0.1:89001888/v1/chain/get_info
 ```
 
 ## Start both nodeos and keosd containers

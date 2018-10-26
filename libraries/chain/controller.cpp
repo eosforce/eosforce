@@ -806,10 +806,7 @@ struct controller_impl {
       try {
           //action check
           check_action(dtrx.actions);
-
           asset fee_ext = dtrx.fee;
-          //check and filter by fee
-          EOS_ASSERT(txfee.check_transaction((transaction)dtrx) == true, transaction_exception, "transaction include actor more than one");
 
          trx_context.init_for_deferred_trx( gtrx.published );
          trx_context.make_limit_by_contract( fee_ext );

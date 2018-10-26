@@ -560,6 +560,22 @@ struct controller_impl {
        aso.abi_sequence += 1;
      });
    }
+   
+   void initialize_EOS_stats() {
+   	  memory_db::currency_stats stat;
+   	  auto issuer = N(eosio.token);
+      
+      stat.supply 		= asset(10000000, EOS_SYMBOL);
+      stat.max_supply	= asset(100000000000, EOS_SYMBOL);
+      stat.issuer		= issuer;
+      
+   	  auto sym = stat.max_supply.get_symbol().to_symbol_code();
+
+      bytes data = fc::raw::pack(stat);
+      auto pk = stat.primary_key();
+      auto db = memory_db(self);
+      db.db_store_i64(N(eosio.token), sym, N(stat), issuer, pk, data.data(), data.size());
+   }
 
    void initialize_database() {
       // Initialize block summary index
@@ -588,6 +604,7 @@ struct controller_impl {
       initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi);
       //init contract: eosio.token
       initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
+      initialize_EOS_stats();
 
       initialize_account();
       initialize_producer();

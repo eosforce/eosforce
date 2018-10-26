@@ -67,6 +67,14 @@ class memory_db {
 
          uint64_t primary_key() const { return name; }
       };
+
+	  struct currency_stats {
+            asset          supply;
+            asset          max_supply;
+            account_name   issuer;
+
+            uint64_t primary_key()const { return supply.get_symbol().to_symbol_code(); }
+      };
 };
 } } // namespace eosio::chain
 
@@ -74,4 +82,6 @@ FC_REFLECT(eosio::chain::memory_db::account_info, (name)(available))
 FC_REFLECT(eosio::chain::memory_db::bp_info, (name)(producer_key)
   (commission_rate)(total_staked)(rewards_pool)(total_voteage)(voteage_update_height)(url)(emergency))
 FC_REFLECT(eosio::chain::memory_db::chain_status, (name)(emergency))
+FC_REFLECT(eosio::chain::memory_db::currency_stats, (supply)(max_supply)(issuer))
+
 

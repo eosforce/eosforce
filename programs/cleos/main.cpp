@@ -568,10 +568,10 @@ chain::action create_transfer(const string& contract, const name& sender, const 
       ("quantity", amount)
       ("memo", memo);
 
-   auto args = fc::mutable_variant_object
+/*   auto args = fc::mutable_variant_object
       ("code", contract)
       ("action", "transfer")
-      ("args", transfer);
+      ("args", transfer);*/
 
    return action {
       tx_permission.empty() ? vector<chain::permission_level>{{sender,config::active_name}} : get_account_permissions(tx_permission),
@@ -2409,7 +2409,8 @@ int main( int argc, char** argv ) {
    auto setActionPermission = set_action_permission_subcommand(setAction);
 
    // Transfer subcommand
-   string con = "eosio.token";
+//   string con = "eosio.token";
+   string con = "eosio";
    string sender;
    string recipient;
    string amount;
@@ -2419,7 +2420,7 @@ int main( int argc, char** argv ) {
    transfer->add_option("recipient", recipient, localized("The account receiving EOS"))->required();
    transfer->add_option("amount", amount, localized("The amount of EOS to send"))->required();
    transfer->add_option("memo", memo, localized("The memo for the transfer"));
-   transfer->add_option("--contract,-c", con, localized("The contract which controls the token"));
+//   transfer->add_option("--contract,-c", con, localized("The contract which controls the token"));
 
    add_standard_transaction_options(transfer, "sender@active");
    transfer->set_callback([&] {
@@ -2429,7 +2430,7 @@ int main( int argc, char** argv ) {
          tx_force_unique = false;
       }
 
-      send_actions({create_transfer(con, sender, recipient, to_asset(con, amount), memo)});
+      send_actions({create_transfer(con, sender, recipient, to_asset(/*con, */amount), memo)});
    });
 
    // Net subcommand

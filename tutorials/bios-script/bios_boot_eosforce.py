@@ -142,10 +142,13 @@ def stepStartWallet():
 
 def stepStartProducers():
     startProducers(datas["initProducers"], datas["initProducerSigKeys"])
-    sleep(8)
+    sleep(10)
+
+def stepCreateNodeDirs():
+    createNodeDirs(datas["initProducers"], datas["initProducerSigKeys"])
+    sleep(0.5)
 
 def stepAddAccounts():
-    sleep(3)
     addB1Account()
     addRelayAccount()
     sleep(5)
@@ -189,11 +192,10 @@ def stepMakeGenesis():
     run('mv ./key.json ' + os.path.abspath(args.config_dir) + '/keys/')
     run('mv ./sigkey.json ' + os.path.abspath(args.config_dir) + '/keys/')
 
-    createNodeDirs(datas["initProducers"], datas["initProducerSigKeys"])
-
 def clearData():
     stepKillAll()
     run('rm -rf ' + args.config_dir)
+    run('rm -rf ' + args.nodes_dir)
     run('rm -rf ' + args.wallet_dir)
     sleep(1)
 
@@ -217,6 +219,7 @@ commands = [
     ('m', 'mkConfig',       stepMkConfig,               True,    "Make Configs"),
     ('w', 'wallet',         stepStartWallet,            True,    "Start keosd, create wallet, fill with keys"),
     ('i', 'importKeys',     importKeys,                 True,    "importKeys"),
+    ('D', 'createDirs',     stepCreateNodeDirs,         True,    "create dirs for node and log"),
     ('P', 'start-prod',     stepStartProducers,         True,    "Start producers"),
     ('C', 'createAccs',     stepAddAccounts,            True,    "Create some Accounts"),
     ('l', 'log',            stepLog,                    True,    "Show tail of node's log"),

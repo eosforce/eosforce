@@ -81,3 +81,11 @@ var/lib/node_*
 .idea/
 *.iws
 .DS_Store
+
+tutorials/bios-script/config\.ini
+tutorials/bios-script/nodes
+tutorials/bios-script/config
+
+tutorials/bios-script/pw
+
+tutorials/bios-script/output\.log

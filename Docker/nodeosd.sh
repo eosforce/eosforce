@@ -1,33 +1,20 @@
 #!/bin/sh
-cd /opt/eosio/bin
+cd /opt/eosforce/bin
 
-if [ -f '/opt/eosio/bin/data-dir/config.ini' ]; then
+if [ -f '/opt/eosforce/config/config.ini' ]; then
+    echo 
+  else
+    echo "need to config config.ini"
+    cp -R /tmp/config/config.ini /opt/eosforce/config/
+    exit 1
+fi
+
+if [ -f '/opt/eosforce/config/genesis.json' ]; then
     echo
   else
-    cp /config.ini /opt/eosio/bin/data-dir
+    cp -R /tmp/config/* /opt/eosforce/config/
 fi
 
-if [ -d '/opt/eosio/bin/data-dir/contracts' ]; then
-    echo
-  else
-    cp -r /contracts /opt/eosio/bin/data-dir
-fi
+CONFIG_DIR="--config-dir /opt/eosforce/config/ -d /opt/eosforce/data/"
 
-while :; do
-    case $1 in
-        --config-dir=?*)
-            CONFIG_DIR=${1#*=}
-            ;;
-        *)
-            break
-    esac
-    shift
-done
-
-if [ ! "$CONFIG_DIR" ]; then
-    CONFIG_DIR="--config-dir=/opt/eosio/bin/data-dir"
-else
-    CONFIG_DIR=""
-fi
-
-exec /opt/eosio/bin/nodeos $CONFIG_DIR "$@"
+exec /opt/eosforce/bin/nodeos $CONFIG_DIR $@

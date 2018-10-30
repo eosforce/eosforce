@@ -331,7 +331,7 @@ namespace eosio {
          if( options.count( "filter-on" )) {
             auto fo = options.at( "filter-on" ).as<vector<string>>();
             for( auto& s : fo ) {
-               if( s == "*" ) {
+               if( s == "*" || s == "\"*\"" ) {
                   my->bypass_filter = true;
                   wlog( "--filter-on * enabled. This can fill shared_mem, causing nodeos to stop." );
                   break;
@@ -500,13 +500,31 @@ namespace eosio {
       read_only::get_transaction_result read_only::get_transaction( const read_only::get_transaction_params& p )const {
          auto& chain = history->chain_plug->chain();
          const auto abi_serializer_max_time = history->chain_plug->get_abi_serializer_max_time();
-         auto short_id = fc::variant(p.id).as_string().substr(0,8);
+
+         transaction_id_type input_id;
+         auto input_id_length = p.id.size();
+         try {
+            FC_ASSERT( input_id_length <= 64, "hex string is too long to represent an actual transaction id" );
+            FC_ASSERT( input_id_length >= 8,  "hex string representing transaction id should be at least 8 characters long to avoid excessive collisions" );
+            input_id = transaction_id_type(p.id);
+         } EOS_RETHROW_EXCEPTIONS(transaction_id_type_exception, "Invalid transaction ID: ${transaction_id}", ("transaction_id", p.id))
+
+         auto txn_id_matched = [&input_id, input_id_size = input_id_length/2, no_half_byte_at_end = (input_id_length % 2 == 0)]
+                               ( const transaction_id_type &id ) -> bool // hex prefix comparison
+         {
+            bool whole_byte_prefix_matches = memcmp( input_id.data(), id.data(), input_id_size ) == 0;
+            if( !whole_byte_prefix_matches || no_half_byte_at_end )
+               return whole_byte_prefix_matches;
+
+            // check if half byte at end of specified part of input_id matches
+            return (*(input_id.data() + input_id_size) & 0xF0) == (*(id.data() + input_id_size) & 0xF0);
+         };
 
          const auto& db = chain.db();
          const auto& idx = db.get_index<action_history_index, by_trx_id>();
-         auto itr = idx.lower_bound( boost::make_tuple(p.id) );
+         auto itr = idx.lower_bound( boost::make_tuple( input_id ) );
 
-         bool in_history = (itr != idx.end() && fc::variant(itr->trx_id).as_string().substr(0,8) == short_id );
+         bool in_history = (itr != idx.end() && txn_id_matched(itr->trx_id) );
 
          if( !in_history && !p.block_num_hint ) {
             EOS_THROW(tx_not_found, "Transaction ${id} not found in history and no block hint was given", ("id",p.id));
@@ -514,12 +532,9 @@ namespace eosio {
 
          get_transaction_result result;
 
-         if (in_history) {
-            result.id = p.id;
-            result.last_irreversible_block = chain.last_irreversible_block_num();
-
-
+         if( in_history ) {
             result.id         = itr->trx_id;
+            result.last_irreversible_block = chain.last_irreversible_block_num();
             result.block_num  = itr->block_num;
             result.block_time = itr->block_time;
 
@@ -569,7 +584,7 @@ namespace eosio {
                   if (receipt.trx.contains<packed_transaction>()) {
                      auto& pt = receipt.trx.get<packed_transaction>();
                      auto mtrx = transaction_metadata(pt);
-                     if (fc::variant(mtrx.id).as_string().substr(0, 8) == short_id) {
+                     if( txn_id_matched(mtrx.id) ) {
                         result.id = mtrx.id;
                         result.last_irreversible_block = chain.last_irreversible_block_num();
                         result.block_num = *p.block_num_hint;
@@ -582,7 +597,7 @@ namespace eosio {
                      }
                   } else {
                      auto& id = receipt.trx.get<transaction_id_type>();
-                     if (fc::variant(id).as_string().substr(0, 8) == short_id) {
+                     if( txn_id_matched(id) ) {
                         result.id = id;
                         result.last_irreversible_block = chain.last_irreversible_block_num();
                         result.block_num = *p.block_num_hint;

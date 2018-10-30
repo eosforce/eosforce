@@ -110,6 +110,7 @@ namespace eosio { namespace chain {
             validation_mode          block_validation_mode  = validation_mode::FULL;
 
             flat_set<account_name>   resource_greylist;
+            flat_set<account_name>   trusted_producers;
          };
 
          enum class block_status {
@@ -223,6 +224,7 @@ namespace eosio { namespace chain {
 
          time_point      pending_block_time()const;
          block_state_ptr pending_block_state()const;
+         optional<block_id_type> pending_producer_block_id()const;
 
          const producer_schedule_type&    active_producers()const;
          const producer_schedule_type&    pending_producers()const;
@@ -353,4 +355,5 @@ FC_REFLECT( eosio::chain::controller::config,
             (bios_code)(bios_abi)(msig_code)(msig_abi)
             (System01_code)(System01_abi)
             (resource_greylist)
+            (trusted_producers)
           )

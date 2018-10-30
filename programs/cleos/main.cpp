@@ -72,6 +72,7 @@ Options:
 ```
 */
 
+#include <pwd.h>
 #include <string>
 #include <vector>
 #include <regex>
@@ -150,6 +151,22 @@ FC_DECLARE_EXCEPTION( localized_exception, 10000000, "an error occured" );
     FC_MULTILINE_MACRO_END \
   )
 
+//copy pasta from keosd's main.cpp
+bfs::path determine_home_directory()
+{
+   bfs::path home;
+   struct passwd* pwd = getpwuid(getuid());
+   if(pwd) {
+      home = pwd->pw_dir;
+   }
+   else {
+      home = getenv("HOME");
+   }
+   if(home.empty())
+      home = "./";
+   return home;
+}
+
 string url = "http://127.0.0.1:8888/";
 string wallet_url = "http://127.0.0.1:8900/";
 bool no_verify = false;
@@ -165,11 +182,13 @@ bool   tx_skip_sign = false;
 bool   tx_print_json = false;
 bool   print_request = false;
 bool   print_response = false;
+bool   no_auto_keosd = false;
 
 uint8_t  tx_max_cpu_usage = 0;
 uint32_t tx_max_net_usage = 0;
 
 const asset zeroAsset = asset(0);
+uint32_t delaysec = 0;
 
 vector<string> tx_permission;
 
@@ -201,6 +220,8 @@ void add_standard_transaction_options(CLI::App* cmd, string default_permission =
 
    cmd->add_option("--max-cpu-usage-ms", tx_max_cpu_usage, localized("set an upper limit on the milliseconds of cpu usage budget, for the execution of the transaction (defaults to 0 which means no limit)"));
    cmd->add_option("--max-net-usage", tx_max_net_usage, localized("set an upper limit on the net usage budget, in bytes, for the transaction (defaults to 0 which means no limit)"));
+
+   cmd->add_option("--delay-sec", delaysec, localized("set the delay_sec seconds, defaults to 0s"));
 }
 
 vector<chain::permission_level> get_account_permissions(const vector<string>& permissions) {
@@ -311,6 +332,7 @@ fc::variant push_transaction( signed_transaction& trx, int32_t extra_kcpu = 1000
 
       trx.max_cpu_usage_ms = tx_max_cpu_usage;
       trx.max_net_usage_words = (tx_max_net_usage + 7)/8;
+      trx.delay_sec = delaysec;
    }
 
    auto required_keys = determine_required_keys(trx);
@@ -560,6 +582,17 @@ fc::variant regproducer_variant(const account_name& producer, const public_key_t
             ;
 }
 
+chain::action create_open(const string& contract, const name& owner, symbol sym, const name& ram_payer) {
+   auto open_ = fc::mutable_variant_object
+      ("owner", owner)
+      ("symbol", sym)
+      ("ram_payer", ram_payer);
+    return action {
+      tx_permission.empty() ? vector<chain::permission_level>{{ram_payer,config::active_name}} : get_account_permissions(tx_permission),
+      contract, "open", variant_to_bin( contract, N(open), open_ )
+   };
+}
+
 chain::action create_transfer(const string& contract, const name& sender, const name& recipient, asset amount, const string& memo ) {
 
    auto transfer = fc::mutable_variant_object
@@ -568,23 +601,18 @@ chain::action create_transfer(const string& contract, const name& sender, const 
       ("quantity", amount)
       ("memo", memo);
 
-/*   auto args = fc::mutable_variant_object
-      ("code", contract)
-      ("action", "transfer")
-      ("args", transfer);*/
-
    return action {
       tx_permission.empty() ? vector<chain::permission_level>{{sender,config::active_name}} : get_account_permissions(tx_permission),
       contract, "transfer", variant_to_bin( contract, N(transfer), transfer )
    };
 }
 
-chain::action create_setabi(const name& account, const abi_def& abi) {
+chain::action create_setabi(const name& account, const bytes& abi) {
    return action {
       tx_permission.empty() ? vector<chain::permission_level>{{account,config::active_name}} : get_account_permissions(tx_permission),
       setabi{
          .account   = account,
-         .abi       = fc::raw::pack(abi)
+         .abi       = abi
       }
    };
 }
@@ -653,11 +681,11 @@ authority parse_json_authority_or_key(const std::string& authorityJsonOrFile) {
    }
 }
 
-asset to_asset( const string& code, const string& s ) {
-   static map<eosio::chain::symbol_code, eosio::chain::symbol> cache;
+asset to_asset( account_name code, const string& s ) {
+   static map< pair<account_name, eosio::chain::symbol_code>, eosio::chain::symbol> cache;
    auto a = asset::from_string( s );
    eosio::chain::symbol_code sym = a.get_symbol().to_symbol_code();
-   auto it = cache.find( sym );
+   auto it = cache.find( make_pair(code, sym) );
    auto sym_str = a.symbol_name();
    if ( it == cache.end() ) {
       auto json = call(get_currency_stats_func, fc::mutable_variant_object("json", false)
@@ -668,7 +696,7 @@ asset to_asset( const string& code, const string& s ) {
       auto obj_it = obj.find( sym_str );
       if (obj_it != obj.end()) {
          auto result = obj_it->value().as<eosio::chain_apis::read_only::get_currency_stats_result>();
-         auto p = cache.insert(make_pair( sym, result.max_supply.get_symbol() ));
+         auto p = cache.emplace( make_pair( code, sym ), result.max_supply.get_symbol() );
          it = p.first;
       } else {
          EOS_THROW(symbol_type_exception, "Symbol ${s} is not supported by token contract ${c}", ("s", sym_str)("c", code));
@@ -686,7 +714,7 @@ asset to_asset( const string& code, const string& s ) {
 }
 
 inline asset to_asset( const string& s ) {
-   return to_asset( "eosio.token", s );
+   return to_asset( N(eosio.token), s );
 }
 
 struct set_account_permission_subcommand {
@@ -803,6 +831,8 @@ void try_local_port( const string& lo_address, uint16_t port, uint32_t duration 
 }
 
 void ensure_keosd_running(CLI::App* app) {
+    if (no_auto_keosd)
+        return;
     // get, version, net do not require keosd
     if (tx_skip_sign || app->got_subcommand("get") || app->got_subcommand("version") || app->got_subcommand("net"))
         return;
@@ -1489,6 +1519,13 @@ void get_account( const string& accountName, bool json_format ) {
       asset staked;
       asset unstaking;
 
+      if( res.core_liquid_balance.valid() ) {
+         unstaking = asset( 0, res.core_liquid_balance->get_symbol() ); // Correct core symbol for unstaking asset.
+         staked = asset( 0, res.core_liquid_balance->get_symbol() );    // Correct core symbol for staked asset.
+      }
+
+      std::cout << "created: " << string(res.created) << std::endl;
+
       if(res.privileged) std::cout << "privileged: true" << std::endl;
 
       constexpr size_t indent_size = 5;
@@ -1511,14 +1548,14 @@ void get_account( const string& accountName, bool json_format ) {
       std::function<void (account_name, int)> dfs_print = [&]( account_name name, int depth ) -> void {
          auto& p = cache.at(name);
          std::cout << indent << std::string(depth*3, ' ') << name << ' ' << std::setw(5) << p.required_auth.threshold << ":    ";
+         const char *sep = "";
          for ( auto it = p.required_auth.keys.begin(); it != p.required_auth.keys.end(); ++it ) {
-            if ( it != p.required_auth.keys.begin() ) {
-               std::cout  << ", ";
-            }
-            std::cout << it->weight << ' ' << string(it->key);
+            std::cout << sep << it->weight << ' ' << string(it->key);
+            sep = ", ";
          }
          for ( auto& acc : p.required_auth.accounts ) {
-            std::cout << acc.weight << ' ' << string(acc.permission.actor) << '@' << string(acc.permission.permission) << ", ";
+            std::cout << sep << acc.weight << ' ' << string(acc.permission.actor) << '@' << string(acc.permission.permission);
+            sep = ", ";
          }
          std::cout << std::endl;
          auto it = tree.find( name );
@@ -1761,6 +1798,7 @@ int main( int argc, char** argv ) {
 
    app.add_option( "-r,--header", header_opt_callback, localized("pass specific HTTP header; repeat this option to pass multiple headers"));
    app.add_flag( "-n,--no-verify", no_verify, localized("don't verify peer certificate when using HTTPS"));
+   app.add_flag( "--no-auto-keosd", no_auto_keosd, localized("don't automatically launch a keosd if one is not currently running"));
    app.set_callback([&app]{ ensure_keosd_running(&app);});
 
    bool verbose_errors = false;
@@ -2015,14 +2053,14 @@ int main( int argc, char** argv ) {
    uint32_t limit = 10;
    string index_position;
    auto getTable = get->add_subcommand( "table", localized("Retrieve the contents of a database table"), false);
-   getTable->add_option( "contract", code, localized("The contract who owns the table") )->required();
+   getTable->add_option( "account", code, localized("The account who owns the table") )->required();
    getTable->add_option( "scope", scope, localized("The scope within the contract in which the table is found") )->required();
    getTable->add_option( "table", table, localized("The name of the table as specified by the contract abi") )->required();
    getTable->add_option( "-b,--binary", binary, localized("Return the value as BINARY rather than using abi to interpret as JSON") );
    getTable->add_option( "-l,--limit", limit, localized("The maximum number of rows to return") );
    getTable->add_option( "-k,--key", table_key, localized("Deprecated") );
    getTable->add_option( "-L,--lower", lower, localized("JSON representation of lower bound value of key, defaults to first") );
-   getTable->add_option( "-U,--upper", upper, localized("JSON representation of upper bound value value of key, defaults to last") );
+   getTable->add_option( "-U,--upper", upper, localized("JSON representation of upper bound value of key, defaults to last") );
    getTable->add_option( "--index", index_position,
                          localized("Index number, 1 - primary (first), 2 - secondary index (in order defined by multi_index), 3 - third index, etc.\n"
                                    "\t\t\t\tNumber or name of index can be specified, e.g. 'secondary' or '2'."));
@@ -2048,6 +2086,23 @@ int main( int argc, char** argv ) {
                          ("encode_type", encode_type)
                          );
 
+      std::cout << fc::json::to_pretty_string(result)
+                << std::endl;
+   });
+
+   auto getScope = get->add_subcommand( "scope", localized("Retrieve a list of scopes and tables owned by a contract"), false);
+   getScope->add_option( "contract", code, localized("The contract who owns the table") )->required();
+   getScope->add_option( "-t,--table", table, localized("The name of the table as filter") );
+   getScope->add_option( "-l,--limit", limit, localized("The maximum number of rows to return") );
+   getScope->add_option( "-L,--lower", lower, localized("lower bound of scope") );
+   getScope->add_option( "-U,--upper", upper, localized("upper bound of scope") );
+   getScope->set_callback([&] {
+      auto result = call(get_table_by_scope_func, fc::mutable_variant_object("code",code)
+                         ("table",table)
+                         ("lower_bound",lower)
+                         ("upper_bound",upper)
+                         ("limit",limit)
+                         );
       std::cout << fc::json::to_pretty_string(result)
                 << std::endl;
    });
@@ -2118,12 +2173,7 @@ int main( int argc, char** argv ) {
    getTransaction->add_option("id", transaction_id_str, localized("ID of the transaction to retrieve"))->required();
    getTransaction->add_option( "-b,--block-hint", block_num_hint, localized("the block number this transaction may be in") );
    getTransaction->set_callback([&] {
-      transaction_id_type transaction_id;
-      try {
-         while( transaction_id_str.size() < 64 ) transaction_id_str += "0";
-         transaction_id = transaction_id_type(transaction_id_str);
-      } EOS_RETHROW_EXCEPTIONS(transaction_id_type_exception, "Invalid transaction ID: ${transaction_id}", ("transaction_id", transaction_id_str))
-      auto arg= fc::mutable_variant_object( "id", transaction_id);
+      auto arg= fc::mutable_variant_object( "id", transaction_id_str);
       if ( block_num_hint > 0 ) {
          arg = arg("block_num_hint", block_num_hint);
       }
@@ -2295,13 +2345,16 @@ int main( int argc, char** argv ) {
    string wasmPath;
    string abiPath;
    bool shouldSend = true;
+   bool contract_clear = false;
    auto codeSubcommand = setSubcommand->add_subcommand("code", localized("Create or update the code on an account"));
    codeSubcommand->add_option("account", account, localized("The account to set code for"))->required();
-   codeSubcommand->add_option("code-file", wasmPath, localized("The fullpath containing the contract WASM"))->required();
+   codeSubcommand->add_option("code-file", wasmPath, localized("The fullpath containing the contract WASM"));//->required();
+   codeSubcommand->add_flag( "-c,--clear", contract_clear, localized("Remove code on an account"));
 
    auto abiSubcommand = setSubcommand->add_subcommand("abi", localized("Create or update the abi on an account"));
    abiSubcommand->add_option("account", account, localized("The account to set the ABI for"))->required();
-   abiSubcommand->add_option("abi-file", abiPath, localized("The fullpath containing the contract ABI"))->required();
+   abiSubcommand->add_option("abi-file", abiPath, localized("The fullpath containing the contract ABI"));//->required();
+   abiSubcommand->add_flag( "-c,--clear", contract_clear, localized("Remove abi on an account"));
 
 
    string action_to_set_fee;
@@ -2328,15 +2381,18 @@ int main( int argc, char** argv ) {
    auto contractSubcommand = setSubcommand->add_subcommand("contract", localized("Create or update the contract on an account"));
    contractSubcommand->add_option("account", account, localized("The account to publish a contract for"))
                      ->required();
-   contractSubcommand->add_option("contract-dir", contractPath, localized("The path containing the .wasm and .abi"))
-                     ->required();
+   contractSubcommand->add_option("contract-dir", contractPath, localized("The path containing the .wasm and .abi"));
+                     // ->required();
    contractSubcommand->add_option("wasm-file", wasmPath, localized("The file containing the contract WASM relative to contract-dir"));
 //                     ->check(CLI::ExistingFile);
    auto abi = contractSubcommand->add_option("abi-file,-a,--abi", abiPath, localized("The ABI for the contract relative to contract-dir"));
 //                                ->check(CLI::ExistingFile);
+   contractSubcommand->add_flag( "-c,--clear", contract_clear, localized("Rmove contract on an account"));
 
    std::vector<chain::action> actions;
    auto set_code_callback = [&]() {
+      bytes code_bytes;
+      if(!contract_clear){
       std::string wasm;
       fc::path cpath(contractPath);
 
@@ -2354,8 +2410,14 @@ int main( int argc, char** argv ) {
       const string binary_wasm_header("\x00\x61\x73\x6d\x01\x00\x00\x00", 8);
       if(wasm.compare(0, 8, binary_wasm_header))
          std::cerr << localized("WARNING: ") << wasmPath << localized(" doesn't look like a binary WASM file. Is it something else, like WAST? Trying anyways...") << std::endl;
+        code_bytes = bytes(wasm.begin(), wasm.end());
 
-      actions.emplace_back( create_setcode(account, bytes(wasm.begin(), wasm.end()) ) );
+      } else {
+        code_bytes = bytes();
+      }
+
+
+      actions.emplace_back( create_setcode(account, code_bytes ) );
       if ( shouldSend ) {
          std::cerr << localized("Setting Code...") << std::endl;
          send_actions(std::move(actions), 10000, packed_transaction::zlib);
@@ -2363,6 +2425,8 @@ int main( int argc, char** argv ) {
    };
 
    auto set_abi_callback = [&]() {
+      bytes abi_bytes;
+      if(!contract_clear){
       fc::path cpath(contractPath);
       if( cpath.filename().generic_string() == "." ) cpath = cpath.parent_path();
 
@@ -2374,8 +2438,14 @@ int main( int argc, char** argv ) {
 
       EOS_ASSERT( fc::exists( abiPath ), abi_file_not_found, "no abi file found ${f}", ("f", abiPath)  );
 
+        abi_bytes = fc::raw::pack(fc::json::from_file(abiPath).as<abi_def>());
+
+      } else {
+        abi_bytes = bytes();
+      }
+
       try {
-         actions.emplace_back( create_setabi(account, fc::json::from_file(abiPath).as<abi_def>()) );
+         actions.emplace_back( create_setabi(account, abi_bytes) );
       } EOS_RETHROW_EXCEPTIONS(abi_type_exception,  "Fail to parse ABI JSON")
       if ( shouldSend ) {
          std::cerr << localized("Setting ABI...") << std::endl;
@@ -2388,6 +2458,8 @@ int main( int argc, char** argv ) {
    add_standard_transaction_options(abiSubcommand, "account@active");
    contractSubcommand->set_callback([&] {
       shouldSend = true;
+      if(!contract_clear) EOS_ASSERT( !contractPath.empty(), contract_exception, " contract-dir is null ", ("f", contractPath) );
+      set_code_callback();
       set_abi_callback();
       set_code_callback();
       //std::cout << localized("Publishing contract...") << std::endl;
@@ -2415,6 +2487,7 @@ int main( int argc, char** argv ) {
    string recipient;
    string amount;
    string memo;
+   bool pay_ram = false;
    auto transfer = app.add_subcommand("transfer", localized("Transfer EOS from account to account"), false);
    transfer->add_option("sender", sender, localized("The account sending EOS"))->required();
    transfer->add_option("recipient", recipient, localized("The account receiving EOS"))->required();

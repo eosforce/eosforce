@@ -22,10 +22,10 @@ cd eosforce/Docker
 docker build . -t eosforce/eos
 ```
 
-The above will build off the most recent commit to the master branch by default. If you would like to target a specific branch/tag, you may use a build argument. For example, if you wished to generate a docker image based off of the v1.2.6 tag, you could do the following:
+The above will build off the most recent commit to the master branch by default. If you would like to target a specific branch/tag, you may use a build argument. For example, if you wished to generate a docker image based off of the v1.3.0 tag, you could do the following:
 
 ```bash
-docker build -t eosio/eos:v1.2.6 --build-arg branch=v1.2.6 .
+docker build -t eosio/eos:v1.3.0 --build-arg branch=v1.3.0 .
 ```
 
 ## Start nodeos docker container only

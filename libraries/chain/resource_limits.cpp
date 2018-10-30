@@ -96,8 +96,6 @@ void resource_limits_manager::add_transaction_usage(const flat_set<account_name>
 
    for( const auto& a : accounts ) {
 
-      //dlog("add_transaction_usage ${acc} ${cpu} ${net}", ("acc", a)("cpu", cpu_usage)("net", net_usage));
-
       const auto& usage = _db.get<resource_usage_object,by_owner>( a );
       int64_t unused;
       int64_t net_weight;
@@ -162,9 +160,6 @@ void resource_limits_manager::add_pending_ram_usage( const account_name account,
    if (ram_delta == 0) {
       return;
    }
-
-
-   //dlog("add_pending_ram_usage ${acc} ${ram}", ("acc", account)("ram", ram_delta));
 
    const auto& usage  = _db.get<resource_usage_object,by_owner>( account );
 

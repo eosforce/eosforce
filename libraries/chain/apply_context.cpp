@@ -124,32 +124,9 @@ bool apply_context::is_account( const account_name& account )const {
 // setcode_require_authorization add by eosforce, setcode need spec authorization in eosforce
 // now test mode will just for one account
 void apply_context::setcode_require_authorization( const account_name& account ) {
-   // TODO add power Invalid block number
    require_authorization(account);
 
    return;
-
-   /*
-   for( uint32_t i=0; i < act.authorization.size(); i++ ) {
-     auto producers = get_active_producers();
-
-     // allow active BPs to authorize
-     for (auto j:producers) {
-       if (act.authorization[i].actor == j) {
-         used_authorizations[i] = true;
-         // now bp cannot set code
-         // return;
-       }
-     }
-
-     // do not allow eosio account to authorize it.
-     //if( act.authorization[i].actor == account ) {
-     //   used_authorizations[i] = true;
-     //   return;
-     //}
-   }
-   EOS_ASSERT(false, missing_auth_exception, "missing authority of one of the BPs");
-    */
 }
 
 void apply_context::require_authorization( const account_name& account ) {
@@ -400,7 +377,6 @@ void apply_context::update_db_usage( const account_name& payer, int64_t delta ) 
          require_authorization( payer );
       }
    }
-   //dlog("update_db_usage ${acc} ${d}", ("acc", payer)("d", delta));
    trx_context.add_ram_usage(payer, delta);
 }
 

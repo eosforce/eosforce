@@ -993,10 +993,6 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block(bool 
 
             if (!persisted_by_expiry.empty()) {
                for (auto itr = unapplied_trxs.begin(); itr != unapplied_trxs.end(); ++itr) {
-                 if (pbs->block->transactions.size() >= config::block_max_tx_num) {
-                   ilog("-----chain pending count: ${count}", ("count", pbs->block->transactions.size()));
-                   break;
-                }
                   const auto& trx = *itr;
                   if (persisted_by_id.find(trx->id) != persisted_by_id.end()) {
                      // this is a persisted transaction, push it into the block (even if we are speculating) with
@@ -1017,10 +1013,6 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block(bool 
 
             if (_pending_block_mode == pending_block_mode::producing) {
                for (const auto& trx : unapplied_trxs) {
-                 if (pbs->block->transactions.size() >= config::block_max_tx_num) {
-                    ilog("-----chain max transaction size: ${count}", ("count", pbs->block->transactions.size()));
-                    break;
-                 }
                   if (block_time <= fc::time_point::now()) exhausted = true;
                   if (exhausted) {
                      break;
@@ -1074,10 +1066,6 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block(bool 
             auto scheduled_trxs = chain.get_scheduled_transactions();
 
             for (const auto& trx : scheduled_trxs) {
-              if (pbs->block->transactions.size() >= config::block_max_tx_num) {
-                ilog("-----chain pending count: ${count}", ("count", pbs->block->transactions.size()));
-                break;
-             }
                if (block_time <= fc::time_point::now()) exhausted = true;
                if (exhausted) {
                   break;
@@ -1191,7 +1179,7 @@ void producer_plugin_impl::schedule_production_loop() {
          EOS_ASSERT( chain.pending_block_state(), missing_pending_block_state, "producing without pending_block_state, start_block succeeded" );
          auto deadline = chain.pending_block_time().time_since_epoch().count() + (last_block ? _last_block_time_offset_us : _produce_time_offset_us);
          _timer.expires_at( epoch + boost::posix_time::microseconds( deadline ));
-         ilog("Scheduling Block Production on Normal Block #${num} for ${time}", ("num", chain.pending_block_state()->block_num)("time",deadline));
+         fc_dlog(_log, "Scheduling Block Production on Normal Block #${num} for ${time}", ("num", chain.pending_block_state()->block_num)("time",deadline));
       } else {
          EOS_ASSERT( chain.pending_block_state(), missing_pending_block_state, "producing without pending_block_state" );
          auto expect_time = chain.pending_block_time() - fc::microseconds(config::block_interval_us);

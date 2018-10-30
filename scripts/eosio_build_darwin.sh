@@ -25,7 +25,7 @@
 	printf "\\tDisk space total: %sG\\n" "${DISK_TOTAL}"
 	printf "\\tDisk space available: %sG\\n\\n" "${DISK_AVAIL}"
 
-	if [ "${MEM_GIG}" -lt 3 ]; then
+	if [ "${MEM_GIG}" -lt 7 ]; then
 		echo "Your system must have 7 or more Gigabytes of physical memory installed."
 		echo "Exiting now."
 		exit 1

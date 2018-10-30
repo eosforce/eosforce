@@ -428,7 +428,6 @@ namespace eosio {
 
 
    namespace history_apis {
-
     read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
          edump((params));
         auto& chain = history->chain_plug->chain();

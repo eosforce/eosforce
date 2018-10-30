@@ -20,7 +20,7 @@ class memory_db {
    /// Constructor
    public:
       memory_db(controller& con)
-      :db(con.db())
+      :db(con.mutable_db())
       {
       }
       memory_db(chainbase::database& db)

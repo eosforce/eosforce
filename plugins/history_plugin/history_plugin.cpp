@@ -313,7 +313,7 @@ namespace eosio {
                "The switch of get actions;true/false")
             ;
       cfg.add_options()
-            ("filter-out,f", bpo::value<vector<string>>()->composing(),
+            ("filter-out,F", bpo::value<vector<string>>()->composing(),
              "Do not track actions which match receiver:action:actor. Action and Actor both blank excludes all from Reciever. Actor blank excludes all from reciever:action. Receiver may not be blank.")
             ;
    }

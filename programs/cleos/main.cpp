@@ -2420,7 +2420,7 @@ int main( int argc, char** argv ) {
    transfer->add_option("recipient", recipient, localized("The account receiving EOS"))->required();
    transfer->add_option("amount", amount, localized("The amount of EOS to send"))->required();
    transfer->add_option("memo", memo, localized("The memo for the transfer"));
-//   transfer->add_option("--contract,-c", con, localized("The contract which controls the token"));
+   transfer->add_option("--contract,-c", con, localized("The contract which controls the token"));
 
    add_standard_transaction_options(transfer, "sender@active");
    transfer->set_callback([&] {

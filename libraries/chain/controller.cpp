@@ -729,7 +729,11 @@ struct controller_impl {
      }
    }
 
-  void initialize_contract(uint64_t contract, const bytes code, const bytes abi){
+   void initialize_contract(uint64_t contract, const bytes code, const bytes abi){
+       initialize_contract(contract, code, abi, false);
+   }
+
+  void initialize_contract(const uint64_t contract, const bytes code, const bytes abi, const bool privileged){
      auto code_id = fc::sha256::hash(code.data(), (uint32_t)code.size());
      int64_t code_size = code.size();
      auto abi_id = fc::sha256::hash(abi.data(), (uint32_t)abi.size());
@@ -738,6 +742,7 @@ struct controller_impl {
      const auto &account = db.get<account_object, by_name>(contract);
      db.modify(account, [&](auto &a) {
        a.last_code_update = conf.genesis.initial_timestamp;
+       a.privileged = privileged;
        a.code_version = code_id;
        a.code.resize(code_size);
        a.abi_version = abi_id;
@@ -1362,6 +1367,10 @@ struct controller_impl {
               ilog(" ---- update System contract ---- ");
               initialize_contract(N(eosio), conf.System01_code, conf.System01_abi);
           }
+         if(conf.msgi_block_num == head->block_num){
+            ilog(" ---- update eosio.msig contract ---- ");
+            initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
+         }
 
          try {
             auto onbtrx = std::make_shared<transaction_metadata>( get_on_block_transaction() );

@@ -799,7 +799,7 @@ struct controller_impl {
       create_native_account( N(eosio.token), system_auth, system_auth, false );
 
       //init contract: System
-      initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi);
+      initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi, true);
       //init contract: eosio.token
       initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
       initialize_EOS_stats();

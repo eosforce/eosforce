@@ -204,10 +204,11 @@ namespace eosio {
                      (filter_out.find({ act.receipt.receiver, 0, a.actor }) == filter_out.end()) &&
                      (filter_out.find({ act.receipt.receiver, act.act.name, 0 }) == filter_out.end()) &&
                      (filter_out.find({ act.receipt.receiver, act.act.name, a.actor }) == filter_out.end())) {
-                    if(act.act.name != N(onfee))
-                  {
-                      result.insert( a.actor );
-                  }
+                     if (act.act.name != N(onfee)) {
+                         result.insert(a.actor);
+                     }
+                 }
+               }
             }
             return result;
          }

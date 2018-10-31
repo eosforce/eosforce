@@ -4,7 +4,6 @@
 
 namespace eosio {
 
-using eosio::print;
 /*
 propose function manually parses input data (instead of taking parsed arguments from dispatcher)
 because parsing data in the dispatcher uses too much CPU in case if proposed transaction is big
@@ -30,7 +29,6 @@ void multisig::propose() {
 
    datastream<const char*> ds( buffer, size );
    ds >> proposer >> proposal_name >> requested;
-   print( "-----multisig::propose-----", eosio::name{.value=proposal_name}, "-----", proposer, "\n" );
    size_t trx_pos = ds.tellp();
    ds >> trx_header;
 

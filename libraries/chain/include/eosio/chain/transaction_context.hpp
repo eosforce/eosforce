@@ -1,8 +1,22 @@
 #pragma once
 #include <eosio/chain/controller.hpp>
 #include <eosio/chain/trace.hpp>
+#include <signal.h>
 
 namespace eosio { namespace chain {
+
+   struct deadline_timer {
+         deadline_timer();
+         ~deadline_timer();
+
+         void start(fc::time_point tp);
+         void stop();
+
+         static volatile sig_atomic_t expired;
+      private:
+         static void timer_expired(int);
+         static bool initialized;
+   };
 
    class transaction_context {
       private:
@@ -38,8 +52,6 @@ namespace eosio { namespace chain {
          void pause_billing_timer();
          void resume_billing_timer();
 
-         void add_ram_usage( account_name account, int64_t ram_delta );
-
          uint32_t update_billed_cpu_time( fc::time_point now );
 
          std::tuple<int64_t, int64_t, bool, bool> max_bandwidth_billed_accounts_can_pay( bool force_elastic_limits = false )const;
@@ -48,6 +60,8 @@ namespace eosio { namespace chain {
 
          friend struct controller_impl;
          friend class apply_context;
+
+         void add_ram_usage( account_name account, int64_t ram_delta );
 
          void dispatch_action( action_trace& trace, const action& a, account_name receiver, bool context_free = false, uint32_t recurse_depth = 0 );
          inline void dispatch_action( action_trace& trace, const action& a, bool context_free = false ) {
@@ -118,6 +132,7 @@ namespace eosio { namespace chain {
          bool use_limit_by_contract = false;
 
          void make_limit_by_contract(const asset &fee_ext);
+         deadline_timer                _deadline_timer;
    };
 
 } }

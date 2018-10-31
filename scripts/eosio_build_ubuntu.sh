@@ -24,7 +24,7 @@
 	printf "\\tDisk space total: %sG\\n" "${DISK_TOTAL%.*}"
 	printf "\\tDisk space available: %sG\\n" "${DISK_AVAIL%.*}"
 
-	if [ "${MEM_MEG}" -lt 3000 ]; then
+	if [ "${MEM_MEG}" -lt 7000 ]; then
 		printf "\\tYour system must have 7 or more Gigabytes of physical memory installed.\\n"
 		printf "\\tExiting now.\\n"
 		exit 1
@@ -419,63 +419,6 @@ mongodconf
 		printf "\\tMongo C++ driver installed at /usr/local/lib/libmongocxx-static.a.\\n"
 	else
 		printf "\\tMongo C++ driver found at /usr/local/lib/libmongocxx-static.a.\\n"
-	fi
-
-	printf "\\n\\tChecking secp256k1-zkp installation.\\n"
-    # install secp256k1-zkp (Cryptonomex branch)
-    if [ ! -e "/usr/local/lib/libsecp256k1.a" ]; then
-		printf "\\tInstalling secp256k1-zkp (Cryptonomex branch).\\n"
-		if ! cd "${TEMP_DIR}"
-		then
-			printf "\\n\\tUnable to cd into directory %s.\\n" "${TEMP_DIR}"
-			printf "\\n\\tExiting now.\\n"
-			exit 1;
-		fi
-		if ! git clone https://github.com/cryptonomex/secp256k1-zkp.git
-		then
-			printf "\\tUnable to clone repo secp256k1-zkp @ https://github.com/cryptonomex/secp256k1-zkp.git.\\n"
-			printf "\\tExiting now.\\n\\n"
-			exit 1;
-		fi
-		if ! cd "${TEMP_DIR}/secp256k1-zkp"
-		then
-			printf "\\n\\tUnable to cd into directory %s.\\n" "${TEMP_DIR}/secp256k1-zkp"
-			printf "\\n\\tExiting now.\\n"
-			exit 1;
-		fi
-		if ! ./autogen.sh
-		then
-			printf "\\tError running autogen for secp256k1-zkp.\\n"
-			printf "\\tExiting now.\\n\\n"
-			exit 1;
-		fi
-		if ! ./configure
-		then
-			printf "\\tError running configure for secp256k1-zkp.\\n"
-			printf "\\tExiting now.\\n\\n"
-			exit 1;
-		fi
-		if ! make -j"${JOBS}"
-		then
-			printf "\\tError compiling secp256k1-zkp.\\n"
-			printf "\\tExiting now.\\n\\n"
-			exit 1;
-		fi
-		if ! sudo make install
-		then
-			printf "\\tError installing secp256k1-zkp.\\n"
-			printf "\\tExiting now.\\n\\n"
-			exit 1;
-		fi
-		if ! rm -rf "${TEMP_DIR}/secp256k1-zkp"
-		then
-			printf "\\tError removing directory %s.\\n" "${TEMP_DIR}/secp256k1-zkp"
-			printf "\\tExiting now.\\n\\n"
-			exit 1;
-		fi
-		printf "\\n\\tsecp256k1 successfully installed @ /usr/local/lib.\\n\\n"
-	else
-		printf "\\tsecp256k1 found @ /usr/local/lib.\\n"
 	fi
 
 	printf "\\n\\tChecking for LLVM with WASM support.\\n"

@@ -1,10 +1,11 @@
 #pragma once
-#include <eosiolib/core_symbol.hpp>
 #include <eosiolib/serialize.hpp>
 #include <eosiolib/print.hpp>
 #include <eosiolib/system.h>
 #include <tuple>
 #include <limits>
+
+#define EOS_SYMBOL S(4,"EOS")
 
 namespace eosio {
 

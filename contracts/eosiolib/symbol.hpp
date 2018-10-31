@@ -5,7 +5,7 @@
 #include <tuple>
 #include <limits>
 
-#define EOS_SYMBOL S(4,"EOS")
+#define EOS_SYMBOL S(4,EOS)
 
 namespace eosio {
 

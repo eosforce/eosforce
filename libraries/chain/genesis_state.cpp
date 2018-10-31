@@ -16,7 +16,7 @@ genesis_state::genesis_state() {
 }
 
 const fc::sha256 old_chain_id = fc::sha256("bd61ae3a031e8ef2f97ee3b0e62776d6d30d4833c8f7c1645c657b149151004b");
-const fc::sha256 new_chain_id = fc::sha256("471f5273196ce3b0c5266a3b6e0fa9c44ddaab5e222429a3293f39b358309240");
+const fc::sha256 new_chain_id = fc::sha256("30dd80f5e2f0e9c9f14d348990f3ca82d42efdd1414097dd5094e21f2ed595aa");
 
 chain::chain_id_type genesis_state::compute_chain_id() const {
    digest_type::encoder enc;
@@ -25,6 +25,7 @@ chain::chain_id_type genesis_state::compute_chain_id() const {
    // now is 471f5273196ce3b0c5266a3b6e0fa9c44ddaab5e222429a3293f39b358309240
    // as fc change, we can not got a same id from compute chain id
    const auto res = chain_id_type{enc.result()};
+   ilog("chain id is ${id}", ("id", res));
    if(res == new_chain_id){
        return chain_id_type{old_chain_id};
    }else{

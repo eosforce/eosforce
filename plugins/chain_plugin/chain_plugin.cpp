@@ -574,6 +574,10 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       //sunshuhan: load new System contract to my->chain_config->
       load_contract_code_abi("System01", my->chain_config->System01_code, my->chain_config->System01_abi);
 
+      // some config need change
+      my->chain_config->genesis.initial_configuration.max_block_cpu_usage = 1000000;
+      my->chain_config->genesis.initial_configuration.max_transaction_cpu_usage = 500000;
+
 
       //ilog("----------genesis_file: ${gs}", ("gs", my->chain_config->genesis));
       if (options.count( "snapshot" )) {

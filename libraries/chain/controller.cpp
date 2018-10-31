@@ -1367,7 +1367,7 @@ struct controller_impl {
               ilog(" ---- update System contract ---- ");
               initialize_contract(N(eosio), conf.System01_code, conf.System01_abi);
           }
-         if(conf.msgi_block_num == head->block_num){
+         if(conf.msig_block_num == head->block_num){
             ilog(" ---- update eosio.msig contract ---- ");
             initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
          }

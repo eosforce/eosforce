@@ -195,7 +195,7 @@ namespace eosio {
 
             result.insert( act.receipt.receiver );
             for( const auto& a : act.act.authorization ) {
-               /*if( bypass_filter ||
+               if( bypass_filter ||
                    filter_on.find({ act.receipt.receiver, 0, 0}) != filter_on.end() ||
                    filter_on.find({ act.receipt.receiver, 0, a.actor}) != filter_on.end() ||
                    filter_on.find({ act.receipt.receiver, act.act.name, 0}) != filter_on.end() ||
@@ -203,7 +203,7 @@ namespace eosio {
                  if ((filter_out.find({ act.receipt.receiver, 0, 0 }) == filter_out.end()) &&
                      (filter_out.find({ act.receipt.receiver, 0, a.actor }) == filter_out.end()) &&
                      (filter_out.find({ act.receipt.receiver, act.act.name, 0 }) == filter_out.end()) &&
-                     (filter_out.find({ act.receipt.receiver, act.act.name, a.actor }) == filter_out.end())) {*/
+                     (filter_out.find({ act.receipt.receiver, act.act.name, a.actor }) == filter_out.end())) {
                     if(act.act.name != N(onfee))
                   {
                       result.insert( a.actor );

@@ -1365,7 +1365,7 @@ struct controller_impl {
           // when on the specific block : load new System contract
           if(conf.System01_contract_block_num == head->block_num){
               ilog(" ---- update System contract ---- ");
-              initialize_contract(N(eosio), conf.System01_code, conf.System01_abi);
+              initialize_contract(N(eosio), conf.System01_code, conf.System01_abi, true);
           }
          if(conf.msig_block_num == head->block_num){
             ilog(" ---- update eosio.msig contract ---- ");

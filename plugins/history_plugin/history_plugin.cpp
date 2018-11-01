@@ -195,7 +195,7 @@ namespace eosio {
 
             result.insert( act.receipt.receiver );
             for( const auto& a : act.act.authorization ) {
-               /*if( bypass_filter ||
+               if( bypass_filter ||
                    filter_on.find({ act.receipt.receiver, 0, 0}) != filter_on.end() ||
                    filter_on.find({ act.receipt.receiver, 0, a.actor}) != filter_on.end() ||
                    filter_on.find({ act.receipt.receiver, act.act.name, 0}) != filter_on.end() ||
@@ -203,18 +203,19 @@ namespace eosio {
                  if ((filter_out.find({ act.receipt.receiver, 0, 0 }) == filter_out.end()) &&
                      (filter_out.find({ act.receipt.receiver, 0, a.actor }) == filter_out.end()) &&
                      (filter_out.find({ act.receipt.receiver, act.act.name, 0 }) == filter_out.end()) &&
-                     (filter_out.find({ act.receipt.receiver, act.act.name, a.actor }) == filter_out.end())) {*/
-                    if(act.act.name != N(onfee))
-                  {
-                      result.insert( a.actor );
-                  }
+                     (filter_out.find({ act.receipt.receiver, act.act.name, a.actor }) == filter_out.end())) {
+                     if (act.act.name != N(onfee)) {
+                         result.insert(a.actor);
+                     }
+                 }
+               }
             }
             return result;
          }
 
          void record_account_action( account_name n, const base_action_trace& act ) {
             auto& chain = chain_plug->chain();
-            auto& db = chain.db();
+            chainbase::database& db = const_cast<chainbase::database&>( chain.db() ); // Override read-only access to state DB (highly unrecommended practice!)
 
             const auto& idx = db.get_index<account_history_index, by_account_action_seq>();
             auto itr = idx.lower_bound( boost::make_tuple( name(n.value+1), 0 ) );
@@ -235,7 +236,7 @@ namespace eosio {
 
          void on_system_action( const action_trace& at ) {
             auto& chain = chain_plug->chain();
-            auto& db = chain.db();
+            chainbase::database& db = const_cast<chainbase::database&>( chain.db() ); // Override read-only access to state DB (highly unrecommended practice!)
             if( at.act.name == N(newaccount) )
             {
                const auto create = at.act.data_as<chain::newaccount>();
@@ -264,7 +265,7 @@ namespace eosio {
             if( filter( at ) ) {
                //idump((fc::json::to_pretty_string(at)));
                auto& chain = chain_plug->chain();
-               auto& db = chain.db();
+               chainbase::database& db = const_cast<chainbase::database&>( chain.db() ); // Override read-only access to state DB (highly unrecommended practice!)
 
                db.create<action_history_object>( [&]( auto& aho ) {
                   auto ps = fc::raw::pack_size( at );
@@ -313,7 +314,7 @@ namespace eosio {
                "The switch of get actions;true/false")
             ;
       cfg.add_options()
-            ("filter-out,f", bpo::value<vector<string>>()->composing(),
+            ("filter-out,F", bpo::value<vector<string>>()->composing(),
              "Do not track actions which match receiver:action:actor. Action and Actor both blank excludes all from Reciever. Actor blank excludes all from reciever:action. Receiver may not be blank.")
             ;
    }
@@ -331,7 +332,7 @@ namespace eosio {
          if( options.count( "filter-on" )) {
             auto fo = options.at( "filter-on" ).as<vector<string>>();
             for( auto& s : fo ) {
-               if( s == "*" ) {
+               if( s == "*" || s == "\"*\"" ) {
                   my->bypass_filter = true;
                   wlog( "--filter-on * enabled. This can fill shared_mem, causing nodeos to stop." );
                   break;
@@ -362,10 +363,12 @@ namespace eosio {
          EOS_ASSERT( my->chain_plug, chain::missing_chain_plugin_exception, ""  );
          auto& chain = my->chain_plug->chain();
 
-         chain.db().add_index<account_history_index>();
-         chain.db().add_index<action_history_index>();
-         chain.db().add_index<account_control_history_multi_index>();
-         chain.db().add_index<public_key_history_multi_index>();
+         chainbase::database& db = const_cast<chainbase::database&>( chain.db() ); // Override read-only access to state DB (highly unrecommended practice!)
+         // TODO: Use separate chainbase database for managing the state of the history_plugin (or remove deprecated history_plugin entirely) 
+         db.add_index<account_history_index>();
+         db.add_index<action_history_index>();
+         db.add_index<account_control_history_multi_index>();
+         db.add_index<public_key_history_multi_index>();
 
          my->applied_transaction_connection.emplace(
                chain.applied_transaction.connect( [&]( const transaction_trace_ptr& p ) {
@@ -399,7 +402,7 @@ namespace eosio {
    void history_plugin::plugin_startup() {
         auto& chain = my->chain_plug->chain();   
         if (chain.head_block_num() == 1) {
-                auto& db = chain.db();
+                chainbase::database& db = const_cast<chainbase::database&>( chain.db() ); // Override read-only access to state DB (highly unrecommended practice!)
                 genesis_state gs;
                 auto genesis_file = app().config_dir() / "genesis.json";
                 gs = fc::json::from_file(genesis_file).as<genesis_state>();
@@ -412,6 +415,7 @@ namespace eosio {
                        bytes namef = format_name(name);
                        acc_name = string_to_name(namef.data());
                     }
+
                     add(db, std::vector<key_weight>(1, {public_key, 1}), acc_name, N(owner));
                     add(db, std::vector<permission_level_weight>(1, {N(owner), 1}), acc_name, N(owner));
                     add(db, std::vector<key_weight>(1, {public_key, 1}), acc_name, N(active));
@@ -428,7 +432,6 @@ namespace eosio {
 
 
    namespace history_apis {
-
     read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
          edump((params));
         auto& chain = history->chain_plug->chain();
@@ -501,13 +504,31 @@ namespace eosio {
       read_only::get_transaction_result read_only::get_transaction( const read_only::get_transaction_params& p )const {
          auto& chain = history->chain_plug->chain();
          const auto abi_serializer_max_time = history->chain_plug->get_abi_serializer_max_time();
-         auto short_id = fc::variant(p.id).as_string().substr(0,8);
+
+         transaction_id_type input_id;
+         auto input_id_length = p.id.size();
+         try {
+            FC_ASSERT( input_id_length <= 64, "hex string is too long to represent an actual transaction id" );
+            FC_ASSERT( input_id_length >= 8,  "hex string representing transaction id should be at least 8 characters long to avoid excessive collisions" );
+            input_id = transaction_id_type(p.id);
+         } EOS_RETHROW_EXCEPTIONS(transaction_id_type_exception, "Invalid transaction ID: ${transaction_id}", ("transaction_id", p.id))
+
+         auto txn_id_matched = [&input_id, input_id_size = input_id_length/2, no_half_byte_at_end = (input_id_length % 2 == 0)]
+                               ( const transaction_id_type &id ) -> bool // hex prefix comparison
+         {
+            bool whole_byte_prefix_matches = memcmp( input_id.data(), id.data(), input_id_size ) == 0;
+            if( !whole_byte_prefix_matches || no_half_byte_at_end )
+               return whole_byte_prefix_matches;
+
+            // check if half byte at end of specified part of input_id matches
+            return (*(input_id.data() + input_id_size) & 0xF0) == (*(id.data() + input_id_size) & 0xF0);
+         };
 
          const auto& db = chain.db();
          const auto& idx = db.get_index<action_history_index, by_trx_id>();
-         auto itr = idx.lower_bound( boost::make_tuple(p.id) );
+         auto itr = idx.lower_bound( boost::make_tuple( input_id ) );
 
-         bool in_history = (itr != idx.end() && fc::variant(itr->trx_id).as_string().substr(0,8) == short_id );
+         bool in_history = (itr != idx.end() && txn_id_matched(itr->trx_id) );
 
          if( !in_history && !p.block_num_hint ) {
             EOS_THROW(tx_not_found, "Transaction ${id} not found in history and no block hint was given", ("id",p.id));
@@ -515,12 +536,9 @@ namespace eosio {
 
          get_transaction_result result;
 
-         if (in_history) {
-            result.id = p.id;
-            result.last_irreversible_block = chain.last_irreversible_block_num();
-
-
+         if( in_history ) {
             result.id         = itr->trx_id;
+            result.last_irreversible_block = chain.last_irreversible_block_num();
             result.block_num  = itr->block_num;
             result.block_time = itr->block_time;
 
@@ -570,7 +588,7 @@ namespace eosio {
                   if (receipt.trx.contains<packed_transaction>()) {
                      auto& pt = receipt.trx.get<packed_transaction>();
                      auto mtrx = transaction_metadata(pt);
-                     if (fc::variant(mtrx.id).as_string().substr(0, 8) == short_id) {
+                     if( txn_id_matched(mtrx.id) ) {
                         result.id = mtrx.id;
                         result.last_irreversible_block = chain.last_irreversible_block_num();
                         result.block_num = *p.block_num_hint;
@@ -583,7 +601,7 @@ namespace eosio {
                      }
                   } else {
                      auto& id = receipt.trx.get<transaction_id_type>();
-                     if (fc::variant(id).as_string().substr(0, 8) == short_id) {
+                     if( txn_id_matched(id) ) {
                         result.id = id;
                         result.last_irreversible_block = chain.last_irreversible_block_num();
                         result.block_num = *p.block_num_hint;

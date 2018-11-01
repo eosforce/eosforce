@@ -63,6 +63,7 @@ tests/plugin_test
 unittests/unit_test
 
 doxygen
+eos.doxygen
 
 wallet.json
 witness_node_data_dir
@@ -89,3 +90,5 @@ tutorials/bios-script/config
 tutorials/bios-script/pw
 
 tutorials/bios-script/output\.log
+
+tutorials/bios-script/wallet/

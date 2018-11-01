@@ -27,7 +27,8 @@ relayAccounts = [
     'r.token.in',
     'r.token.out',
     'r.acc.map',
-    'r.t.exchange'
+    'r.t.exchange',
+    'force.test'
 ]
 
 def jsonArg(a):
@@ -118,8 +119,9 @@ def startNode(nodeIndex, bpaccount, key):
         '    --enable-stale-production'
         '    --producer-name ' + bpaccount['name'] +
         '    --signature-provider=' + bpaccount['bpkey'] + '=KEY:' + key[1] +
-        '    --plugin eosio::http_plugin'
-        '    --plugin eosio::chain_api_plugin'
+        '    --contracts-console ' +
+        '    --plugin eosio::http_plugin' +
+        '    --plugin eosio::chain_api_plugin' +
         '    --plugin eosio::producer_plugin' +
         otherOpts)
     with open(dir + '../' + bpaccount['name'] + '.log', mode='w') as f:

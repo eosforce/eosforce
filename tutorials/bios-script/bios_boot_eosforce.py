@@ -97,7 +97,7 @@ def createNodeDirs(inits, keys):
 
 def startNode(nodeIndex, bpaccount, key):
     dir = args.nodes_dir + ('%02d-' % nodeIndex) + bpaccount['name'] + '/'
-    otherOpts = ''.join(list(map(lambda i: '    --p2p-peer-address 0.0.0.0:' + str(9001 + i), range(24 - 1))))
+    otherOpts = ''.join(list(map(lambda i: '    --p2p-peer-address 127.0.0.1:' + str(9001 + i), range(24 - 1))))
     if not nodeIndex: otherOpts += (
         '    --plugin eosio::history_plugin'
         '    --plugin eosio::history_api_plugin'
@@ -177,14 +177,16 @@ def stepMakeGenesis():
 
     run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System/System.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System/System.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/System01/System01.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/System01/System01.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.wasm ' + os.path.abspath(args.config_dir))
+
+    # testnet will use new System contract from start
+    run('cp ' + args.contracts_dir + '/System01/System01.abi ' + os.path.abspath(args.config_dir) + "/System.abi")
+    run('cp ' + args.contracts_dir + '/System01/System01.wasm ' + os.path.abspath(args.config_dir) + "/System.wasm")
 
     run(args.root + 'build/programs/genesis/genesis')
     run('mv ./genesis.json ' + os.path.abspath(args.config_dir))
@@ -227,7 +229,7 @@ commands = [
 
 parser.add_argument('--root', metavar='', help="Eosforce root dir from git", default='../../')
 parser.add_argument('--contracts-dir', metavar='', help="Path to contracts directory", default='build/contracts/')
-parser.add_argument('--cleos', metavar='', help="Cleos command", default='build/programs/cleos/cleos --wallet-url http://0.0.0.0:6666 ')
+parser.add_argument('--cleos', metavar='', help="Cleos command", default='build/programs/cleos/cleos --wallet-url http://127.0.0.1:6666 ')
 parser.add_argument('--nodeos', metavar='', help="Path to nodeos binary", default='build/programs/nodeos/nodeos')
 parser.add_argument('--nodes-dir', metavar='', help="Path to nodes directory", default='./nodes/')
 parser.add_argument('--keosd', metavar='', help="Path to keosd binary", default='build/programs/keosd/keosd')

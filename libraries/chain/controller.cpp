@@ -643,7 +643,7 @@ struct controller_impl {
 
       resource_limits.add_pending_ram_usage(name, ram_delta);
       resource_limits.verify_account_ram_usage(name);
-      dlog("create_native_account : ${name}", ("name", name));
+      //dlog("create_native_account : ${name}", ("name", name));
    }
 
    void initialize_producer() {

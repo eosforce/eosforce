@@ -70,7 +70,6 @@ def addRelayAccount():
 
 
 def startWallet():
-    run('rm -rf ' + os.path.abspath(args.wallet_dir))
     run('mkdir -p ' + os.path.abspath(args.wallet_dir))
     background(args.keosd + ' --unlock-timeout %d --http-server-address 0.0.0.0:6666 --wallet-dir %s' % (unlockTimeout, os.path.abspath(args.wallet_dir)))
     sleep(.4)
@@ -198,9 +197,9 @@ def stepMakeGenesis():
 
 def clearData():
     stepKillAll()
-    run('rm -rf ' + args.config_dir)
-    run('rm -rf ' + args.nodes_dir)
-    run('rm -rf ' + args.wallet_dir)
+    run('rm -rf ' + os.path.abspath(args.config_dir))
+    run('rm -rf ' + os.path.abspath(args.nodes_dir))
+    run('rm -rf ' + os.path.abspath(args.wallet_dir))
     sleep(1)
 
 def restart():

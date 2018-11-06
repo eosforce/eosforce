@@ -8,7 +8,6 @@
 #include <eosio/chain/core_symbol.hpp>
 #include <string>
 #include <functional>
-#include <eosio/chain/exceptions.hpp>
 
 namespace eosio {
    namespace chain {

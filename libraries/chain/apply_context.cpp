@@ -141,14 +141,6 @@ bool apply_context::is_account( const account_name& account )const {
    return nullptr != db.find<account_object,by_name>( account );
 }
 
-// setcode_require_authorization add by eosforce, setcode need spec authorization in eosforce
-// now test mode will just for one account
-void apply_context::setcode_require_authorization( const account_name& account ) {
-   require_authorization(account);
-
-   return;
-}
-
 void apply_context::require_authorization( const account_name& account ) {
    for( uint32_t i=0; i < act.authorization.size(); i++ ) {
      if( act.authorization[i].actor == account ) {

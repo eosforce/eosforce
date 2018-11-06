@@ -139,7 +139,7 @@ public:
    };
 
    struct get_account_params {
-      name account_name;
+      name             account_name;
       optional<symbol> expected_core_symbol;
    };
    get_account_results get_account( const get_account_params& params )const;
@@ -503,13 +503,12 @@ public:
       abi_serializer abis;
       abis.set_abi(abi, abi_serializer_max_time);
       const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(p.code, scope, p.table));
-      
       if (t_id != nullptr) {
-        const auto& idx = d.get_index<IndexType, chain::by_scope_primary>();
-        decltype(t_id->id) next_tid(t_id->id._id + 1);
-        auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
-        auto upper = idx.lower_bound(boost::make_tuple(next_tid));
-        
+         const auto& idx = d.get_index<IndexType, chain::by_scope_primary>();
+         decltype(t_id->id) next_tid(t_id->id._id + 1);
+         auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
+         auto upper = idx.lower_bound(boost::make_tuple(next_tid));
+
         //Return only rows that contain key.
         if(!p.table_key.empty()) {
           const auto& idxk = d.get_index<chain::key_value_index, chain::by_scope_primary>();
@@ -539,7 +538,6 @@ public:
          }
 
         }
-
          vector<char> data;
 
          auto end = fc::time_point::now() + fc::microseconds(1000 * 10); /// 10ms max time

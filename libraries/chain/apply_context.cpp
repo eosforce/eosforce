@@ -47,28 +47,28 @@ void apply_context::exec_one( action_trace& trace )
    const auto& cfg = control.get_global_properties().configuration;
    try {
       try {
-      const auto& a = control.get_account( receiver );
-      privileged = a.privileged;
-      auto native = control.find_apply_handler( receiver, act.account, act.name );
-      if( native ) {
+         const auto& a = control.get_account( receiver );
+         privileged = a.privileged;
+         auto native = control.find_apply_handler( receiver, act.account, act.name );
+         if( native ) {
             if( trx_context.can_subjectively_fail && control.is_producing_block() ) {
-            control.check_contract_list( receiver );
-            control.check_action_list( act.account, act.name );
+               control.check_contract_list( receiver );
+               control.check_action_list( act.account, act.name );
+            }
+            (*native)( *this );
          }
-         (*native)( *this );
-      }
 
-      if( a.code.size() > 0
-          && !(act.account == config::system_account_name && act.name == N( setcode ) &&
+         if( a.code.size() > 0
+             && !(act.account == config::system_account_name && act.name == N( setcode ) &&
                   receiver == config::system_account_name) ) {
             if( trx_context.can_subjectively_fail && control.is_producing_block() ) {
-            control.check_contract_list( receiver );
-            control.check_action_list( act.account, act.name );
+               control.check_contract_list( receiver );
+               control.check_action_list( act.account, act.name );
+            }
+            try {
+               control.get_wasm_interface().apply( a.code_version, a.code, *this );
+            } catch( const wasm_exit& ) {}
          }
-         try {
-            control.get_wasm_interface().apply( a.code_version, a.code, *this );
-         } catch( const wasm_exit& ) {}
-      }
       } FC_RETHROW_EXCEPTIONS( warn, "pending console output: ${console}", ("console", _pending_console_output.str()) )
    } catch( fc::exception& e ) {
       trace.receipt = r; // fill with known data

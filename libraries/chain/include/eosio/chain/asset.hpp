@@ -13,7 +13,7 @@ namespace eosio { namespace chain {
 
 asset includes amount and currency symbol
 
-asset::from_string takes a string of the form "10.0000 CUR" and constructs an asset
+asset::from_string takes a string of the form "10.0000 CUR" and constructs an asset 
 with amount = 10 and symbol(4,"CUR")
 
 */

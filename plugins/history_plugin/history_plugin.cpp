@@ -432,7 +432,7 @@ namespace eosio {
 
 
    namespace history_apis {
-    read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
+      read_only::get_actions_result read_only::get_actions( const read_only::get_actions_params& params )const {
          edump((params));
         auto& chain = history->chain_plug->chain();
         const auto& db = chain.db();
@@ -500,6 +500,7 @@ namespace eosio {
         }
         return result;
       }
+
 
       read_only::get_transaction_result read_only::get_transaction( const read_only::get_transaction_params& p )const {
          auto& chain = history->chain_plug->chain();

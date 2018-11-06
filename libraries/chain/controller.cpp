@@ -257,7 +257,7 @@ struct controller_impl {
             EOS_ASSERT(s->block_num == blog.first_block_num() - 1, block_log_exception, "block log has no blocks and is not properly set up to start after the snapshot");
          }
       } else {
-      auto lh_block_num = log_head->block_num();
+         auto lh_block_num = log_head->block_num();
          if (s->block_num > lh_block_num) {
             EOS_ASSERT(s->block_num - 1 == lh_block_num, unlinkable_block_exception, "unlinkable block", ("s->block_num", s->block_num)("lh_block_num", lh_block_num));
             EOS_ASSERT(s->block->previous == log_head->id(), unlinkable_block_exception, "irreversible doesn't link to block log head");
@@ -269,7 +269,7 @@ struct controller_impl {
       db.commit( s->block_num );
 
       if( append_to_blog ) {
-      blog.append(s->block);
+         blog.append(s->block);
       }
 
       const auto& ubi = reversible_blocks.get_index<reversible_block_index,by_num>();
@@ -287,13 +287,13 @@ struct controller_impl {
             // when not applying a snapshot, make sure this is the next block
             if (!head || s->block_num == head->block_num + 1) {
                apply_block(s->block, controller::block_status::complete);
-         head = s;
+               head = s;
             } else {
                // otherwise, assert the one odd case where initializing a chain
                // from genesis creates and applies the first block automatically.
                // when syncing from another chain, this is pushed in again
                EOS_ASSERT(!head || head->block_num == 1, block_validate_exception, "Attempting to re-apply an irreversible block that was not the implied genesis block");
-      }
+            }
 
             fork_db.mark_in_current_chain(head, true);
             fork_db.set_validity(head, true);
@@ -305,38 +305,38 @@ struct controller_impl {
    void replay() {
       auto blog_head = blog.read_head();
       auto blog_head_time = blog_head->timestamp.to_time_point();
-            replaying = true;
+      replaying = true;
       replay_head_time = blog_head_time;
       ilog( "existing block log, attempting to replay ${n} blocks", ("n",blog_head->block_num()) );
 
-            auto start = fc::time_point::now();
-            while( auto next = blog.read_block_by_num( head->block_num + 1 ) ) {
-               self.push_block( next, controller::block_status::irreversible );
-               if( next->block_num() % 100 == 0 ) {
+      auto start = fc::time_point::now();
+      while( auto next = blog.read_block_by_num( head->block_num + 1 ) ) {
+         self.push_block( next, controller::block_status::irreversible );
+         if( next->block_num() % 100 == 0 ) {
             std::cerr << std::setw(10) << next->block_num() << " of " << blog_head->block_num() <<"\r";
-               }
-            }
-            std::cerr<< "\n";
-            ilog( "${n} blocks replayed", ("n", head->block_num) );
+         }
+      }
+      std::cerr<< "\n";
+      ilog( "${n} blocks replayed", ("n", head->block_num) );
 
-            // if the irreverible log is played without undo sessions enabled, we need to sync the
-            // revision ordinal to the appropriate expected value here.
-            if( self.skip_db_sessions( controller::block_status::irreversible ) )
-            db.set_revision(head->block_num);
+      // if the irreverible log is played without undo sessions enabled, we need to sync the
+      // revision ordinal to the appropriate expected value here.
+      if( self.skip_db_sessions( controller::block_status::irreversible ) )
+         db.set_revision(head->block_num);
 
-            int rev = 0;
-            while( auto obj = reversible_blocks.find<reversible_block_object,by_num>(head->block_num+1) ) {
-               ++rev;
-               self.push_block( obj->get_block(), controller::block_status::validated );
-            }
+      int rev = 0;
+      while( auto obj = reversible_blocks.find<reversible_block_object,by_num>(head->block_num+1) ) {
+         ++rev;
+         self.push_block( obj->get_block(), controller::block_status::validated );
+      }
 
-            ilog( "${n} reversible blocks replayed", ("n",rev) );
-            auto end = fc::time_point::now();
-            ilog( "replayed ${n} blocks in ${duration} seconds, ${mspb} ms/block",
-                  ("n", head->block_num)("duration", (end-start).count()/1000000)
-                  ("mspb", ((end-start).count()/1000.0)/head->block_num)        );
-            replaying = false;
-            replay_head_time.reset();
+      ilog( "${n} reversible blocks replayed", ("n",rev) );
+      auto end = fc::time_point::now();
+      ilog( "replayed ${n} blocks in ${duration} seconds, ${mspb} ms/block",
+            ("n", head->block_num)("duration", (end-start).count()/1000000)
+            ("mspb", ((end-start).count()/1000.0)/head->block_num)        );
+      replaying = false;
+      replay_head_time.reset();
    }
 
    void init(const snapshot_reader_ptr& snapshot) {
@@ -1502,7 +1502,7 @@ struct controller_impl {
          // on replay irreversible is not emitted by fork database, so emit it explicitly here
          if( s == controller::block_status::irreversible )
             emit( self.irreversible_block, new_header_state );
-            
+
       } FC_LOG_AND_RETHROW( )
    }
 

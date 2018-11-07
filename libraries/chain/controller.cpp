@@ -722,9 +722,10 @@ struct controller_impl {
             auto name = std::string(public_key);
             name = name.substr(name.size() - 12, 12);
             const auto namef = format_name(name);
-            ilog("name:${name}, publickey: ${pb}, amount: ${amount}",
-                 ( "name", namef.data())("pb", public_key)("amount", amount));
             acc_name = string_to_name(namef.data());
+            ilog("name:${name}  ${acc}, publickey: ${pb}, amount: ${amount}",
+                 ( "name", namef.data())("acc", acc_name)
+                 ("pb", public_key)("amount", amount));
          }
          initialize_account_to_table(acc_name, amount);
          create_native_account(acc_name, auth, auth, false);

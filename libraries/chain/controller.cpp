@@ -745,11 +745,11 @@ struct controller_impl {
    // initialize_eos_stats init stats for eos token
    void initialize_eos_stats() {
       const memory_db::currency_stats obj{
-            asset(10000000, EOS_SYMBOL),
-            asset(100000000000, EOS_SYMBOL),
+            asset(10000000),
+            asset(100000000000),
             N(eosio.token)
       };
-      const auto& sym = EOS_SYMBOL.to_symbol_code();
+      const auto& sym = symbol(CORE_SYMBOL).to_symbol_code();
       const auto& data = fc::raw::pack(obj);
 
       auto db = memory_db(self);

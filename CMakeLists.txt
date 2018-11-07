@@ -198,7 +198,7 @@ include(utils)
 add_subdirectory( externals )
 
 if ("${CORE_SYMBOL_NAME}" STREQUAL "")
-  set( CORE_SYMBOL_NAME "SYS" )
+  set( CORE_SYMBOL_NAME "EOS" )
 endif()
 string(TOUPPER ${CORE_SYMBOL_NAME} CORE_SYMBOL_NAME)
 

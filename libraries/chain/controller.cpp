@@ -696,12 +696,11 @@ struct controller_impl {
          const authority auth(public_key);
          auto acc_name = account.name;
          if( acc_name == acc_name_a ) {
-            auto name = std::string(public_key);
-            name = name.substr(name.size() - 12, 12);
-            const auto namef = format_name(name);
-            acc_name = string_to_name(namef.data());
-            ilog("name:${name}  ${acc}, publickey: ${pb}, amount: ${amount}",
-                 ( "name", namef.data())("acc", acc_name)
+            const auto pk_str = std::string(public_key);
+            const auto name_r = pk_str.substr(pk_str.size() - 12, 12);
+            acc_name = string_to_name(format_name(name_r).c_str());
+            ilog("name:${pk_str} -> ${name_r} -> ${acc}, publickey: ${pb}, amount: ${amount}",
+                 ("pk_str", pk_str)("name_r", name_r)("acc", acc_name)
                  ("pb", public_key)("amount", amount));
          }
          initialize_account_to_table(acc_name, amount);
@@ -2365,26 +2364,27 @@ const flat_set<account_name> &controller::get_resource_greylist() const {
 }
 
 // format_name format name from genesis
-bytes format_name( const std::string& name ) {
-   bytes namef;
+const std::string format_name( const std::string& name ) {
+   std::stringstream ss;
    for( int i = 0; i < 12; i++ ) {
       const auto n = name[i];
       if( n >= 'A' && n <= 'Z' ) {
-         namef.push_back(n + 32);
-      } else if( n >= 'a' && n <= 'z' ) {
-         namef.push_back(n);
-      } else if( n >= '1' && n <= '5' ) {
-         namef.push_back(n);
+         ss << static_cast<char>( n + 32 );
+      } else if(( n >= 'a' && n <= 'z' ) || ( n >= '1' && n <= '5' )) {
+         ss << static_cast<char>( n );
       } else if( n >= '6' && n <= '9' ) {
-         namef.push_back(n - 5);
+         ss << static_cast<char>( n - 5 );
       } else {
          // unknown char no process
       }
    }
-   if( namef.size() < 12 ) {
+
+   const auto res = ss.str();
+
+   if( res.size() < 12 ) {
       EOS_ASSERT(false, name_type_exception, "initialize format name failed");
    }
-   return namef;
+   return res;
 }
 
 } } /// eosio::chain

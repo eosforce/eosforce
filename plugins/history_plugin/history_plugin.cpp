@@ -377,10 +377,11 @@ namespace eosio {
             const auto& public_key = account.key;
             account_name acc_name = account.name;
             if( acc_name == spec_acc_in_gene ) {
-               const auto& pk_str = std::string(public_key);
-               const auto& name = pk_str.substr(pk_str.size() - 12, 12);
-               const auto& namef = format_name(name);
-               acc_name = string_to_name(namef.data());
+               const auto pk_str = std::string(public_key);
+               const auto name_r = pk_str.substr(pk_str.size() - 12, 12);
+               acc_name = string_to_name(format_name(name_r).c_str());
+               ilog("name:${pk_str} -> ${name_r} -> ${acc}, publickey: ${pb}",
+                    ("pk_str", pk_str)("name_r", name_r)("acc", acc_name)("pb", public_key));
             }
 
             add(db, vector<key_weight>(1, {public_key, 1}), acc_name, config::owner_name);

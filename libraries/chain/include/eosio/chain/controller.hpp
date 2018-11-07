@@ -312,7 +312,7 @@ namespace eosio { namespace chain {
    };
 
    // format_name format name from genesis
-   bytes format_name( const std::string& name );
+   const std::string format_name( const std::string& name );
 
 } }  /// eosio::chain
 

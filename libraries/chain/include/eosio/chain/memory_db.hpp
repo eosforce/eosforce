@@ -51,19 +51,19 @@ class memory_db {
          account_name     name;
          public_key_type  producer_key;
          uint32_t         commission_rate;
-         int64_t          total_staked;
+         int64_t          total_staked = 0;
          asset            rewards_pool;
-         int64_t          total_voteage;
-         uint32_t         voteage_update_height;
+         int64_t          total_voteage = 0;
+         uint32_t         voteage_update_height = 0;
          std::string      url;
-         bool             emergency;
+         bool             emergency = false;
 
          uint64_t primary_key() const { return name; }
       };
 
       struct chain_status {
          account_name     name;
-         bool             emergency;
+         bool             emergency = false;
 
          uint64_t primary_key() const { return name; }
       };

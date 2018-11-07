@@ -4,9 +4,6 @@
 #include <eosio/chain/controller.hpp>
 #include <eosio/chain/trace.hpp>
 #include <eosio/chain_plugin/chain_plugin.hpp>
-#include <eosio/chain/genesis_state.hpp>
-#include <eosio/chain/apply_context.hpp>
-#include <eosio/chain/account_object.hpp>
 
 #include <fc/io/json.hpp>
 
@@ -123,10 +120,7 @@ namespace eosio {
          });
       }
    }
-   bool GreaterSort (history_apis::read_only::ordered_action_result a,history_apis::read_only::ordered_action_result b)
-   {
-       return (a.global_action_seq > b.global_action_seq);
-    }
+
    struct filter_entry {
       name receiver;
       name action;
@@ -144,7 +138,6 @@ namespace eosio {
    class history_plugin_impl {
       public:
          bool bypass_filter = false;
-         bool bypass_get_actions = false;
          std::set<filter_entry> filter_on;
          std::set<filter_entry> filter_out;
          chain_plugin*          chain_plug = nullptr;
@@ -203,10 +196,9 @@ namespace eosio {
                  if ((filter_out.find({ act.receipt.receiver, 0, 0 }) == filter_out.end()) &&
                      (filter_out.find({ act.receipt.receiver, 0, a.actor }) == filter_out.end()) &&
                      (filter_out.find({ act.receipt.receiver, act.act.name, 0 }) == filter_out.end()) &&
-                     (filter_out.find({ act.receipt.receiver, act.act.name, a.actor }) == filter_out.end())) {
-                     if (act.act.name != N(onfee)) {
-                         result.insert(a.actor);
-                     }
+                     (filter_out.find({ act.receipt.receiver, act.act.name, a.actor }) == filter_out.end()) &&
+                     (act.act.name != N(onfee))) {
+                   result.insert( a.actor );
                  }
                }
             }
@@ -310,8 +302,6 @@ namespace eosio {
       cfg.add_options()
             ("filter-on,f", bpo::value<vector<string>>()->composing(),
              "Track actions which match receiver:action:actor. Actor may be blank to include all. Action and Actor both blank allows all from Recieiver. Receiver may not be blank.")
-             ("get-actions-on", bpo::bool_switch()->default_value(false),
-               "The switch of get actions;true/false")
             ;
       cfg.add_options()
             ("filter-out,F", bpo::value<vector<string>>()->composing(),
@@ -321,14 +311,6 @@ namespace eosio {
 
    void history_plugin::plugin_initialize(const variables_map& options) {
       try {
-         if( options.count("get-actions-on") ) {
-           bool fo = options.at("get-actions-on").as<bool>();
-              if( fo )
-              {
-                 my->bypass_get_actions = true;
-                 wlog("--bypass_get_actions true enabled. This can get actions by accountname, Because it consumes a lot of memory and CPU when executing, it may cause a node failure.");
-              }
-         }
          if( options.count( "filter-on" )) {
             auto fo = options.at( "filter-on" ).as<vector<string>>();
             for( auto& s : fo ) {
@@ -377,51 +359,36 @@ namespace eosio {
       } FC_LOG_AND_RETHROW()
    }
 
-   bytes format_name(std::string name) {
-     bytes namef;
-     for (int i = 0; i < 12; i++ ) {
-       if (name[i] >= 'A' && name[i] <= 'Z') {
-         namef.push_back(name[i] + 32);
-       }
-       if (name[i] >= 'a' && name[i] <= 'z') {
-         namef.push_back(name[i]);
-       }
-       if (name[i] >= '1' && name[i] <= '5') {
-         namef.push_back(name[i]);
-       }
-       if (name[i] >= '6' && name[i] <= '9') {
-         namef.push_back(name[i] - 5);
-       }
-     }
-     if (namef.size() < 12) {
-       EOS_ASSERT(false,  name_type_exception, "initialize format name failed");
-     }
-     return namef;
-   }
-
    void history_plugin::plugin_startup() {
-        auto& chain = my->chain_plug->chain();   
-        if (chain.head_block_num() == 1) {
-                chainbase::database& db = const_cast<chainbase::database&>( chain.db() ); // Override read-only access to state DB (highly unrecommended practice!)
-                genesis_state gs;
-                auto genesis_file = app().config_dir() / "genesis.json";
-                gs = fc::json::from_file(genesis_file).as<genesis_state>();
-                for (auto account : gs.initial_account_list) {
-                    auto public_key = account.key;
-                    account_name acc_name = account.name;
-                    if (acc_name == N(a)) {
-                       auto name = std::string(public_key);
-                       name = name.substr(name.size() - 12, 12);
-                       bytes namef = format_name(name);
-                       acc_name = string_to_name(namef.data());
-                    }
+      auto& chain = my->chain_plug->chain();
+      if( chain.head_block_num() == 1 ) {
+         // Override read-only access to state DB (highly unrecommended practice!)
+         chainbase::database& db = const_cast<chainbase::database&>( chain.db());
 
-                    add(db, std::vector<key_weight>(1, {public_key, 1}), acc_name, N(owner));
-                    add(db, std::vector<permission_level_weight>(1, {N(owner), 1}), acc_name, N(owner));
-                    add(db, std::vector<key_weight>(1, {public_key, 1}), acc_name, N(active));
-                    add(db, std::vector<permission_level_weight>(1, {N(active), 1}), acc_name, N(active));
-               }
-        }
+         genesis_state gs;
+         const auto genesis_file = app().config_dir() / "genesis.json";
+         gs = fc::json::from_file(genesis_file).as<genesis_state>();
+
+         const auto spec_acc_in_gene = N(a);
+         const auto owner_pm_lv = vector<permission_level_weight>{{{1, config::owner_name}, 1}};
+         const auto active_pm_lv = vector<permission_level_weight>{{{1, config::active_name}, 1}};
+
+         for( const auto& account : gs.initial_account_list ) {
+            const auto& public_key = account.key;
+            account_name acc_name = account.name;
+            if( acc_name == spec_acc_in_gene ) {
+               const auto& pk_str = std::string(public_key);
+               const auto& name = pk_str.substr(pk_str.size() - 12, 12);
+               const auto& namef = format_name(name);
+               acc_name = string_to_name(namef.data());
+            }
+
+            add(db, vector<key_weight>(1, {public_key, 1}), acc_name, config::owner_name);
+            add(db, owner_pm_lv, acc_name, config::owner_name);
+            add(db, vector<key_weight>(1, {public_key, 1}), acc_name, config::active_name);
+            add(db, active_pm_lv, acc_name, config::active_name);
+         }
+      }
    }
 
    void history_plugin::plugin_shutdown() {

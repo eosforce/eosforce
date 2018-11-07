@@ -311,6 +311,9 @@ namespace eosio { namespace chain {
 
    };
 
+   // format_name format name from genesis
+   bytes format_name( const std::string& name );
+
 } }  /// eosio::chain
 
 FC_REFLECT( eosio::chain::controller::config,

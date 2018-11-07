@@ -687,29 +687,6 @@ struct controller_impl {
                       data.data(), data.size());
    }
 
-   // format_name format name from genesis
-   bytes format_name( const std::string& name ) {
-      bytes namef;
-      for( int i = 0; i < 12; i++ ) {
-         const auto n = name[i];
-         if( n >= 'A' && n <= 'Z' ) {
-            namef.push_back(n + 32);
-         } else if( n >= 'a' && n <= 'z' ) {
-            namef.push_back(n);
-         } else if( n >= '1' && n <= '5' ) {
-            namef.push_back(n);
-         } else if( n >= '6' && n <= '9' ) {
-            namef.push_back(n - 5);
-         } else {
-            // unknown char no process
-         }
-      }
-      if( namef.size() < 12 ) {
-         EOS_ASSERT(false, name_type_exception, "initialize format name failed");
-      }
-      return namef;
-   }
-
    // initialize_account init account from genesis
    void initialize_account() {
       const auto acc_name_a = N(a);
@@ -2385,6 +2362,29 @@ bool controller::is_resource_greylisted(const account_name &name) const {
 
 const flat_set<account_name> &controller::get_resource_greylist() const {
    return  my->conf.resource_greylist;
+}
+
+// format_name format name from genesis
+bytes format_name( const std::string& name ) {
+   bytes namef;
+   for( int i = 0; i < 12; i++ ) {
+      const auto n = name[i];
+      if( n >= 'A' && n <= 'Z' ) {
+         namef.push_back(n + 32);
+      } else if( n >= 'a' && n <= 'z' ) {
+         namef.push_back(n);
+      } else if( n >= '1' && n <= '5' ) {
+         namef.push_back(n);
+      } else if( n >= '6' && n <= '9' ) {
+         namef.push_back(n - 5);
+      } else {
+         // unknown char no process
+      }
+   }
+   if( namef.size() < 12 ) {
+      EOS_ASSERT(false, name_type_exception, "initialize format name failed");
+   }
+   return namef;
 }
 
 } } /// eosio::chain

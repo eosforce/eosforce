@@ -23,7 +23,6 @@ namespace eosio { namespace chain {
 
       time_point           last_code_update;
       digest_type          code_version;
-      digest_type          abi_version;
       block_timestamp_type creation_date;
 
       shared_blob    code;

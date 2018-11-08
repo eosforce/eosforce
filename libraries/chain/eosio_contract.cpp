@@ -69,15 +69,14 @@ void validate_authority_precondition( const apply_context& context, const author
 }
 
 
-  void accounts_table(account_name name, chainbase::database& cdb) {
-      memory_db::account_info obj;
-      obj.name = name;
-      obj.available = asset(0);
-      bytes data = fc::raw::pack(obj);
-      auto pk = obj.primary_key();
-      memory_db db(cdb);
-      db.db_store_i64(N(eosio), N(eosio), N(accounts), name, pk, data.data(), data.size() );
-   }
+void accounts_table( const account_name& name, chainbase::database& cdb ) {
+   const auto obj = memory_db::account_info{name, asset(0)};
+   const auto data = fc::raw::pack(obj);
+   memory_db db(cdb);
+   db.db_store_i64(N(eosio), N(eosio), N(accounts),
+         name, obj.primary_key(),
+         data.data(), data.size());
+}
 
 /**
  *  This method is called assuming precondition_system_newaccount succeeds a
@@ -102,10 +101,6 @@ void apply_eosio_newaccount(apply_context& context) {
    // Check if the creator is privileged
    const auto &creator = db.get<account_object, by_name>(create.creator);
    EOS_ASSERT(!creator.privileged, action_validate_exception, "not support privileged accounts");
-  //  if( !creator.privileged ) {
-  //     EOS_ASSERT( name_str.find( "eosio." ) != 0, action_validate_exception,
-  //                 "only privileged accounts can have names that start with 'eosio.'" );
-  //  }
 
    auto existing_account = db.find<account_object, by_name>(create.name);
    EOS_ASSERT(existing_account == nullptr, account_name_exists_exception,
@@ -120,6 +115,7 @@ void apply_eosio_newaccount(apply_context& context) {
    db.create<account_sequence_object>([&](auto& a) {
       a.name = create.name;
    });
+
    accounts_table(create.name, db);
 
    for( const auto& auth : { create.owner, create.active } ){
@@ -141,67 +137,6 @@ void apply_eosio_newaccount(apply_context& context) {
    context.add_ram_usage(create.name, ram_delta);
 
 } FC_CAPTURE_AND_RETHROW( (create) ) }
-
-static void copy_inline_row(const chain::key_value_object& obj, vector<char>& data) {
-  data.resize( obj.value.size() );
-  memcpy( data.data(), obj.value.data(), obj.value.size() );
-}
-
-// config::system_account_name
-
-bool allow_setcode(apply_context& context, std::string code_id) {
-  const auto& code_account = context.db.get<account_object,by_name>(N(eosio));
-  chain::abi_def abi;
-  if(abi_serializer::to_abi(code_account.abi, abi)) {
-    abi_serializer abis(abi, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
-    const auto* t_id = context.db.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(config::system_account_name, config::system_account_name, N(contractstat)));
-    if (t_id != nullptr) {
-      const auto &idx = context.db.get_index<key_value_index, by_scope_primary>();
-      auto it = idx.lower_bound(boost::make_tuple(t_id->id, config::system_account_name));
-      if (it != idx.end()) {
-        vector<char> data;
-        copy_inline_row(*it, data);
-        auto ct = abis.binary_to_variant("contractstat_info", data, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
-        auto& obj = ct.get_object();
-        auto code_obj = obj["code"].get_object();
-        auto cid = code_obj["code_id"].as_string();
-        if (cid == code_id) {
-          return true;
-        } else {
-          return false;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-bool allow_setabi(apply_context& context, std::string abi_id) {
-  const auto& code_account = context.db.get<account_object,by_name>(N(eosio));
-  chain::abi_def abi;
-  if(abi_serializer::to_abi(code_account.abi, abi)) {
-    abi_serializer abis(abi, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
-    const auto* t_id = context.db.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(config::system_account_name, config::system_account_name, N(contractstat)));
-    if (t_id != nullptr) {
-      const auto &idx = context.db.get_index<key_value_index, by_scope_primary>();
-      auto it = idx.lower_bound(boost::make_tuple(t_id->id, config::system_account_name));
-      if (it != idx.end()) {
-        vector<char> data;
-        copy_inline_row(*it, data);
-        auto ct = abis.binary_to_variant("contractstat_info", data, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
-        auto& obj = ct.get_object();
-        auto code_obj = obj["code"].get_object();
-        auto aid = code_obj["abi_id"].as_string();
-        if (aid == abi_id) {
-          return true;
-        } else {
-          return false;
-        }
-      }
-    }
-  }
-  return false;
-}
 
 // clean_action_fee_for_account clean all fee setting for a account,
 // call it when account code or abi update
@@ -250,13 +185,6 @@ void apply_eosio_setcode(apply_context& context) {
    int64_t code_size = (int64_t)act.code.size();
    int64_t old_size  = (int64_t)account.code.size() * config::setcode_ram_bytes_multiplier;
    int64_t new_size  = code_size * config::setcode_ram_bytes_multiplier;
-
-   //ilog("head num ${n}", ("n", context.control.head_block_num()));
-
-   // Not first time setcode
-   if (account.code_version != fc::sha256()) {
-      clean_action_fee_for_account(context, act.account);
-   }
 
    EOS_ASSERT( account.code_version != code_id, set_exact_code, "contract is already running this version of code" );
 
@@ -329,8 +257,6 @@ void apply_eosio_setabi(apply_context& context) {
 
    context.require_authorization(act.account);
 
-   auto abi_id = fc::sha256::hash(act.abi.data(), (uint32_t)act.abi.size());
-
    const auto& account = db.get<account_object,by_name>(act.account);
 
    int64_t abi_size = act.abi.size();
@@ -338,17 +264,7 @@ void apply_eosio_setabi(apply_context& context) {
    int64_t old_size = (int64_t)account.abi.size();
    int64_t new_size = abi_size;
 
-   //ilog("head num ${n}", ("n", context.control.head_block_num()));
-
-   // Not first time setabi
-   if (account.abi_version != fc::sha256()) {
-      clean_action_fee_for_account(context, act.account);
-   }
-
-   FC_ASSERT(account.abi_version != abi_id, "contract is already running this version of abi");
-
    db.modify( account, [&]( auto& a ) {
-      a.abi_version = abi_id;
       a.abi.resize( abi_size );
       if( abi_size > 0 )
          memcpy( a.abi.data(), act.abi.data(), abi_size );

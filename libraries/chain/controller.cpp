@@ -715,7 +715,6 @@ struct controller_impl {
                              const bool privileged = false ) {
       const auto& code_id = fc::sha256::hash(code.data(), (uint32_t) code.size());
       const int64_t code_size = code.size();
-      const auto& abi_id = fc::sha256::hash(abi.data(), (uint32_t) abi.size());
       const int64_t abi_size = abi.size();
 
       const auto& account = db.get<account_object, by_name>(contract);
@@ -727,7 +726,6 @@ struct controller_impl {
          a.code.resize(code_size);
          memcpy(a.code.data(), code.data(), code_size);
 
-         a.abi_version = abi_id;
          a.abi.resize(abi_size);
          if( abi_size > 0 ) {
             memcpy(a.abi.data(), abi.data(), abi_size);

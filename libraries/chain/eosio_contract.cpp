@@ -217,12 +217,56 @@ void apply_eosio_setfee(apply_context& context) {
    // need force.test
    // TODO add power Invalid block number
    // idump((context.act.authorization));
-   EOS_ASSERT((
-              context.act.authorization.size() == 1
-           && context.act.authorization[0].actor == N(force.test)
-           && context.act.authorization[0].permission == config::owner_name),
-   invalid_permission,
-   "setfee just can call by force.test" );
+
+   /*
+   * About Fee
+   *
+   * fee come from three mode:
+   *  - native, set in cpp
+   *  - set by eosio
+   *  - set by user
+   *
+   * and res limit can set a value or zero,
+   * all of this will make diff mode to calc res limit,
+   * support 1.0 EOS is for `C` cpu, `N` net and `R` ram,
+   * and cost fee by `f` EOS and extfee by `F` EOS
+   *
+   * then can give:
+   *  - native and no setfee : use native fee and unlimit res use
+   *  - eosio set fee {f, (c,n,r)}
+   *      (cpu_limit, net_limit, ram_limit) == (c + F*C, n + F*N, r + F*R)
+   *  - eosio set fee {f, (0,0,0)}
+   *      (cpu_limit, net_limit, ram_limit) == ((f+F)*C, (f+F)*N, (f+F)*R)
+   *  - user set fee {f, (0,0,0)}, user cannot set fee by c>0||n>0||r>0
+   *      (cpu_limit, net_limit, ram_limit) == ((f+F)*C, (f+F)*N, (f+F)*R)
+   *
+   *  so it can be check by:
+   *  if no setfee
+   *       if no native -> err
+   *       if native -> use native and unlimit res use
+   *  else
+   *       if res limit is (0,0,0) -> limit res by ((f+F)*C, (f+F)*N, (f+F)*R)
+   *       if res limit is (c,n,r) -> (c + F*C, n + F*N, r + F*R)
+   *
+   *  at the same time, eosio can set res limit > (0,0,0) and user cannot
+   *
+   * */
+
+   if(   ( act.cpu_limit == 0 )
+      && ( act.net_limit == 0 )
+      && ( act.ram_limit == 0 ) ) {
+      context.require_authorization(act.account);
+   } else {
+      context.require_authorization(N(force.test));
+   }
+
+   // by keep for main net so use get_amount
+   EOS_ASSERT(act.fee.get_amount() > 0,
+         invalid_action_args_exception, "fee can not be zero");
+
+   // a max will need check
+   EOS_ASSERT(act.fee.get_amount() <= (200 * 10000),
+         invalid_action_args_exception, "fee can not too mush, more then 200.0000 EOS");
 
    ilog("apply_eosio_setfee ${acc} ${fee} ${act} limit ${cpu},${net},${ram}",
          ("acc", act.account)("fee", act.fee)("act", act.action)
@@ -231,7 +275,7 @@ void apply_eosio_setfee(apply_context& context) {
    // warning
    const auto key = boost::make_tuple(act.account, act.action);
    auto fee_old = db.find<chain::action_fee_object, chain::by_action_name>(key);
-   if(fee_old == nullptr){
+   if(fee_old == nullptr) {
       //dlog("need create fee");
       db.create<chain::action_fee_object>([&]( auto& fee_obj ) {
          fee_obj.account = act.account;
@@ -241,7 +285,7 @@ void apply_eosio_setfee(apply_context& context) {
          fee_obj.net_limit = act.net_limit;
          fee_obj.ram_limit = act.ram_limit;
       });
-   }else{
+   } else {
       db.modify<chain::action_fee_object>( *fee_old, [&]( auto& fee_obj ) {
          fee_obj.fee = act.fee;
          fee_obj.cpu_limit = act.cpu_limit;

@@ -618,8 +618,13 @@ chain::action create_setabi(const name& account, const bytes& abi) {
 }
 
 chain::action create_setfee(const name& account, const name &act, const asset fee, const uint32_t cpu, const uint32_t net, const uint32_t ram) {
+   const auto permission_account =
+         ((cpu == 0)&&(net == 0)&&(ram == 0))
+         ? account             // if no set res limit, just need account permission
+         : name("force.test"); // if set res limit, need force.test
+
    return action {
-         vector<chain::permission_level>{{N(force.test),config::owner_name}},
+         vector<chain::permission_level>{{permission_account, config::active_name}},
          setfee{
                .account   = account,
                .action    = act,

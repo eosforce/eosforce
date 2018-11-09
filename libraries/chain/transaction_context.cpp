@@ -334,33 +334,86 @@ namespace bacc = boost::accumulators;
    // fee_ext ext fee for ext res
    void transaction_context::make_limit_by_contract(const asset &fee_ext){
       // now one trx just has one action in eosforce, so it can no include system contract
+      /*
+       * About Fee
+       *
+       * fee come from three mode:
+       *  - native, set in cpp
+       *  - set by eosio
+       *  - set by user
+       *
+       * and res limit can set a value or zero,
+       * all of this will make diff mode to calc res limit,
+       * support 1.0 EOS is for `C` cpu, `N` net and `R` ram,
+       * and cost fee by `f` EOS and extfee by `F` EOS
+       *
+       * then can give:
+       *  - native and no setfee : use native fee and unlimit res use
+       *  - eosio set fee {f, (c,n,r)}
+       *      (cpu_limit, net_limit, ram_limit) == (c + F*C, n + F*N, r + F*R)
+       *  - eosio set fee {f, (0,0,0)}
+       *      (cpu_limit, net_limit, ram_limit) == ((f+F)*C, (f+F)*N, (f+F)*R)
+       *  - user set fee {f, (0,0,0)}, user cannot set fee by c>0||n>0||r>0
+       *      (cpu_limit, net_limit, ram_limit) == ((f+F)*C, (f+F)*N, (f+F)*R)
+       *
+       *  so it can be check by:
+       *  if no setfee
+       *       if no native -> err
+       *       if native -> use native and unlimit res use
+       *  else
+       *       if res limit is (0,0,0) -> limit res by ((f+F)*C, (f+F)*N, (f+F)*R)
+       *       if res limit is (c,n,r) -> (c + F*C, n + F*N, r + F*R)
+       *
+       *  at the same time, eosio can set res limit > (0,0,0) and user cannot
+       *
+       */
 
       auto &db = control.db();
 
-      if (fee_ext > asset(0)){
-         ilog("use fee ext ${f} to x ${c}", ("f", fee_ext)("c", fee_ext.get_amount() / 100));
+      if ( fee_ext > asset(0) ) {
+         dlog( "use fee ext ${f} to x ${c}",
+               ("f", fee_ext)("c", fee_ext.get_amount() / 100) );
       }
 
+      // use_limit_by_contract is if setfee
       use_limit_by_contract = false;
       cpu_limit_by_contract = 0;
       net_limit_by_contract = 0;
       ram_limit_by_contract = 0;
+      auto calc_res_fee = fee_ext;
 
+      // all setfee action calc sum res limit
       for( const auto& act : trx.actions ) {
-         const auto key = boost::make_tuple(act.account, act.name);
-         auto info = db.find<action_fee_object, by_action_name>(key);
-         if(info != nullptr){
+         const auto info = db.find<action_fee_object, by_action_name>(
+               boost::make_tuple(act.account, act.name));
+
+         // no setfee, is native or err by get_require_fee
+         if( info == nullptr ) {
+            // do nothing
+            continue;
+         }
+
+         // setfee, if a trx has both native act and setfee act, will use res limit
+         use_limit_by_contract = true;
+
+         if( (info->cpu_limit > 0)
+          || (info->net_limit > 0)
+          || (info->ram_limit > 0) ) {
+            // setfee with res limit
             //dlog("get limit by contract ${con} ${cpu} ${net} ${ram}",
             //      ("con", act.name)("cpu", info->cpu_limit)("net", info->net_limit)("ram", info->ram_limit));
-            use_limit_by_contract = true;
             cpu_limit_by_contract += info->cpu_limit;
             net_limit_by_contract += info->net_limit;
             ram_limit_by_contract += info->ram_limit;
+         } else {
+            // setfee with zero res limit
+            // calc res limit like fee_ext
+            calc_res_fee += info->fee;
          }
       }
 
-      if ((fee_ext > asset(0)) && use_limit_by_contract) {
-         const auto m = fee_ext.get_amount() / 100; // 100 mine 0.01 eos
+      if ((calc_res_fee > asset(0)) && use_limit_by_contract) {
+         const auto m = calc_res_fee.get_amount() / 100; // 100 mine 0.01 eos
          //
          // For First version we just use const value for main net stable
          //
@@ -369,7 +422,7 @@ namespace bacc = boost::accumulators;
          ram_limit_by_contract += m * 10;
       }
 
-      if (use_limit_by_contract) {
+      if ( use_limit_by_contract ) {
          dlog("limit by contract ${cpu} ${net} ${ram}",
               ("cpu", cpu_limit_by_contract)("net", net_limit_by_contract)("ram", ram_limit_by_contract));
       }
@@ -492,34 +545,34 @@ namespace bacc = boost::accumulators;
    void transaction_context::checktime()const {
       if(BOOST_LIKELY(_deadline_timer.expired == false))
          return;
-         auto now = fc::time_point::now();
-         if( BOOST_UNLIKELY( now > _deadline ) ) {
-            // edump((now-start)(now-pseudo_start));
-            if( explicit_billed_cpu_time || deadline_exception_code == deadline_exception::code_value ) {
-               EOS_THROW( deadline_exception, "deadline exceeded", ("now", now)("deadline", _deadline)("start", start) );
-            } else if( deadline_exception_code == block_cpu_usage_exceeded::code_value ) {
-               EOS_THROW( block_cpu_usage_exceeded,
-                          "not enough time left in block to complete executing transaction",
-                          ("now", now)("deadline", _deadline)("start", start)("billing_timer", now - pseudo_start) );
-            } else if( deadline_exception_code == tx_cpu_usage_exceeded::code_value ) {
-               if (cpu_limit_due_to_greylist) {
-                  EOS_THROW( greylist_cpu_usage_exceeded,
-                           "greylisted transaction was executing for too long",
-                           ("now", now)("deadline", _deadline)("start", start)("billing_timer", now - pseudo_start) );
-               } else {
-                  EOS_THROW( tx_cpu_usage_exceeded,
-                           "transaction was executing for too long",
-                           ("now", now)("deadline", _deadline)("start", start)("billing_timer", now - pseudo_start) );
-               }
-            } else if( deadline_exception_code == leeway_deadline_exception::code_value ) {
-               EOS_THROW( leeway_deadline_exception,
-                          "the transaction was unable to complete by deadline, "
-                          "but it is possible it could have succeeded if it were allowed to run to completion",
-                          ("now", now)("deadline", _deadline)("start", start)("billing_timer", now - pseudo_start) );
+      auto now = fc::time_point::now();
+      if( BOOST_UNLIKELY( now > _deadline ) ) {
+         // edump((now-start)(now-pseudo_start));
+         if( explicit_billed_cpu_time || deadline_exception_code == deadline_exception::code_value ) {
+            EOS_THROW( deadline_exception, "deadline exceeded", ("now", now)("deadline", _deadline)("start", start) );
+         } else if( deadline_exception_code == block_cpu_usage_exceeded::code_value ) {
+            EOS_THROW( block_cpu_usage_exceeded,
+                        "not enough time left in block to complete executing transaction",
+                        ("now", now)("deadline", _deadline)("start", start)("billing_timer", now - pseudo_start) );
+         } else if( deadline_exception_code == tx_cpu_usage_exceeded::code_value ) {
+            if (cpu_limit_due_to_greylist) {
+               EOS_THROW( greylist_cpu_usage_exceeded,
+                        "greylisted transaction was executing for too long",
+                        ("now", now)("deadline", _deadline)("start", start)("billing_timer", now - pseudo_start) );
+            } else {
+               EOS_THROW( tx_cpu_usage_exceeded,
+                        "transaction was executing for too long",
+                        ("now", now)("deadline", _deadline)("start", start)("billing_timer", now - pseudo_start) );
             }
-            EOS_ASSERT( false,  transaction_exception, "unexpected deadline exception code" );
+         } else if( deadline_exception_code == leeway_deadline_exception::code_value ) {
+            EOS_THROW( leeway_deadline_exception,
+                        "the transaction was unable to complete by deadline, "
+                        "but it is possible it could have succeeded if it were allowed to run to completion",
+                        ("now", now)("deadline", _deadline)("start", start)("billing_timer", now - pseudo_start) );
          }
+         EOS_ASSERT( false,  transaction_exception, "unexpected deadline exception code" );
       }
+   }
 
    void transaction_context::pause_billing_timer() {
       if( explicit_billed_cpu_time || pseudo_start == fc::time_point() ) return; // either irrelevant or already paused
@@ -583,7 +636,6 @@ namespace bacc = boost::accumulators;
    void transaction_context::add_ram_usage( account_name account, int64_t ram_delta ) {
       auto& rl = control.get_mutable_resource_limits_manager();
       rl.add_pending_ram_usage( account, ram_delta );
-      //dlog("add_ram_usage ${acc} ${delta}", ("acc", account)("delta", ram_delta));
       if( ram_delta > 0 ) {
          validate_ram_usage.insert( account );
       }

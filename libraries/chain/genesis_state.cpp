@@ -16,7 +16,7 @@ genesis_state::genesis_state() {
 }
 
 const fc::sha256 old_chain_id = fc::sha256("bd61ae3a031e8ef2f97ee3b0e62776d6d30d4833c8f7c1645c657b149151004b");
-const fc::sha256 new_chain_id = fc::sha256("30dd80f5e2f0e9c9f14d348990f3ca82d42efdd1414097dd5094e21f2ed595aa");
+const fc::sha256 new_chain_id = fc::sha256("78215edcce90572883cf4ed9a6763d94e9c0d566f709141647709091c7d1378b");
 
 chain::chain_id_type genesis_state::compute_chain_id() const {
    digest_type::encoder enc;

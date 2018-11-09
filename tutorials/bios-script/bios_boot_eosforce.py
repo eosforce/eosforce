@@ -27,7 +27,8 @@ relayAccounts = [
     'r.token.in',
     'r.token.out',
     'r.acc.map',
-    'r.t.exchange'
+    'r.t.exchange',
+    'force.test'
 ]
 
 def jsonArg(a):
@@ -69,7 +70,6 @@ def addRelayAccount():
 
 
 def startWallet():
-    run('rm -rf ' + os.path.abspath(args.wallet_dir))
     run('mkdir -p ' + os.path.abspath(args.wallet_dir))
     background(args.keosd + ' --unlock-timeout %d --http-server-address 0.0.0.0:6666 --wallet-dir %s' % (unlockTimeout, os.path.abspath(args.wallet_dir)))
     sleep(.4)
@@ -118,8 +118,9 @@ def startNode(nodeIndex, bpaccount, key):
         '    --enable-stale-production'
         '    --producer-name ' + bpaccount['name'] +
         '    --signature-provider=' + bpaccount['bpkey'] + '=KEY:' + key[1] +
-        '    --plugin eosio::http_plugin'
-        '    --plugin eosio::chain_api_plugin'
+        '    --contracts-console ' +
+        '    --plugin eosio::http_plugin' +
+        '    --plugin eosio::chain_api_plugin' +
         '    --plugin eosio::producer_plugin' +
         otherOpts)
     with open(dir + '../' + bpaccount['name'] + '.log', mode='w') as f:
@@ -196,9 +197,9 @@ def stepMakeGenesis():
 
 def clearData():
     stepKillAll()
-    run('rm -rf ' + args.config_dir)
-    run('rm -rf ' + args.nodes_dir)
-    run('rm -rf ' + args.wallet_dir)
+    run('rm -rf ' + os.path.abspath(args.config_dir))
+    run('rm -rf ' + os.path.abspath(args.nodes_dir))
+    run('rm -rf ' + os.path.abspath(args.wallet_dir))
     sleep(1)
 
 def restart():

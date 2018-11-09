@@ -326,22 +326,24 @@ fc::time_point calculate_genesis_timestamp( string tstr ) {
  * bytes& code: out param
  * bytes& abi: out param
  */
-void load_contract_code_abi(const string contract, bytes& code, bytes& abi){
-      ilog("load contract : ${contract}", ("contract", contract));
-      auto wastPath = app().config_dir() / contract += ".wasm";
-      std::string wast;
-      fc::read_file_contents(wastPath, wast);
-      FC_ASSERT(!wast.empty(), "no wast file found ");
-      const string binary_wasm_header("\x00\x61\x73\x6d", 4);
-      if(wast.compare(0, 4, binary_wasm_header) == 0) {
-            code = bytes(wast.begin(), wast.end());
-      } else {
-            FC_ASSERT("not support this wast");
-      }
-      auto abiPath = app().config_dir() / contract += ".abi";
-      FC_ASSERT( fc::exists( abiPath ), "no abi file found ");
-      auto abijson = fc::json::from_file(abiPath).as<abi_def>();
-      abi = fc::raw::pack(abijson);
+void load_contract_code_abi( const string& contract, bytes& code, bytes& abi ) {
+   ilog("load contract : ${contract}", ( "contract", contract ));
+
+   const auto wast_path = app().config_dir() / contract += ".wasm";
+   std::string wast;
+   fc::read_file_contents(wast_path, wast);
+   EOS_ASSERT(!wast.empty(), wast_file_not_found, "no wast file found ");
+   const string binary_wasm_header("\x00\x61\x73\x6d", 4);
+   if( wast.compare(0, 4, binary_wasm_header) == 0 ) {
+      code = bytes(wast.begin(), wast.end());
+   } else {
+      FC_ASSERT("not support this wast");
+   }
+
+   const auto abi_path = app().config_dir() / contract += ".abi";
+   EOS_ASSERT(fc::exists(abi_path), abi_not_found_exception, "no abi file found ");
+   const auto abijson = fc::json::from_file(abi_path).as<abi_def>();
+   abi = fc::raw::pack(abijson);
 }
 
 
@@ -562,8 +564,8 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       if( options.count("import-reversible-blocks") ) {
          wlog("The --import-reversible-blocks option should be used by itself.");
       }
-       
-      auto genesis_file = app().config_dir() / "genesis.json";
+
+      const auto genesis_file = app().config_dir() / "genesis.json";
       my->chain_config->genesis = fc::json::from_file(genesis_file).as<genesis_state>();
 
       load_contract_code_abi("System", my->chain_config->genesis.code, my->chain_config->genesis.abi);
@@ -578,8 +580,6 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       my->chain_config->genesis.initial_configuration.max_block_cpu_usage = 1000000;
       my->chain_config->genesis.initial_configuration.max_transaction_cpu_usage = 500000;
 
-
-      //ilog("----------genesis_file: ${gs}", ("gs", my->chain_config->genesis));
       if (options.count( "snapshot" )) {
          my->snapshot_path = options.at( "snapshot" ).as<bfs::path>();
          EOS_ASSERT( fc::exists(*my->snapshot_path), plugin_config_exception,
@@ -611,45 +611,45 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
          }
 
       } else {
-      if( options.count( "genesis-json" )) {
-         EOS_ASSERT( !fc::exists( my->blocks_dir / "blocks.log" ),
-                     plugin_config_exception,
-                    "Genesis state can only be set on a fresh blockchain." );
+         if( options.count( "genesis-json" )) {
+            EOS_ASSERT( !fc::exists( my->blocks_dir / "blocks.log" ),
+                        plugin_config_exception,
+                       "Genesis state can only be set on a fresh blockchain." );
 
-         auto genesis_file = options.at( "genesis-json" ).as<bfs::path>();
-         if( genesis_file.is_relative()) {
-            genesis_file = bfs::current_path() / genesis_file;
-         }
+            auto genesis_file = options.at( "genesis-json" ).as<bfs::path>();
+            if( genesis_file.is_relative()) {
+               genesis_file = bfs::current_path() / genesis_file;
+            }
 
-         EOS_ASSERT( fc::is_regular_file( genesis_file ),
-                     plugin_config_exception,
-                    "Specified genesis file '${genesis}' does not exist.",
-                    ("genesis", genesis_file.generic_string()));
+            EOS_ASSERT( fc::is_regular_file( genesis_file ),
+                        plugin_config_exception,
+                       "Specified genesis file '${genesis}' does not exist.",
+                       ("genesis", genesis_file.generic_string()));
 
-         my->chain_config->genesis = fc::json::from_file( genesis_file ).as<genesis_state>();
+            my->chain_config->genesis = fc::json::from_file( genesis_file ).as<genesis_state>();
 
-         ilog( "Using genesis state provided in '${genesis}'", ("genesis", genesis_file.generic_string()));
+            ilog( "Using genesis state provided in '${genesis}'", ("genesis", genesis_file.generic_string()));
 
-         if( options.count( "genesis-timestamp" )) {
+            if( options.count( "genesis-timestamp" )) {
+               my->chain_config->genesis.initial_timestamp = calculate_genesis_timestamp(
+                     options.at( "genesis-timestamp" ).as<string>());
+            }
+
+            wlog( "Starting up fresh blockchain with provided genesis state." );
+         } else if( options.count( "genesis-timestamp" )) {
+            EOS_ASSERT( !fc::exists( my->blocks_dir / "blocks.log" ),
+                        plugin_config_exception,
+                       "Genesis state can only be set on a fresh blockchain." );
+
             my->chain_config->genesis.initial_timestamp = calculate_genesis_timestamp(
                   options.at( "genesis-timestamp" ).as<string>());
+
+            wlog( "Starting up fresh blockchain with default genesis state but with adjusted genesis timestamp." );
+         } else if( fc::is_regular_file( my->blocks_dir / "blocks.log" )) {
+            my->chain_config->genesis = block_log::extract_genesis_state( my->blocks_dir );
+         } else {
+            wlog( "Starting up fresh blockchain with default genesis state." );
          }
-
-         wlog( "Starting up fresh blockchain with provided genesis state." );
-      } else if( options.count( "genesis-timestamp" )) {
-         EOS_ASSERT( !fc::exists( my->blocks_dir / "blocks.log" ),
-                     plugin_config_exception,
-                    "Genesis state can only be set on a fresh blockchain." );
-
-         my->chain_config->genesis.initial_timestamp = calculate_genesis_timestamp(
-               options.at( "genesis-timestamp" ).as<string>());
-
-         wlog( "Starting up fresh blockchain with default genesis state but with adjusted genesis timestamp." );
-      } else if( fc::is_regular_file( my->blocks_dir / "blocks.log" )) {
-         my->chain_config->genesis = block_log::extract_genesis_state( my->blocks_dir );
-      } else {
-         wlog( "Starting up fresh blockchain with default genesis state." );
-      }
       }
 
       if ( options.count("read-mode") ) {
@@ -740,7 +740,7 @@ void chain_plugin::plugin_startup()
          my->chain->startup(reader);
          infile.close();
       } else {
-      my->chain->startup();
+         my->chain->startup();
       }
    } catch (const database_guard_exception& e) {
       log_guard_exception(e);

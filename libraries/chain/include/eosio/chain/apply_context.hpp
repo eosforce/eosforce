@@ -494,7 +494,6 @@ class apply_context {
        * @throws missing_auth_exception If no sufficient permission was found
        */
       void require_authorization(const account_name& account);
-      void setcode_require_authorization(const account_name& account);
       bool has_authorization(const account_name& account) const;
       void require_authorization(const account_name& account, const permission_name& permission);
 

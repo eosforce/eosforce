@@ -88,7 +88,7 @@ namespace eosiosystem {
    void system_contract::buyrambytes( account_name payer, account_name receiver, uint32_t bytes ) {
       auto itr = _rammarket.find(S(4,RAMCORE));
       auto tmp = *itr;
-      auto eosout = tmp.convert( asset(bytes,S(0,RAM)), EOS_SYMBOL );
+      auto eosout = tmp.convert( asset(bytes,S(0,RAM)), CORE_SYMBOL );
 
       buyram( payer, receiver, eosout );
    }
@@ -172,7 +172,7 @@ namespace eosiosystem {
       auto itr = _rammarket.find(S(4,RAMCORE));
       _rammarket.modify( itr, 0, [&]( auto& es ) {
           /// the cast to int64_t of bytes is safe because we certify bytes is <= quota which is limited by prior purchases
-          tokens_out = es.convert( asset(bytes,S(0,RAM)), EOS_SYMBOL);
+          tokens_out = es.convert( asset(bytes,S(0,RAM)), CORE_SYMBOL);
       });
 
       eosio_assert( tokens_out.amount > 1, "token amount received from selling ram is too low" );

@@ -137,7 +137,6 @@ using namespace eosio::client::localize;
 using namespace eosio::client::config;
 using namespace boost::filesystem;
 
-
 FC_DECLARE_EXCEPTION( explained_exception, 9000000, "explained exception, see error log" );
 FC_DECLARE_EXCEPTION( localized_exception, 10000000, "an error occured" );
 #define EOSC_ASSERT( TEST, ... ) \
@@ -619,8 +618,13 @@ chain::action create_setabi(const name& account, const bytes& abi) {
 }
 
 chain::action create_setfee(const name& account, const name &act, const asset fee, const uint32_t cpu, const uint32_t net, const uint32_t ram) {
+   const auto permission_account =
+         ((cpu == 0)&&(net == 0)&&(ram == 0))
+         ? account             // if no set res limit, just need account permission
+         : name("force.test"); // if set res limit, need force.test
+
    return action {
-         vector<chain::permission_level>{{N(force.test),config::owner_name}},
+         vector<chain::permission_level>{{permission_account, config::active_name}},
          setfee{
                .account   = account,
                .action    = act,
@@ -841,10 +845,10 @@ void ensure_keosd_running(CLI::App* app) {
          return;
     }
     if (wallet_url != default_wallet_url)
-        return;
+      return;
 
     if (local_port_used())
-          return;
+       return;
 
     boost::filesystem::path binPath = boost::dll::program_location();
     binPath.remove_filename();
@@ -2284,7 +2288,7 @@ int main( int argc, char** argv ) {
 
    auto getSchedule = get_schedule_subcommand{get};
    auto getTransactionId = get_transaction_id_subcommand{get};
-   
+
    /*
    auto getTransactions = get->add_subcommand("transactions", localized("Retrieve all transactions with specific account name referenced in their scope"), false);
    getTransactions->add_option("account_name", account_name, localized("name of account to query on"))->required();
@@ -2346,7 +2350,6 @@ int main( int argc, char** argv ) {
 
    // set contract subcommand
    string account;
-
    string contractPath;
    string wasmPath;
    string abiPath;
@@ -2364,7 +2367,6 @@ int main( int argc, char** argv ) {
    abiSubcommand->add_option("abi-file", abiPath, localized("The fullpath containing the contract ABI"));//->required();
    abiSubcommand->add_flag( "-c,--clear", contract_clear, localized("Remove abi on an account"));
    abiSubcommand->add_flag( "--suppress-duplicate-check", suppress_duplicate_check, localized("Don't check for duplicate"));
-
 
    string action_to_set_fee;
    string fee_to_set;
@@ -2417,23 +2419,23 @@ int main( int argc, char** argv ) {
 
       bytes code_bytes;
       if(!contract_clear){
-      std::string wasm;
-      fc::path cpath(contractPath);
+        std::string wasm;
+        fc::path cpath(contractPath);
 
-      if( cpath.filename().generic_string() == "." ) cpath = cpath.parent_path();
+        if( cpath.filename().generic_string() == "." ) cpath = cpath.parent_path();
 
-      if( wasmPath.empty() )
-         wasmPath = (cpath / (cpath.filename().generic_string()+".wasm")).generic_string();
-      else
-         wasmPath = (cpath / wasmPath).generic_string();
+        if( wasmPath.empty() )
+           wasmPath = (cpath / (cpath.filename().generic_string()+".wasm")).generic_string();
+        else
+           wasmPath = (cpath / wasmPath).generic_string();
 
-      std::cerr << localized(("Reading WASM from " + wasmPath + "...").c_str()) << std::endl;
-      fc::read_file_contents(wasmPath, wasm);
-      EOS_ASSERT( !wasm.empty(), wast_file_not_found, "no wasm file found ${f}", ("f", wasmPath) );
+        std::cerr << localized(("Reading WASM from " + wasmPath + "...").c_str()) << std::endl;
+        fc::read_file_contents(wasmPath, wasm);
+        EOS_ASSERT( !wasm.empty(), wast_file_not_found, "no wasm file found ${f}", ("f", wasmPath) );
 
-      const string binary_wasm_header("\x00\x61\x73\x6d\x01\x00\x00\x00", 8);
-      if(wasm.compare(0, 8, binary_wasm_header))
-         std::cerr << localized("WARNING: ") << wasmPath << localized(" doesn't look like a binary WASM file. Is it something else, like WAST? Trying anyways...") << std::endl;
+        const string binary_wasm_header("\x00\x61\x73\x6d\x01\x00\x00\x00", 8);
+        if(wasm.compare(0, 8, binary_wasm_header))
+           std::cerr << localized("WARNING: ") << wasmPath << localized(" doesn't look like a binary WASM file. Is it something else, like WAST? Trying anyways...") << std::endl;
         code_bytes = bytes(wasm.begin(), wasm.end());
       } else {
         code_bytes = bytes();
@@ -2447,11 +2449,11 @@ int main( int argc, char** argv ) {
       }
 
       if (!duplicate) {
-      actions.emplace_back( create_setcode(account, code_bytes ) );
-      if ( shouldSend ) {
-         std::cerr << localized("Setting Code...") << std::endl;
-         send_actions(std::move(actions), 10000, packed_transaction::zlib);
-      }
+         actions.emplace_back( create_setcode(account, code_bytes ) );
+         if ( shouldSend ) {
+            std::cerr << localized("Setting Code...") << std::endl;
+            send_actions(std::move(actions), 10000, packed_transaction::zlib);
+         }
       } else {
          std::cerr << localized("Skipping set code because the new code is the same as the existing code") << std::endl;
       }
@@ -2473,16 +2475,16 @@ int main( int argc, char** argv ) {
 
       bytes abi_bytes;
       if(!contract_clear){
-      fc::path cpath(contractPath);
-      if( cpath.filename().generic_string() == "." ) cpath = cpath.parent_path();
+        fc::path cpath(contractPath);
+        if( cpath.filename().generic_string() == "." ) cpath = cpath.parent_path();
 
-      if( abiPath.empty() ) {
-         abiPath = (cpath / (cpath.filename().generic_string()+".abi")).generic_string();
-      } else {
-         abiPath = (cpath / abiPath).generic_string();
-      }
+        if( abiPath.empty() ) {
+           abiPath = (cpath / (cpath.filename().generic_string()+".abi")).generic_string();
+        } else {
+           abiPath = (cpath / abiPath).generic_string();
+        }
 
-      EOS_ASSERT( fc::exists( abiPath ), abi_file_not_found, "no abi file found ${f}", ("f", abiPath)  );
+        EOS_ASSERT( fc::exists( abiPath ), abi_file_not_found, "no abi file found ${f}", ("f", abiPath)  );
 
         abi_bytes = fc::raw::pack(fc::json::from_file(abiPath).as<abi_def>());
       } else {
@@ -2494,13 +2496,13 @@ int main( int argc, char** argv ) {
       }
 
       if (!duplicate) {
-      try {
-         actions.emplace_back( create_setabi(account, abi_bytes) );
-      } EOS_RETHROW_EXCEPTIONS(abi_type_exception,  "Fail to parse ABI JSON")
-      if ( shouldSend ) {
-         std::cerr << localized("Setting ABI...") << std::endl;
-         send_actions(std::move(actions), 10000, packed_transaction::zlib);
-      }
+         try {
+            actions.emplace_back( create_setabi(account, abi_bytes) );
+         } EOS_RETHROW_EXCEPTIONS(abi_type_exception,  "Fail to parse ABI JSON")
+         if ( shouldSend ) {
+            std::cerr << localized("Setting ABI...") << std::endl;
+            send_actions(std::move(actions), 10000, packed_transaction::zlib);
+         }
       } else {
          std::cerr << localized("Skipping set abi because the new abi is the same as the existing abi") << std::endl;
       }

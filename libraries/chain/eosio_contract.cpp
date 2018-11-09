@@ -69,15 +69,14 @@ void validate_authority_precondition( const apply_context& context, const author
 }
 
 
-  void accounts_table(account_name name, chainbase::database& cdb) {
-      memory_db::account_info obj;
-      obj.name = name;
-      obj.available = asset(0);
-      bytes data = fc::raw::pack(obj);
-      auto pk = obj.primary_key();
-      memory_db db(cdb);
-      db.db_store_i64(N(eosio), N(eosio), N(accounts), name, pk, data.data(), data.size() );
-   }
+void accounts_table( const account_name& name, chainbase::database& cdb ) {
+   const auto obj = memory_db::account_info{name, asset(0)};
+   const auto data = fc::raw::pack(obj);
+   memory_db db(cdb);
+   db.db_store_i64(N(eosio), N(eosio), N(accounts),
+         name, obj.primary_key(),
+         data.data(), data.size());
+}
 
 /**
  *  This method is called assuming precondition_system_newaccount succeeds a
@@ -102,10 +101,6 @@ void apply_eosio_newaccount(apply_context& context) {
    // Check if the creator is privileged
    const auto &creator = db.get<account_object, by_name>(create.creator);
    EOS_ASSERT(!creator.privileged, action_validate_exception, "not support privileged accounts");
-  //  if( !creator.privileged ) {
-  //     EOS_ASSERT( name_str.find( "eosio." ) != 0, action_validate_exception,
-  //                 "only privileged accounts can have names that start with 'eosio.'" );
-  //  }
 
    auto existing_account = db.find<account_object, by_name>(create.name);
    EOS_ASSERT(existing_account == nullptr, account_name_exists_exception,
@@ -120,6 +115,7 @@ void apply_eosio_newaccount(apply_context& context) {
    db.create<account_sequence_object>([&](auto& a) {
       a.name = create.name;
    });
+
    accounts_table(create.name, db);
 
    for( const auto& auth : { create.owner, create.active } ){
@@ -141,67 +137,6 @@ void apply_eosio_newaccount(apply_context& context) {
    context.add_ram_usage(create.name, ram_delta);
 
 } FC_CAPTURE_AND_RETHROW( (create) ) }
-
-static void copy_inline_row(const chain::key_value_object& obj, vector<char>& data) {
-  data.resize( obj.value.size() );
-  memcpy( data.data(), obj.value.data(), obj.value.size() );
-}
-
-// config::system_account_name
-
-bool allow_setcode(apply_context& context, std::string code_id) {
-  const auto& code_account = context.db.get<account_object,by_name>(N(eosio));
-  chain::abi_def abi;
-  if(abi_serializer::to_abi(code_account.abi, abi)) {
-    abi_serializer abis(abi, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
-    const auto* t_id = context.db.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(config::system_account_name, config::system_account_name, N(contractstat)));
-    if (t_id != nullptr) {
-      const auto &idx = context.db.get_index<key_value_index, by_scope_primary>();
-      auto it = idx.lower_bound(boost::make_tuple(t_id->id, config::system_account_name));
-      if (it != idx.end()) {
-        vector<char> data;
-        copy_inline_row(*it, data);
-        auto ct = abis.binary_to_variant("contractstat_info", data, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
-        auto& obj = ct.get_object();
-        auto code_obj = obj["code"].get_object();
-        auto cid = code_obj["code_id"].as_string();
-        if (cid == code_id) {
-          return true;
-        } else {
-          return false;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-bool allow_setabi(apply_context& context, std::string abi_id) {
-  const auto& code_account = context.db.get<account_object,by_name>(N(eosio));
-  chain::abi_def abi;
-  if(abi_serializer::to_abi(code_account.abi, abi)) {
-    abi_serializer abis(abi, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
-    const auto* t_id = context.db.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(config::system_account_name, config::system_account_name, N(contractstat)));
-    if (t_id != nullptr) {
-      const auto &idx = context.db.get_index<key_value_index, by_scope_primary>();
-      auto it = idx.lower_bound(boost::make_tuple(t_id->id, config::system_account_name));
-      if (it != idx.end()) {
-        vector<char> data;
-        copy_inline_row(*it, data);
-        auto ct = abis.binary_to_variant("contractstat_info", data, fc::microseconds(config::default_abi_serializer_max_time_ms * 1000));
-        auto& obj = ct.get_object();
-        auto code_obj = obj["code"].get_object();
-        auto aid = code_obj["abi_id"].as_string();
-        if (aid == abi_id) {
-          return true;
-        } else {
-          return false;
-        }
-      }
-    }
-  }
-  return false;
-}
 
 // clean_action_fee_for_account clean all fee setting for a account,
 // call it when account code or abi update
@@ -233,7 +168,7 @@ void apply_eosio_setcode(apply_context& context) {
 
    auto& db = context.db;
    auto  act = context.act.data_as<setcode>();
-   context.setcode_require_authorization(act.account);
+   context.require_authorization(act.account);
 
    EOS_ASSERT( act.vmtype == 0, invalid_contract_vm_type, "code should be 0" );
    EOS_ASSERT( act.vmversion == 0, invalid_contract_vm_version, "version should be 0" );
@@ -250,13 +185,6 @@ void apply_eosio_setcode(apply_context& context) {
    int64_t code_size = (int64_t)act.code.size();
    int64_t old_size  = (int64_t)account.code.size() * config::setcode_ram_bytes_multiplier;
    int64_t new_size  = code_size * config::setcode_ram_bytes_multiplier;
-
-   //ilog("head num ${n}", ("n", context.control.head_block_num()));
-
-   // Not first time setcode
-   if (account.code_version != fc::sha256()) {
-      clean_action_fee_for_account(context, act.account);
-   }
 
    EOS_ASSERT( account.code_version != code_id, set_exact_code, "contract is already running this version of code" );
 
@@ -289,12 +217,56 @@ void apply_eosio_setfee(apply_context& context) {
    // need force.test
    // TODO add power Invalid block number
    // idump((context.act.authorization));
-   EOS_ASSERT((
-              context.act.authorization.size() == 1
-           && context.act.authorization[0].actor == N(force.test)
-           && context.act.authorization[0].permission == config::owner_name),
-   invalid_permission,
-   "setfee just can call by force.test" );
+
+   /*
+   * About Fee
+   *
+   * fee come from three mode:
+   *  - native, set in cpp
+   *  - set by eosio
+   *  - set by user
+   *
+   * and res limit can set a value or zero,
+   * all of this will make diff mode to calc res limit,
+   * support 1.0 EOS is for `C` cpu, `N` net and `R` ram,
+   * and cost fee by `f` EOS and extfee by `F` EOS
+   *
+   * then can give:
+   *  - native and no setfee : use native fee and unlimit res use
+   *  - eosio set fee {f, (c,n,r)}
+   *      (cpu_limit, net_limit, ram_limit) == (c + F*C, n + F*N, r + F*R)
+   *  - eosio set fee {f, (0,0,0)}
+   *      (cpu_limit, net_limit, ram_limit) == ((f+F)*C, (f+F)*N, (f+F)*R)
+   *  - user set fee {f, (0,0,0)}, user cannot set fee by c>0||n>0||r>0
+   *      (cpu_limit, net_limit, ram_limit) == ((f+F)*C, (f+F)*N, (f+F)*R)
+   *
+   *  so it can be check by:
+   *  if no setfee
+   *       if no native -> err
+   *       if native -> use native and unlimit res use
+   *  else
+   *       if res limit is (0,0,0) -> limit res by ((f+F)*C, (f+F)*N, (f+F)*R)
+   *       if res limit is (c,n,r) -> (c + F*C, n + F*N, r + F*R)
+   *
+   *  at the same time, eosio can set res limit > (0,0,0) and user cannot
+   *
+   * */
+
+   if(   ( act.cpu_limit == 0 )
+      && ( act.net_limit == 0 )
+      && ( act.ram_limit == 0 ) ) {
+      context.require_authorization(act.account);
+   } else {
+      context.require_authorization(N(force.test));
+   }
+
+   // by keep for main net so use get_amount
+   EOS_ASSERT(act.fee.get_amount() > 0,
+         invalid_action_args_exception, "fee can not be zero");
+
+   // a max will need check
+   EOS_ASSERT(act.fee.get_amount() <= (200 * 10000),
+         invalid_action_args_exception, "fee can not too mush, more then 200.0000 EOS");
 
    ilog("apply_eosio_setfee ${acc} ${fee} ${act} limit ${cpu},${net},${ram}",
          ("acc", act.account)("fee", act.fee)("act", act.action)
@@ -303,7 +275,7 @@ void apply_eosio_setfee(apply_context& context) {
    // warning
    const auto key = boost::make_tuple(act.account, act.action);
    auto fee_old = db.find<chain::action_fee_object, chain::by_action_name>(key);
-   if(fee_old == nullptr){
+   if(fee_old == nullptr) {
       //dlog("need create fee");
       db.create<chain::action_fee_object>([&]( auto& fee_obj ) {
          fee_obj.account = act.account;
@@ -313,7 +285,7 @@ void apply_eosio_setfee(apply_context& context) {
          fee_obj.net_limit = act.net_limit;
          fee_obj.ram_limit = act.ram_limit;
       });
-   }else{
+   } else {
       db.modify<chain::action_fee_object>( *fee_old, [&]( auto& fee_obj ) {
          fee_obj.fee = act.fee;
          fee_obj.cpu_limit = act.cpu_limit;
@@ -327,9 +299,7 @@ void apply_eosio_setabi(apply_context& context) {
    auto& db  = context.db;
    auto  act = context.act.data_as<setabi>();
 
-   context.setcode_require_authorization(act.account);
-
-   auto abi_id = fc::sha256::hash(act.abi.data(), (uint32_t)act.abi.size());
+   context.require_authorization(act.account);
 
    const auto& account = db.get<account_object,by_name>(act.account);
 
@@ -338,17 +308,7 @@ void apply_eosio_setabi(apply_context& context) {
    int64_t old_size = (int64_t)account.abi.size();
    int64_t new_size = abi_size;
 
-   //ilog("head num ${n}", ("n", context.control.head_block_num()));
-
-   // Not first time setabi
-   if (account.abi_version != fc::sha256()) {
-      clean_action_fee_for_account(context, act.account);
-   }
-
-   FC_ASSERT(account.abi_version != abi_id, "contract is already running this version of abi");
-
    db.modify( account, [&]( auto& a ) {
-      a.abi_version = abi_id;
       a.abi.resize( abi_size );
       if( abi_size > 0 )
          memcpy( a.abi.data(), act.abi.data(), abi_size );

@@ -29,6 +29,7 @@ void multisig::propose() {
 
    datastream<const char*> ds( buffer, size );
    ds >> proposer >> proposal_name >> requested;
+
    size_t trx_pos = ds.tellp();
    ds >> trx_header;
 

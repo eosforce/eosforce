@@ -298,7 +298,7 @@ namespace eosio { namespace chain {
          encountered_extension |= extension;
          if( !stream.remaining() ) {
             if( extension ) {
-            continue;
+               continue;
             }
             if( encountered_extension ) {
                EOS_THROW( abi_exception, "Encountered field '${f}' without binary extension designation while processing struct '${p}'",
@@ -322,38 +322,38 @@ namespace eosio { namespace chain {
       auto btype = built_in_types.find(ftype );
       if( btype != built_in_types.end() ) {
          try {
-         return btype->second.first(stream, is_array(rtype), is_optional(rtype));
+            return btype->second.first(stream, is_array(rtype), is_optional(rtype));
          } EOS_RETHROW_EXCEPTIONS( unpack_exception, "Unable to unpack ${class} type '${type}' while processing '${p}'",
                                    ("class", is_array(rtype) ? "array of built-in" : is_optional(rtype) ? "optional of built-in" : "built-in")
                                    ("type", ftype)("p", ctx.get_path_string()) )
       }
       if ( is_array(rtype) ) {
          ctx.hint_array_type_if_in_array();
-        fc::unsigned_int size;
+         fc::unsigned_int size;
          try {
-        fc::raw::unpack(stream, size);
+            fc::raw::unpack(stream, size);
          } EOS_RETHROW_EXCEPTIONS( unpack_exception, "Unable to unpack size of array '${p}'", ("p", ctx.get_path_string()) )
-        vector<fc::variant> vars;
+         vector<fc::variant> vars;
          auto h1 = ctx.push_to_path( impl::array_index_path_item{} );
-        for( decltype(size.value) i = 0; i < size; ++i ) {
+         for( decltype(size.value) i = 0; i < size; ++i ) {
             ctx.set_array_index_of_path_back(i);
             auto v = _binary_to_variant(ftype, stream, ctx);
             // QUESTION: Is it actually desired behavior to require the returned variant to not be null?
             //           This would disallow arrays of optionals in general (though if all optionals in the array were present it would be allowed).
             //           Is there any scenario in which the returned variant would be null other than in the case of an empty optional?
             EOS_ASSERT( !v.is_null(), unpack_exception, "Invalid packed array '${p}'", ("p", ctx.get_path_string()) );
-           vars.emplace_back(std::move(v));
-        }
+            vars.emplace_back(std::move(v));
+         }
          // QUESTION: Why would the assert below ever fail?
-        EOS_ASSERT( vars.size() == size.value,
-                    unpack_exception, 
-                    "packed size does not match unpacked array size, packed size ${p} actual size ${a}",
-                    ("p", size)("a", vars.size()) );
-        return fc::variant( std::move(vars) );
+         EOS_ASSERT( vars.size() == size.value,
+                     unpack_exception,
+                     "packed size does not match unpacked array size, packed size ${p} actual size ${a}",
+                     ("p", size)("a", vars.size()) );
+         return fc::variant( std::move(vars) );
       } else if ( is_optional(rtype) ) {
-        char flag;
+         char flag;
          try {
-        fc::raw::unpack(stream, flag);
+            fc::raw::unpack(stream, flag);
          } EOS_RETHROW_EXCEPTIONS( unpack_exception, "Unable to unpack presence flag of optional '${p}'", ("p", ctx.get_path_string()) )
          return flag ? _binary_to_variant(ftype, stream, ctx) : fc::variant();
       } else {
@@ -362,7 +362,7 @@ namespace eosio { namespace chain {
             ctx.hint_variant_type_if_in_array( v_itr );
             fc::unsigned_int select;
             try {
-            fc::raw::unpack(stream, select);
+               fc::raw::unpack(stream, select);
             } EOS_RETHROW_EXCEPTIONS( unpack_exception, "Unable to unpack tag of variant '${p}'", ("p", ctx.get_path_string()) )
             EOS_ASSERT( (size_t)select < v_itr->second.types.size(), unpack_exception,
                         "Unpacked invalid tag (${select}) for variant '${p}'", ("select", select.value)("p",ctx.get_path_string()) );
@@ -487,7 +487,7 @@ namespace eosio { namespace chain {
                   EOS_THROW( pack_exception, "Early end to input array specifying the fields of struct '${p}'; require input for field '${f}'",
                              ("p", ctx.get_path_string())("f", ctx.maybe_shorten(field.name)) );
                }
-               }
+            }
          } else {
             EOS_THROW( pack_exception, "Unexpected input encountered while processing struct '${p}'", ("p",ctx.get_path_string()) );
          }

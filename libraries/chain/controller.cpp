@@ -257,7 +257,7 @@ struct controller_impl {
             EOS_ASSERT(s->block_num == blog.first_block_num() - 1, block_log_exception, "block log has no blocks and is not properly set up to start after the snapshot");
          }
       } else {
-      auto lh_block_num = log_head->block_num();
+         auto lh_block_num = log_head->block_num();
          if (s->block_num > lh_block_num) {
             EOS_ASSERT(s->block_num - 1 == lh_block_num, unlinkable_block_exception, "unlinkable block", ("s->block_num", s->block_num)("lh_block_num", lh_block_num));
             EOS_ASSERT(s->block->previous == log_head->id(), unlinkable_block_exception, "irreversible doesn't link to block log head");
@@ -269,7 +269,7 @@ struct controller_impl {
       db.commit( s->block_num );
 
       if( append_to_blog ) {
-      blog.append(s->block);
+         blog.append(s->block);
       }
 
       const auto& ubi = reversible_blocks.get_index<reversible_block_index,by_num>();
@@ -287,13 +287,13 @@ struct controller_impl {
             // when not applying a snapshot, make sure this is the next block
             if (!head || s->block_num == head->block_num + 1) {
                apply_block(s->block, controller::block_status::complete);
-         head = s;
+               head = s;
             } else {
                // otherwise, assert the one odd case where initializing a chain
                // from genesis creates and applies the first block automatically.
                // when syncing from another chain, this is pushed in again
                EOS_ASSERT(!head || head->block_num == 1, block_validate_exception, "Attempting to re-apply an irreversible block that was not the implied genesis block");
-      }
+            }
 
             fork_db.mark_in_current_chain(head, true);
             fork_db.set_validity(head, true);
@@ -305,38 +305,38 @@ struct controller_impl {
    void replay() {
       auto blog_head = blog.read_head();
       auto blog_head_time = blog_head->timestamp.to_time_point();
-            replaying = true;
+      replaying = true;
       replay_head_time = blog_head_time;
       ilog( "existing block log, attempting to replay ${n} blocks", ("n",blog_head->block_num()) );
 
-            auto start = fc::time_point::now();
-            while( auto next = blog.read_block_by_num( head->block_num + 1 ) ) {
-               self.push_block( next, controller::block_status::irreversible );
-               if( next->block_num() % 100 == 0 ) {
+      auto start = fc::time_point::now();
+      while( auto next = blog.read_block_by_num( head->block_num + 1 ) ) {
+         self.push_block( next, controller::block_status::irreversible );
+         if( next->block_num() % 100 == 0 ) {
             std::cerr << std::setw(10) << next->block_num() << " of " << blog_head->block_num() <<"\r";
-               }
-            }
-            std::cerr<< "\n";
-            ilog( "${n} blocks replayed", ("n", head->block_num) );
+         }
+      }
+      std::cerr<< "\n";
+      ilog( "${n} blocks replayed", ("n", head->block_num) );
 
-            // if the irreverible log is played without undo sessions enabled, we need to sync the
-            // revision ordinal to the appropriate expected value here.
-            if( self.skip_db_sessions( controller::block_status::irreversible ) )
-            db.set_revision(head->block_num);
+      // if the irreverible log is played without undo sessions enabled, we need to sync the
+      // revision ordinal to the appropriate expected value here.
+      if( self.skip_db_sessions( controller::block_status::irreversible ) )
+         db.set_revision(head->block_num);
 
-            int rev = 0;
-            while( auto obj = reversible_blocks.find<reversible_block_object,by_num>(head->block_num+1) ) {
-               ++rev;
-               self.push_block( obj->get_block(), controller::block_status::validated );
-            }
+      int rev = 0;
+      while( auto obj = reversible_blocks.find<reversible_block_object,by_num>(head->block_num+1) ) {
+         ++rev;
+         self.push_block( obj->get_block(), controller::block_status::validated );
+      }
 
-            ilog( "${n} reversible blocks replayed", ("n",rev) );
-            auto end = fc::time_point::now();
-            ilog( "replayed ${n} blocks in ${duration} seconds, ${mspb} ms/block",
-                  ("n", head->block_num)("duration", (end-start).count()/1000000)
-                  ("mspb", ((end-start).count()/1000.0)/head->block_num)        );
-            replaying = false;
-            replay_head_time.reset();
+      ilog( "${n} reversible blocks replayed", ("n",rev) );
+      auto end = fc::time_point::now();
+      ilog( "replayed ${n} blocks in ${duration} seconds, ${mspb} ms/block",
+            ("n", head->block_num)("duration", (end-start).count()/1000000)
+            ("mspb", ((end-start).count()/1000.0)/head->block_num)        );
+      replaying = false;
+      replay_head_time.reset();
    }
 
    void init(const snapshot_reader_ptr& snapshot) {
@@ -430,13 +430,12 @@ struct controller_impl {
       });
    }
 
-   void initialize_schedule(producer_schedule_type &schedule) {
-       for (auto producer : conf.genesis.initial_producer_list) {
-         producer_key key;
-         key.producer_name = producer.name;
-         key.block_signing_key = producer.bpkey;
-         schedule.producers.push_back(key);
-       }
+   void initialize_schedule( producer_schedule_type& schedule ) {
+      schedule.version = 0;
+      schedule.producers.reserve(config::max_producers);
+      for( const auto& producer : conf.genesis.initial_producer_list ) {
+         schedule.producers.push_back({producer.name, producer.bpkey});
+      }
    }
 
    void add_contract_tables_to_snapshot( const snapshot_writer_ptr& snapshot ) const {
@@ -589,9 +588,7 @@ struct controller_impl {
     */
    void initialize_fork_db() {
       wlog( " Initializing new blockchain with genesis state                  " );
-      // producer_schedule_type initial_schedule{ 0, {{config::system_account_name, conf.genesis.initial_key}} };
       producer_schedule_type initial_schedule;
-      initial_schedule.version = 0;
       initialize_schedule(initial_schedule);
 
       block_header_state genheader;
@@ -643,136 +640,119 @@ struct controller_impl {
 
       resource_limits.add_pending_ram_usage(name, ram_delta);
       resource_limits.verify_account_ram_usage(name);
-      //dlog("create_native_account : ${name}", ("name", name));
    }
 
+   // initialize_producer init bios bps in initial_producer_list
    void initialize_producer() {
-      for (auto producer : conf.genesis.initial_producer_list) {
-         auto name = producer.name;
-         auto public_key = producer.bpkey;
-         authority auth(public_key);
+      auto db = memory_db(self);
+      for( const auto& producer : conf.genesis.initial_producer_list ) {
+         const auto& name = producer.name;
+         const auto& public_key = producer.bpkey;
+
+         // create accpimt for init bps
+         const authority auth(public_key);
          create_native_account(name, auth, auth, false);
+
+         // store bp data in bp table
          memory_db::bp_info obj;
          obj.name = name;
          obj.producer_key = public_key;
          obj.commission_rate = producer.commission_rate;
          obj.url = producer.url;
-         obj.total_staked = 0;
-         obj.voteage_update_height = 0;
-         obj.total_voteage = 0;
-         obj.emergency = false;
-         auto pk = obj.primary_key();
-         auto db = memory_db(self);
-         bytes data = fc::raw::pack(obj);
-         db.db_store_i64(N(eosio), N(eosio), N(bps), name, pk, data.data(), data.size() );
+
+         const auto data = fc::raw::pack(obj);
+         db.db_store_i64(N(eosio), N(eosio), N(bps),
+                         name, obj.primary_key(),
+                         data.data(), data.size());
       }
    }
 
-   void initialize_chain_emergency(){
-      memory_db::chain_status obj;
-      obj.name = N(chainstatus);
-      obj.emergency = false;
-      bytes data = fc::raw::pack(obj);
-      auto pk = obj.primary_key();
+   // initialize_chain_emergency init chain emergency stat
+   void initialize_chain_emergency() {
+      const memory_db::chain_status obj{N(chainstatus), false};
+      const auto data = fc::raw::pack(obj);
       auto db = memory_db(self);
-      db.db_store_i64(N(eosio), N(eosio), N(chainstatus), N(eosio), pk, data.data(), data.size() );
+      db.db_store_i64(N(eosio), N(eosio), N(chainstatus),
+                      N(eosio), obj.primary_key(),
+                      data.data(), data.size());
    }
 
-   void accounts_table(account_name name, asset balance) {
-      memory_db::account_info obj;
-      obj.name = name;
-      obj.available = balance;
-
-      bytes data = fc::raw::pack(obj);
-      auto pk = obj.primary_key();
+   // initialize_account_to_table init account data in accounts table
+   void initialize_account_to_table( const account_name& name, const asset& balance ) {
+      const memory_db::account_info obj{name, balance};
+      const auto data = fc::raw::pack(obj);
       auto db = memory_db(self);
-      db.db_store_i64(N(eosio), N(eosio), N(accounts), name, pk, data.data(), data.size());
+      db.db_store_i64(N(eosio), N(eosio), N(accounts),
+                      name, obj.primary_key(),
+                      data.data(), data.size());
    }
 
-   bytes format_name(std::string name) {
-     bytes namef;
-     for (int i = 0; i < 12; i++ ) {
-       if (name[i] >= 'A' && name[i] <= 'Z') {
-         namef.push_back(name[i] + 32);
-       }
-       if (name[i] >= 'a' && name[i] <= 'z') {
-         namef.push_back(name[i]);
-       }
-       if (name[i] >= '1' && name[i] <= '5') {
-         namef.push_back(name[i]);
-       }
-       if (name[i] >= '6' && name[i] <= '9') {
-         namef.push_back(name[i] - 5);
-       }
-     }
-     if (namef.size() < 12) {
-       FC_ASSERT(false, "initialize format name failed");
-     }
-     return namef;
-   }
-
+   // initialize_account init account from genesis
    void initialize_account() {
-     for (auto account : conf.genesis.initial_account_list) {
-       auto public_key = account.key;
-       auto amount = account.asset;
-       authority auth(public_key);
-       account_name acc_name = account.name;
-       if (acc_name == N(a)) {
-           auto name = std::string(public_key);
-           name = name.substr(name.size() - 12, 12);
-           bytes namef = format_name(name);
-           ilog("---name:${name}, publickey: ${pb}, amount: ${amount}", ("name", namef.data())("pb", public_key)("amount", amount));
-           acc_name = string_to_name(namef.data());
-       }
-       accounts_table(acc_name, amount);
-       create_native_account(acc_name, auth, auth, false);
-     }
+      const auto acc_name_a = N(a);
+      for( const auto& account : conf.genesis.initial_account_list ) {
+         const auto& public_key = account.key;
+         const auto& amount = account.asset;
+         const authority auth(public_key);
+         auto acc_name = account.name;
+         if( acc_name == acc_name_a ) {
+            const auto pk_str = std::string(public_key);
+            const auto name_r = pk_str.substr(pk_str.size() - 12, 12);
+            acc_name = string_to_name(format_name(name_r).c_str());
+            ilog("name:${pk_str} -> ${name_r} -> ${acc}, publickey: ${pb}, amount: ${amount}",
+                 ("pk_str", pk_str)("name_r", name_r)("acc", acc_name)
+                 ("pb", public_key)("amount", amount));
+         }
+         initialize_account_to_table(acc_name, amount);
+         create_native_account(acc_name, auth, auth, false);
+      }
    }
 
-   void initialize_contract(uint64_t contract, const bytes code, const bytes abi){
-       initialize_contract(contract, code, abi, false);
+   // initialize_contract init sys contract
+   void initialize_contract( const uint64_t& contract,
+                             const bytes& code,
+                             const bytes& abi,
+                             const bool privileged = false ) {
+      const auto& code_id = fc::sha256::hash(code.data(), (uint32_t) code.size());
+      const int64_t code_size = code.size();
+      const int64_t abi_size = abi.size();
+
+      const auto& account = db.get<account_object, by_name>(contract);
+      db.modify(account, [&]( auto& a ) {
+         a.last_code_update = conf.genesis.initial_timestamp;
+         a.privileged = privileged;
+
+         a.code_version = code_id;
+         a.code.resize(code_size);
+         memcpy(a.code.data(), code.data(), code_size);
+
+         a.abi.resize(abi_size);
+         if( abi_size > 0 ) {
+            memcpy(a.abi.data(), abi.data(), abi_size);
+         }
+      });
+
+      const auto& account_sequence = db.get<account_sequence_object, by_name>(contract);
+      db.modify(account_sequence, [&]( auto& aso ) {
+         aso.code_sequence += 1;
+         aso.abi_sequence += 1;
+      });
    }
 
-  void initialize_contract(const uint64_t contract, const bytes code, const bytes abi, const bool privileged){
-     auto code_id = fc::sha256::hash(code.data(), (uint32_t)code.size());
-     int64_t code_size = code.size();
-     auto abi_id = fc::sha256::hash(abi.data(), (uint32_t)abi.size());
-     int64_t abi_size = abi.size();
+   // initialize_eos_stats init stats for eos token
+   void initialize_eos_stats() {
+      const memory_db::currency_stats obj{
+            asset(10000000),
+            asset(100000000000),
+            N(eosio.token)
+      };
+      const auto& sym = symbol(CORE_SYMBOL).to_symbol_code();
+      const auto& data = fc::raw::pack(obj);
 
-     const auto &account = db.get<account_object, by_name>(contract);
-     db.modify(account, [&](auto &a) {
-       a.last_code_update = conf.genesis.initial_timestamp;
-       a.privileged = privileged;
-       a.code_version = code_id;
-       a.code.resize(code_size);
-       a.abi_version = abi_id;
-       a.abi.resize(abi_size);
-       memcpy(a.code.data(), code.data(), code_size);
-       if (abi_size > 0)
-         memcpy(a.abi.data(), abi.data(), abi_size);
-     });
-
-     const auto &account_sequence = db.get<account_sequence_object, by_name>(contract);
-     db.modify(account_sequence, [&](auto &aso) {
-       aso.code_sequence += 1;
-       aso.abi_sequence += 1;
-     });
-   }
-   
-   void initialize_EOS_stats() {
-   	  memory_db::currency_stats stat;
-   	  auto issuer = N(eosio.token);
-      
-      stat.supply 		= asset(10000000, EOS_SYMBOL);
-      stat.max_supply	= asset(100000000000, EOS_SYMBOL);
-      stat.issuer		= issuer;
-      
-   	  auto sym = stat.max_supply.get_symbol().to_symbol_code();
-
-      bytes data = fc::raw::pack(stat);
-      auto pk = stat.primary_key();
       auto db = memory_db(self);
-      db.db_store_i64(N(eosio.token), sym, N(stat), issuer, pk, data.data(), data.size());
+      db.db_store_i64(N(eosio.token), sym, N(stat),
+                      N(eosio.token), obj.primary_key(),
+                      data.data(), data.size());
    }
 
    void initialize_database() {
@@ -798,11 +778,9 @@ struct controller_impl {
       create_native_account( config::system_account_name, system_auth, system_auth, true );
       create_native_account( N(eosio.token), system_auth, system_auth, false );
 
-      //init contract: System
       initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi, true);
-      //init contract: eosio.token
       initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
-      initialize_EOS_stats();
+      initialize_eos_stats();
 
       initialize_account();
       initialize_producer();
@@ -1131,37 +1109,35 @@ struct controller_impl {
       return r;
    }
 
-    bool check_chainstatus() const
-    {
+   bool check_chainstatus() const {
       const auto *cstatus_tid = db.find<table_id_object, by_code_scope_table>(
             boost::make_tuple(N(eosio), N(eosio), N(chainstatus)));
 
-      FC_ASSERT((cstatus_tid != nullptr),"get chainstatus fatal");
+      EOS_ASSERT(cstatus_tid != nullptr, fork_database_exception, "get chainstatus fatal");
 
-      const auto &idx = db.get_index<key_value_index, by_scope_primary>();
-      auto it = idx.lower_bound(boost::make_tuple(cstatus_tid->id, N(chainstatus)));
-      FC_ASSERT((it != idx.end()),"get chainstatus fatal");
+      const auto& idx = db.get_index<key_value_index, by_scope_primary>();
+      const auto it = idx.lower_bound(boost::make_tuple(cstatus_tid->id, N(chainstatus)));
 
-      vector<char> data(it->value.size());
-      memcpy(data.data(), it->value.data(), it->value.size());
+      EOS_ASSERT(( it != idx.end()), fork_database_exception, "get chainstatus fatal by no stat");
 
-      auto cstatus = fc::raw::unpack<memory_db::chain_status>(data);
+      auto cstatus = fc::raw::unpack<memory_db::chain_status>(
+            it->value.data(),
+            it->value.size());
       return cstatus.emergency;
-    }
+   }
 
-   void check_action(const vector<action>& actions) const
-   {
+   void check_action( const vector<action>& actions ) const {
       const auto chain_status = check_chainstatus();
-      for(const auto &_a : actions){
+      for( const auto& _a : actions ) {
          EOS_ASSERT(_a.data.size() < config::default_trx_size,
-               invalid_action_args_exception,
-               "must less than 100 * 1024 bytes");
-         EOS_ASSERT((!chain_status
-                    || _a.name == N(setemergency)
-                    || _a.name == N(onblock)
-                    || _a.name == N(onfee)),
-               invalid_action_args_exception,
-               "chain is in emergency now !" );
+                    invalid_action_args_exception,
+                    "must less than 100 * 1024 bytes");
+         EOS_ASSERT(( !chain_status
+                      || _a.name == N(setemergency)
+                      || _a.name == N(onblock)
+                      || _a.name == N(onfee)),
+                    invalid_action_args_exception,
+                    "chain is in emergency now !");
       }
    }
 
@@ -1362,13 +1338,15 @@ struct controller_impl {
                   });
             }
 
-          // when on the specific block : load new System contract
-          if(conf.System01_contract_block_num == head->block_num){
-              ilog(" ---- update System contract ---- ");
-              initialize_contract(N(eosio), conf.System01_code, conf.System01_abi);
-          }
-         if(conf.msig_block_num == head->block_num){
-            ilog(" ---- update eosio.msig contract ---- ");
+         // when on the specific block : load new System contract
+         if( conf.System01_contract_block_num == head->block_num ) {
+            ilog("update System contract");
+            initialize_contract(N(eosio), conf.System01_code, conf.System01_abi, true);
+         }
+
+         // when on the specific block : load eosio.msig contract
+         if( conf.msig_block_num == head->block_num ) {
+            ilog("update eosio.msig contract");
             initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
          }
 
@@ -1502,7 +1480,7 @@ struct controller_impl {
          // on replay irreversible is not emitted by fork database, so emit it explicitly here
          if( s == controller::block_status::irreversible )
             emit( self.irreversible_block, new_header_state );
-            
+
       } FC_LOG_AND_RETHROW( )
    }
 
@@ -1805,7 +1783,7 @@ struct controller_impl {
       return trx;
    }
 
-   signed_transaction get_on_fee_transaction( asset fee, account_name actor)
+   signed_transaction get_on_fee_transaction( const asset &fee, const account_name &actor)
    {
       action on_fee_act;
       on_fee_act.account = config::system_account_name;
@@ -2381,6 +2359,30 @@ bool controller::is_resource_greylisted(const account_name &name) const {
 
 const flat_set<account_name> &controller::get_resource_greylist() const {
    return  my->conf.resource_greylist;
+}
+
+// format_name format name from genesis
+const std::string format_name( const std::string& name ) {
+   std::stringstream ss;
+   for( int i = 0; i < 12; i++ ) {
+      const auto n = name[i];
+      if( n >= 'A' && n <= 'Z' ) {
+         ss << static_cast<char>( n + 32 );
+      } else if(( n >= 'a' && n <= 'z' ) || ( n >= '1' && n <= '5' )) {
+         ss << static_cast<char>( n );
+      } else if( n >= '6' && n <= '9' ) {
+         ss << static_cast<char>( n - 5 );
+      } else {
+         // unknown char no process
+      }
+   }
+
+   const auto res = ss.str();
+
+   if( res.size() < 12 ) {
+      EOS_ASSERT(false, name_type_exception, "initialize format name failed");
+   }
+   return res;
 }
 
 } } /// eosio::chain

@@ -139,7 +139,7 @@ public:
    };
 
    struct get_account_params {
-      name account_name;
+      name             account_name;
       optional<symbol> expected_core_symbol;
    };
    get_account_results get_account( const get_account_params& params )const;
@@ -466,27 +466,26 @@ public:
       return result;
    }
 
-    //Convert the table_key string to the uint64_t. can't supprot combination key
-   static uint64_t get_table_key(const read_only::get_table_rows_params& p, const abi_def& abi ){
+   //Convert the table_key string to the uint64_t. can't supprot combination key
+   static uint64_t get_table_key( const read_only::get_table_rows_params& p, const abi_def& abi ) {
       string key_type;
-      for ( auto t : abi.tables ) {
-        if ( t.name == p.table ) {
-          key_type = t.key_types[0];
-        }
+      for( const auto &t : abi.tables ) {
+         if( t.name == p.table ) {
+            key_type = t.key_types[0];
+         }
       }
 
       uint64_t t_key = 0;
       try {
-        if ( key_type == "account_name" || key_type == "name" ) {
-          name k(p.table_key);
-          t_key = k.value;
-        } else if ( key_type == "uint64" && p.table_key != "" ) {
-          auto trimmed_key_str = p.table_key;
-          boost::trim(trimmed_key_str);
-          t_key = boost::lexical_cast<uint64_t>(trimmed_key_str.c_str(), trimmed_key_str.size());
-        }
+         if( key_type == "account_name" || key_type == "name" ) {
+            t_key = eosio::chain::string_to_name(p.table_key.c_str());
+         } else if( key_type == "uint64" && p.table_key != "" ) {
+            string trimmed_key_str = p.table_key;
+            boost::trim(trimmed_key_str);
+            t_key = boost::lexical_cast<uint64_t>(trimmed_key_str.c_str(), trimmed_key_str.size());
+         }
       } catch( ... ) {
-        FC_ASSERT( false, "could not convert table_key string to any of the following: valid account_name, uint64_t" );
+         FC_THROW("could not convert table_key string to any of the following: valid account_name, uint64_t");
       }
       return t_key;
    }
@@ -503,42 +502,40 @@ public:
       abi_serializer abis;
       abis.set_abi(abi, abi_serializer_max_time);
       const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(p.code, scope, p.table));
-      
       if (t_id != nullptr) {
-        const auto& idx = d.get_index<IndexType, chain::by_scope_primary>();
-        decltype(t_id->id) next_tid(t_id->id._id + 1);
-        auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
-        auto upper = idx.lower_bound(boost::make_tuple(next_tid));
-        
-        //Return only rows that contain key.
-        if(!p.table_key.empty()) {
-          const auto& idxk = d.get_index<chain::key_value_index, chain::by_scope_primary>();
-          lower = idxk.lower_bound( boost::make_tuple( t_id->id, t_key));
-          upper = idxk.lower_bound(boost::make_tuple(next_tid, t_key));
-          if ( lower == idxk.end() || lower->t_id != t_id->id || t_key != lower->primary_key ){
-             return result;
-          }
-        } else {
-         if (p.lower_bound.size()) {
-            if (p.key_type == "name") {
-               name s(p.lower_bound);
-               lower = idx.lower_bound( boost::make_tuple( t_id->id, s.value ));
-            } else {
-               auto lv = convert_to_type<typename IndexType::value_type::key_type>( p.lower_bound, "lower_bound" );
-               lower = idx.lower_bound( boost::make_tuple( t_id->id, lv ));
-            }
-         }
-         if (p.upper_bound.size()) {
-            if (p.key_type == "name") {
-               name s(p.upper_bound);
-               upper = idx.lower_bound( boost::make_tuple( t_id->id, s.value ));
-            } else {
-               auto uv = convert_to_type<typename IndexType::value_type::key_type>( p.upper_bound, "upper_bound" );
-               upper = idx.lower_bound( boost::make_tuple( t_id->id, uv ));
-            }
-         }
+         const auto& idx = d.get_index<IndexType, chain::by_scope_primary>();
+         decltype(t_id->id) next_tid(t_id->id._id + 1);
+         auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
+         auto upper = idx.lower_bound(boost::make_tuple(next_tid));
 
-        }
+         //Return only rows that contain key.
+         if( !p.table_key.empty()) {
+            const auto& idxk = d.get_index<chain::key_value_index, chain::by_scope_primary>();
+            lower = idxk.lower_bound(boost::make_tuple(t_id->id, t_key));
+            upper = idxk.lower_bound(boost::make_tuple(next_tid, t_key));
+            if( lower == idxk.end() || lower->t_id != t_id->id || t_key != lower->primary_key ) {
+               return result;
+            }
+         } else {
+            if( p.lower_bound.size()) {
+               if( p.key_type == "name" ) {
+                  name s(p.lower_bound);
+                  lower = idx.lower_bound(boost::make_tuple(t_id->id, s.value));
+               } else {
+                  auto lv = convert_to_type<typename IndexType::value_type::key_type>(p.lower_bound, "lower_bound");
+                  lower = idx.lower_bound(boost::make_tuple(t_id->id, lv));
+               }
+            }
+            if( p.upper_bound.size()) {
+               if( p.key_type == "name" ) {
+                  name s(p.upper_bound);
+                  upper = idx.lower_bound(boost::make_tuple(t_id->id, s.value));
+               } else {
+                  auto uv = convert_to_type<typename IndexType::value_type::key_type>(p.upper_bound, "upper_bound");
+                  upper = idx.lower_bound(boost::make_tuple(t_id->id, uv));
+               }
+            }
+         }
 
          vector<char> data;
 

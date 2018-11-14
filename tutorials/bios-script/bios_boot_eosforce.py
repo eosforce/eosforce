@@ -178,16 +178,20 @@ def stepMakeGenesis():
 
     run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System01/System01.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System01/System01.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/System02/System02.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.wasm ' + os.path.abspath(args.config_dir))
 
     # testnet will use new System contract from start
-    run('cp ' + args.contracts_dir + '/System01/System01.abi ' + os.path.abspath(args.config_dir) + "/System.abi")
-    run('cp ' + args.contracts_dir + '/System01/System01.wasm ' + os.path.abspath(args.config_dir) + "/System.wasm")
+    run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir) + "/System01.abi")
+    run('cp ' + args.contracts_dir + '/System02/System02.wasm ' + os.path.abspath(args.config_dir) + "/System01.wasm")
+
+    # testnet will use new System contract from start
+    run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir) + "/System.abi")
+    run('cp ' + args.contracts_dir + '/System02/System02.wasm ' + os.path.abspath(args.config_dir) + "/System.wasm")
 
     run(args.root + 'build/programs/genesis/genesis')
     run('mv ./genesis.json ' + os.path.abspath(args.config_dir))

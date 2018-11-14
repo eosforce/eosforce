@@ -144,6 +144,10 @@ namespace eosiosystem {
             v.bpname = bpname;
             v.staked = stake;
          });
+
+         // 1 EOS for 1KB
+         set_resource_limits( voter, stake.amount / 10, -1, -1 );
+
       } else {
          change = stake.amount - vts->staked.amount;
          //act.available is already handling fee
@@ -157,6 +161,9 @@ namespace eosiosystem {
                v.unstaking.amount += -change;
                v.unstake_height = current_block_num();
             }
+
+            // 1 EOS for 1KB
+            set_resource_limits( voter, stake.amount / 10, -1, -1 );
          });
       }
 
@@ -358,6 +365,8 @@ namespace eosiosystem {
       bps_table bps_tbl(_self, _self);
       accounts_table acnts_tbl(_self, _self);
       schedules_table schs_tbl(_self, _self);
+
+      // FIXME By FanYang no reward if user vote for ram
 
       //calculate total staked all of the bps
       int64_t staked_all_bps = 0;

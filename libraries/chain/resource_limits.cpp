@@ -269,15 +269,39 @@ bool resource_limits_manager::set_account_limits( const account_name& account, i
    return decreased_limit;
 }
 
+inline int64_t get_account_ram_limit( const account_name& name, const int64_t ram_bytes ) {
+   // TODO use new setting after a block num
+
+   const int64_t init_ram_size = 16*1024;
+   // if is account by system use ram unlimit,
+   // if is a common account with -1 ram limit use init limit
+   if(    name == config::system_account_name
+       || name == N(force.ram)
+       || name == N(force.cpu)
+       || name == N(force.net)
+       || name == N(force.test)
+       || name == N(eosio.token)
+       || name == N(eosio.msig)
+       || name == N(eosio.bios) ) {
+      return -1;
+   }
+
+   if( ram_bytes == -1 ) {
+      return init_ram_size;
+   } else {
+      return ram_bytes + init_ram_size;
+   }
+}
+
 void resource_limits_manager::get_account_limits( const account_name& account, int64_t& ram_bytes, int64_t& net_weight, int64_t& cpu_weight ) const {
    const auto* pending_buo = _db.find<resource_limits_object,by_owner>( boost::make_tuple(true, account) );
    if (pending_buo) {
-      ram_bytes  = pending_buo->ram_bytes;
+      ram_bytes = get_account_ram_limit( account, pending_buo->ram_bytes );
       net_weight = pending_buo->net_weight;
       cpu_weight = pending_buo->cpu_weight;
    } else {
       const auto& buo = _db.get<resource_limits_object,by_owner>( boost::make_tuple( false, account ) );
-      ram_bytes  = buo.ram_bytes;
+      ram_bytes = get_account_ram_limit( account, buo.ram_bytes );
       net_weight = buo.net_weight;
       cpu_weight = buo.cpu_weight;
    }

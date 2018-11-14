@@ -20,6 +20,8 @@ namespace eosio { namespace chain {
       init_native_fee(eosio_acc, N(transfer),     asset(100));
       init_native_fee(eosio_acc, N(vote),         asset(500));
       init_native_fee(eosio_acc, N(unfreeze),     asset(100));
+      init_native_fee(eosio_acc, N(vote4ram),     asset(500));
+      init_native_fee(eosio_acc, N(unfreezeram),  asset(100));
       init_native_fee(eosio_acc, N(claim),        asset(300));
       init_native_fee(eosio_acc, N(updatebp),     asset(100*10000));
       init_native_fee(eosio_acc, N(setemergency), asset(10*10000));

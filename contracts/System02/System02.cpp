@@ -192,14 +192,16 @@ namespace eosiosystem {
       //reward bps
       reward_bps(block_producers);
 
-      //reward block.one
-      const auto& b1 = acnts_tbl.get(N(b1), "b1 is not found in accounts table");
-      acnts_tbl.modify(b1, 0, [&]( account_info& a ) {
-         a.available += asset(BLOCK_REWARDS_B1, SYMBOL);
-      });
+
 
       //update schedule
       if( current_block_num() % UPDATE_CYCLE == 0 ) {
+         //reward block.one
+         const auto& b1 = acnts_tbl.get(N(b1), "b1 is not found in accounts table");
+         acnts_tbl.modify(b1, 0, [&]( account_info& a ) {
+            a.available += asset(BLOCK_REWARDS_B1 * UPDATE_CYCLE, SYMBOL);
+         });
+
          update_elected_bps();
       }
    }

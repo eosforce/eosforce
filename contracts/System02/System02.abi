@@ -121,6 +121,14 @@
       "type": "unfreeze",
       "ricardian_contract": ""
     },{
+      "name": "vote4ram",
+      "type": "vote",
+      "ricardian_contract": ""
+    },{
+      "name": "unfreezeram",
+      "type": "unfreeze",
+      "ricardian_contract": ""
+    },{
       "name": "claim",
       "type": "claim",
       "ricardian_contract": ""
@@ -145,6 +153,12 @@
           "key_types": ["account_name"]
        },{
           "name":"votes",
+          "type":"vote_info",
+          "index_type":"i64",
+          "key_names": ["bpname"],
+          "key_types": ["account_name"]
+       },{
+          "name":"votes4ram",
           "type":"vote_info",
           "index_type":"i64",
           "key_names": ["bpname"],

@@ -120,6 +120,79 @@ namespace eosiosystem {
       });
    }
 
+   void system_contract::vote4ram( const account_name voter, const account_name bpname, const asset stake ) {
+      require_auth(voter);
+      accounts_table acnts_tbl(_self, _self);
+      const auto& act = acnts_tbl.get(voter, "voter is not found in accounts table");
+
+      bps_table bps_tbl(_self, _self);
+      const auto& bp = bps_tbl.get(bpname, "bpname is not registered");
+
+      eosio_assert(stake.symbol == SYMBOL, "only support EOS which has 4 precision");
+      eosio_assert(0 <= stake.amount && stake.amount % 10000 == 0,
+                   "need stake quantity >= 0.0000 EOS and quantity is integer");
+
+      int64_t change = 0;
+      votes4ram_table votes_tbl(_self, voter);
+      auto vts = votes_tbl.find(bpname);
+      if( vts == votes_tbl.end()) {
+         change = stake.amount;
+         //act.available is already handling fee
+         eosio_assert(stake.amount <= act.available.amount, "need stake quantity < your available balance");
+
+         votes_tbl.emplace(voter, [&]( vote_info& v ) {
+            v.bpname = bpname;
+            v.staked = stake;
+         });
+      } else {
+         change = stake.amount - vts->staked.amount;
+         //act.available is already handling fee
+         eosio_assert(change <= act.available.amount, "need stake change quantity < your available balance");
+
+         votes_tbl.modify(vts, 0, [&]( vote_info& v ) {
+            v.voteage += v.staked.amount / 10000 * ( current_block_num() - v.voteage_update_height );
+            v.voteage_update_height = current_block_num();
+            v.staked = stake;
+            if( change < 0 ) {
+               v.unstaking.amount += -change;
+               v.unstake_height = current_block_num();
+            }
+         });
+      }
+
+      if( change > 0 ) {
+         acnts_tbl.modify(act, 0, [&]( account_info& a ) {
+            a.available.amount -= change;
+         });
+      }
+
+      bps_tbl.modify(bp, 0, [&]( bp_info& b ) {
+         b.total_voteage += b.total_staked * ( current_block_num() - b.voteage_update_height );
+         b.voteage_update_height = current_block_num();
+         b.total_staked += change / 10000;
+      });
+   }
+
+   void system_contract::unfreezeram( const account_name voter, const account_name bpname ) {
+      require_auth(voter);
+      accounts_table acnts_tbl(_self, _self);
+      const auto& act = acnts_tbl.get(voter, "voter is not found in accounts table");
+
+      votes4ram_table votes_tbl(_self, voter);
+      const auto& vts = votes_tbl.get(bpname, "voter have not add votes to the the producer yet");
+
+      eosio_assert(vts.unstake_height + FROZEN_DELAY < current_block_num(), "unfreeze is not available yet");
+      eosio_assert(0 < vts.unstaking.amount, "need unstaking quantity > 0.0000 EOS");
+
+      acnts_tbl.modify(act, 0, [&]( account_info& a ) {
+         a.available += vts.unstaking;
+      });
+
+      votes_tbl.modify(vts, 0, [&]( vote_info& v ) {
+         v.unstaking.set_amount(0);
+      });
+   }
+
    void system_contract::claim( const account_name voter, const account_name bpname ) {
       require_auth(voter);
       accounts_table acnts_tbl(_self, _self);

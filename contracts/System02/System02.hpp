@@ -102,6 +102,7 @@ namespace eosiosystem {
 
       typedef eosio::multi_index<N(accounts), account_info> accounts_table;
       typedef eosio::multi_index<N(votes), vote_info> votes_table;
+      typedef eosio::multi_index<N(votes4ram), vote_info> votes4ram_table;
       typedef eosio::multi_index<N(bps), bp_info> bps_table;
       typedef eosio::multi_index<N(schedules), schedule_info> schedules_table;
       typedef eosio::multi_index<N(chainstatus), chain_status> cstatus_table;
@@ -127,6 +128,12 @@ namespace eosiosystem {
       void unfreeze( const account_name voter, const account_name bpname );
 
       // @abi action
+      void vote4ram( const account_name voter, const account_name bpname, const asset stake );
+
+      // @abi action
+      void unfreezeram( const account_name voter, const account_name bpname );
+
+      // @abi action
       void claim( const account_name voter, const account_name bpname );
 
       // @abi action
@@ -138,8 +145,13 @@ namespace eosiosystem {
 
       // @abi action
       void setemergency( const account_name bpname, const bool emergency );
-
    };
 
-   EOSIO_ABI(system_contract, ( transfer )(updatebp)(vote)(unfreeze)(claim)(onblock)(onfee)(setemergency))
+   EOSIO_ABI(system_contract,
+             ( transfer )(updatebp)
+                   (vote)(unfreeze)
+                   (vote4ram)(unfreezeram)
+                   (claim)
+                   (onblock)(onfee)
+                   (setemergency))
 } /// eosiosystem

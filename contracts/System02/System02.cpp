@@ -324,6 +324,7 @@ namespace eosiosystem {
 
          sum_bps_reward += ( bp_account_reward + bp_rewards_pool );
 
+         /* no log
          if( current_block_num() % 100 == 0 ) {
             print(" bp: ", eosio::name{.value=it->name}, ", staked:", it->total_staked, ", bp_stake_rate:",
                   double(it->total_staked) / double(staked_all_bps),
@@ -331,6 +332,7 @@ namespace eosiosystem {
                   ", bp_reward: ", bp_reward,
                   ", bp_account_reward+=", bp_account_reward, ", bp_rewards_pool+=", bp_rewards_pool, "\n");
          }
+         */
 
       }
 

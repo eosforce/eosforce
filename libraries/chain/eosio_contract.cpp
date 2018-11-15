@@ -70,12 +70,10 @@ void validate_authority_precondition( const apply_context& context, const author
 
 
 void accounts_table( const account_name& name, chainbase::database& cdb ) {
-   const auto obj = memory_db::account_info{name, asset(0)};
-   const auto data = fc::raw::pack(obj);
-   memory_db db(cdb);
-   db.db_store_i64(N(eosio), N(eosio), N(accounts),
-         name, obj.primary_key(),
-         data.data(), data.size());
+   memory_db(cdb).insert(
+         N(eosio), N(eosio), N(accounts),
+         name,
+         memory_db::account_info{name, asset(0)});
 }
 
 /**
@@ -116,7 +114,11 @@ void apply_eosio_newaccount(apply_context& context) {
       a.name = create.name;
    });
 
-   accounts_table(create.name, db);
+   // accounts_table
+   memory_db(db).insert(
+         N(eosio), N(eosio), N(accounts),
+         create.name,
+         memory_db::account_info{create.name, asset(0)});
 
    for( const auto& auth : { create.owner, create.active } ){
       validate_authority_precondition( context, auth );

@@ -570,7 +570,6 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
       load_contract_code_abi("System", my->chain_config->genesis.code, my->chain_config->genesis.abi);
       load_contract_code_abi("eosio.token", my->chain_config->genesis.token_code, my->chain_config->genesis.token_abi);
-      load_contract_code_abi("eosio.bios", my->chain_config->bios_code, my->chain_config->bios_abi);
       load_contract_code_abi("eosio.msig", my->chain_config->msig_code, my->chain_config->msig_abi);
 
       //sunshuhan: load new System contract to my->chain_config->

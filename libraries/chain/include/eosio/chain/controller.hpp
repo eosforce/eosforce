@@ -75,8 +75,6 @@ namespace eosio { namespace chain {
             genesis_state            genesis;
             wasm_interface::vm_type  wasm_runtime = chain::config::default_wasm_runtime;
 
-            bytes                                    bios_code;
-            bytes                                    bios_abi;
             bytes                                    msig_code;
             bytes                                    msig_abi;
             bytes                                    System01_code;
@@ -332,7 +330,7 @@ FC_REFLECT( eosio::chain::controller::config,
             (System01_contract_block_num)
             (genesis)
             (wasm_runtime)
-            (bios_code)(bios_abi)(msig_code)(msig_abi)
+            (msig_code)(msig_abi)
             (System01_code)(System01_abi)
             (resource_greylist)
             (trusted_producers)

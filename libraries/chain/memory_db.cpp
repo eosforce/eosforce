@@ -32,6 +32,7 @@ void memory_db::remove_table( const table_id_object& tid ) {
    db.remove(tid);
 }
 
+// db_store_i64 store data to db, WARNNING!!! this can not change RAM use
 int memory_db::db_store_i64(
       uint64_t code,
       uint64_t scope,

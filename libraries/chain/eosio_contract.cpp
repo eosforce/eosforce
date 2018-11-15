@@ -68,14 +68,6 @@ void validate_authority_precondition( const apply_context& context, const author
    }
 }
 
-
-void accounts_table( const account_name& name, chainbase::database& cdb ) {
-   memory_db(cdb).insert(
-         N(eosio), N(eosio), N(accounts),
-         name,
-         memory_db::account_info{name, asset(0)});
-}
-
 /**
  *  This method is called assuming precondition_system_newaccount succeeds a
  */

@@ -272,7 +272,8 @@ bool resource_limits_manager::set_account_limits( const account_name& account, i
 inline int64_t get_account_ram_limit( const account_name& name, const int64_t ram_bytes ) {
    // TODO use new setting after a block num
 
-   const int64_t init_ram_size = 16*1024;
+   // every account can use 8k ram free
+   const int64_t init_ram_size = 8*1024;
    // if is account by system use ram unlimit,
    // if is a common account with -1 ram limit use init limit
    if(    name == config::system_account_name

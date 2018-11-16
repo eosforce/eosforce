@@ -70,7 +70,7 @@ namespace eosio { namespace chain {
             bool                     contracts_console      =  false;
             bool                     allow_ram_billing_in_notify = false;
             uint32_t                 System01_contract_block_num = 3385100;
-            uint32_t                 msig_block_num = 3732865+28800*15;//TODO update before release
+            uint32_t                 msig_block_num = 4154572+28800*6;
 
             genesis_state            genesis;
             wasm_interface::vm_type  wasm_runtime = chain::config::default_wasm_runtime;

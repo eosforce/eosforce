@@ -646,64 +646,50 @@ struct controller_impl {
    void initialize_producer() {
       auto db = memory_db(self);
       for( const auto& producer : conf.genesis.initial_producer_list ) {
-         const auto& name = producer.name;
-         const auto& public_key = producer.bpkey;
-
          // create accpimt for init bps
-         const authority auth(public_key);
-         create_native_account(name, auth, auth, false);
+         const authority auth(producer.bpkey);
+         create_native_account(producer.name, auth, auth, false);
 
          // store bp data in bp table
-         memory_db::bp_info obj;
-         obj.name = name;
-         obj.producer_key = public_key;
-         obj.commission_rate = producer.commission_rate;
-         obj.url = producer.url;
-
-         const auto data = fc::raw::pack(obj);
-         db.db_store_i64(N(eosio), N(eosio), N(bps),
-                         name, obj.primary_key(),
-                         data.data(), data.size());
+         db.insert(N(eosio), N(eosio), N(bps),
+                   producer.name,
+                   memory_db::bp_info{
+                         producer.name,
+                         producer.bpkey,
+                         producer.commission_rate,
+                         producer.url});
       }
    }
 
    // initialize_chain_emergency init chain emergency stat
    void initialize_chain_emergency() {
-      const memory_db::chain_status obj{N(chainstatus), false};
-      const auto data = fc::raw::pack(obj);
-      auto db = memory_db(self);
-      db.db_store_i64(N(eosio), N(eosio), N(chainstatus),
-                      N(eosio), obj.primary_key(),
-                      data.data(), data.size());
-   }
-
-   // initialize_account_to_table init account data in accounts table
-   void initialize_account_to_table( const account_name& name, const asset& balance ) {
-      const memory_db::account_info obj{name, balance};
-      const auto data = fc::raw::pack(obj);
-      auto db = memory_db(self);
-      db.db_store_i64(N(eosio), N(eosio), N(accounts),
-                      name, obj.primary_key(),
-                      data.data(), data.size());
+      memory_db(self).insert(
+            N(eosio), N(eosio), N(chainstatus),
+            N(eosio),
+            memory_db::chain_status{N(chainstatus), false});
    }
 
    // initialize_account init account from genesis
    void initialize_account() {
       const auto acc_name_a = N(a);
+      auto db = memory_db(self);
       for( const auto& account : conf.genesis.initial_account_list ) {
          const auto& public_key = account.key;
          const auto& amount = account.asset;
          const authority auth(public_key);
+
          auto acc_name = account.name;
          if( acc_name == acc_name_a ) {
             const auto pk_str = std::string(public_key);
             const auto name_r = pk_str.substr(pk_str.size() - 12, 12);
             acc_name = string_to_name(format_name(name_r).c_str());
-            ilog("name:${pk_str} -> ${name_r} -> ${acc}, publickey: ${pb}, amount: ${amount}",
-                 ("pk_str", pk_str)("name_r", name_r)("acc", acc_name)
-                 ("pb", public_key)("amount", amount));
          }
-         initialize_account_to_table(acc_name, amount);
+
+         // initialize_account_to_table
+         db.insert(
+               N(eosio), N(eosio), N(accounts),
+               acc_name,
+               memory_db::account_info{acc_name, amount});
          create_native_account(acc_name, auth, auth, false);
       }
    }
@@ -741,18 +727,13 @@ struct controller_impl {
 
    // initialize_eos_stats init stats for eos token
    void initialize_eos_stats() {
-      const memory_db::currency_stats obj{
-            asset(10000000),
-            asset(100000000000),
-            N(eosio.token)
-      };
       const auto& sym = symbol(CORE_SYMBOL).to_symbol_code();
-      const auto& data = fc::raw::pack(obj);
-
-      auto db = memory_db(self);
-      db.db_store_i64(N(eosio.token), sym, N(stat),
-                      N(eosio.token), obj.primary_key(),
-                      data.data(), data.size());
+      memory_db(self).insert(N(eosio.token), sym, N(stat),
+                             N(eosio.token),
+                             memory_db::currency_stats{
+                                   asset(10000000),
+                                   asset(100000000000),
+                                   N(eosio.token)});
    }
 
    void initialize_database() {
@@ -1346,8 +1327,9 @@ struct controller_impl {
 
          // when on the specific block : load eosio.msig contract
          if( conf.msig_block_num == head->block_num ) {
-            ilog("update eosio.msig contract");
+            ilog("update eosio.msig and eosio.bios contract");
             initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
+            initialize_contract(N(eosio.bios), conf.bios_code, conf.bios_abi, true);
          }
 
          try {

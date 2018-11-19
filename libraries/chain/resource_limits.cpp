@@ -299,8 +299,6 @@ inline int64_t get_account_ram_limit( database& db, const account_name& name, co
       return init_ram_size;
    }
 
-   idump((vote_info));
-
    // 1 eos for 1 kb
    return init_ram_size + (vote_info.staked.get_amount() / 10);
 }

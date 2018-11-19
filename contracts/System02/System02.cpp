@@ -144,10 +144,6 @@ namespace eosiosystem {
             v.bpname = bpname;
             v.staked = stake;
          });
-
-         // 1 EOS for 1KB
-         set_resource_limits( voter, stake.amount / 10, -1, -1 );
-
       } else {
          change = stake.amount - vts->staked.amount;
          //act.available is already handling fee
@@ -161,9 +157,6 @@ namespace eosiosystem {
                v.unstaking.amount += -change;
                v.unstake_height = current_block_num();
             }
-
-            // 1 EOS for 1KB
-            set_resource_limits( voter, stake.amount / 10, -1, -1 );
          });
       }
 
@@ -178,6 +171,20 @@ namespace eosiosystem {
          b.voteage_update_height = current_block_num();
          b.total_staked += change / 10000;
       });
+
+      vote4ramsum_table vote4ramsum_tbl(_self, _self);
+      auto vtss = vote4ramsum_tbl.find(voter);
+      if(vtss == vote4ramsum_tbl.end()){
+         vote4ramsum_tbl.emplace(voter, [&]( vote4ram_info& v ) {
+            v.voter = voter;
+            v.staked = stake; // for first vote all staked is stake
+         });
+      }else{
+         vote4ramsum_tbl.modify(vtss, 0, [&]( vote4ram_info& v ) {
+            v.staked += asset{change};
+         });
+      }
+
    }
 
    void system_contract::unfreezeram( const account_name voter, const account_name bpname ) {

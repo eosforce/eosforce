@@ -53,6 +53,14 @@ namespace eosiosystem {
          EOSLIB_SERIALIZE(vote_info, ( bpname )(staked)(voteage)(voteage_update_height)(unstaking)(unstake_height))
       };
 
+      struct vote4ram_info {
+         account_name voter;
+         asset staked = asset(0, SYMBOL);
+         uint64_t primary_key() const { return voter; }
+
+         EOSLIB_SERIALIZE(vote4ram_info, (voter)(staked))
+      };
+
       struct bp_info {
          account_name name;
          public_key block_signing_key;
@@ -103,6 +111,7 @@ namespace eosiosystem {
       typedef eosio::multi_index<N(accounts), account_info> accounts_table;
       typedef eosio::multi_index<N(votes), vote_info> votes_table;
       typedef eosio::multi_index<N(votes4ram), vote_info> votes4ram_table;
+      typedef eosio::multi_index<N(vote4ramsum), vote4ram_info> vote4ramsum_table;
       typedef eosio::multi_index<N(bps), bp_info> bps_table;
       typedef eosio::multi_index<N(schedules), schedule_info> schedules_table;
       typedef eosio::multi_index<N(chainstatus), chain_status> cstatus_table;

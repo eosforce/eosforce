@@ -28,6 +28,8 @@ public:
 
    /// Database methods:
 public:
+   constexpr static size_t max_stack_buffer_size = 512;
+
    template <typename T>
    void insert(const uint64_t &code,
                const uint64_t &scope,
@@ -41,6 +43,39 @@ public:
             data.data(), data.size());
    }
 
+   template <typename T>
+   bool get( const uint64_t &code,
+             const uint64_t &scope,
+             const uint64_t &table,
+             const uint64_t &id,
+             T &out ) {
+      const auto* tab = find_table( code, scope, table );
+      if( !tab ) return false;
+
+      const key_value_object* obj = db.find<key_value_object, by_scope_primary>(
+            boost::make_tuple( tab->id, id ) );
+
+      if( !obj ) return false;
+
+      auto size = db_get_i64( obj, nullptr, 0 );
+      EOS_ASSERT( size >= 0, asset_type_exception, "error reading iterator" );
+
+      //using malloc/free here potentially is not exception-safe, although WASM doesn't support exceptions
+      void* buffer = max_stack_buffer_size < size_t(size) ? malloc(size_t(size)) : alloca(size_t(size));
+
+      db_get_i64( obj, (char *)buffer, uint32_t(size) );
+
+      datastream<const char*> ds( (char*)buffer, uint32_t(size) );
+
+      if ( max_stack_buffer_size < size_t(size) ) {
+         free(buffer);
+      }
+
+      fc::raw::unpack(ds, out);
+
+      return true;
+   }
+
 private:
    int db_store_i64( uint64_t code,
                      uint64_t scope,
@@ -50,18 +85,27 @@ private:
                      const char *buffer,
                      size_t buffer_size );
 
+   int db_get_i64( const key_value_object* obj , char* buffer, size_t buffer_size ) const;
+
    const table_id_object *find_table( name code, name scope, name table );
    const table_id_object& find_or_create_table( name code, name scope, name table, const account_name& payer );
    void remove_table( const table_id_object& tid );
 
-   /// Fields:
 public:
    chainbase::database& db;  ///< database where state is stored
+
+   // account_info
    struct account_info {
       account_name name;
       asset available;
 
       uint64_t primary_key() const { return name; }
+   };
+
+   struct vote4ram_info {
+      account_name voter;
+      asset staked = asset{0};
+      uint64_t primary_key() const { return voter; }
    };
 
    struct bp_info {
@@ -95,6 +139,7 @@ public:
       uint64_t primary_key() const { return name; }
    };
 
+   // currency_stats
    struct currency_stats {
       asset supply;
       asset max_supply;
@@ -102,6 +147,19 @@ public:
 
       uint64_t primary_key() const { return supply.get_symbol().to_symbol_code(); }
    };
+
+   // vote_info
+   struct vote_info {
+      account_name    bpname         = 0;
+      asset           staked         = asset{0};
+      uint32_t        voteage_update_height = 0;
+      int64_t         voteage        = 0;
+      asset           unstaking      = asset{0};
+      uint32_t        unstake_height = 0;
+
+      uint64_t        primary_key() const { return bpname; }
+   };
+
 };
 
 // native_multi_index a simple multi index interface for call in cpp
@@ -166,7 +224,6 @@ public:
       }
 
       fc::raw::unpack(ds, out);
-      //ds >> out;
    }
 
    bool find( uint64_t primary, T& out )const {
@@ -218,10 +275,11 @@ public:
 
 } } // namespace eosio::chain
 
-FC_REFLECT(eosio::chain::memory_db::account_info, ( name )(available))
-FC_REFLECT(eosio::chain::memory_db::bp_info, ( name )(producer_key)
-      (commission_rate)(total_staked)(rewards_pool)(total_voteage)(voteage_update_height)(url)(emergency))
-FC_REFLECT(eosio::chain::memory_db::chain_status, ( name )(emergency))
-FC_REFLECT(eosio::chain::memory_db::currency_stats, ( supply )(max_supply)(issuer))
-
-
+FC_REFLECT(eosio::chain::memory_db::bp_info, (name)(producer_key)
+            (commission_rate)(total_staked)(rewards_pool)(total_voteage)(voteage_update_height)(url)(emergency))
+FC_REFLECT(eosio::chain::memory_db::account_info, (name)(available))
+FC_REFLECT(eosio::chain::memory_db::chain_status, (name)(emergency))
+FC_REFLECT(eosio::chain::memory_db::currency_stats, (supply)(max_supply)(issuer))
+FC_REFLECT(eosio::chain::memory_db::vote_info,
+           (bpname)(staked)(voteage)(voteage_update_height)(unstaking)(unstake_height))
+FC_REFLECT(eosio::chain::memory_db::vote4ram_info, (voter)(staked))

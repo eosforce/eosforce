@@ -62,4 +62,14 @@ int memory_db::db_store_i64(
    return 1;
 }
 
+int memory_db::db_get_i64( const key_value_object* obj , char* buffer, size_t buffer_size ) const {
+   auto s = obj->value.size();
+   if( buffer_size == 0 ) return s;
+
+   auto copy_size = std::min( buffer_size, s );
+   memcpy( buffer, obj->value.data(), copy_size );
+
+   return copy_size;
+}
+
 } } /// eosio::chain

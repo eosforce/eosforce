@@ -15,6 +15,7 @@ add_library( eosio_chain
              block_state.cpp
              fork_database.cpp
              controller.cpp
+             config_on_chain.cpp
              authorization_manager.cpp
              txfee_manager.cpp
              resource_limits.cpp

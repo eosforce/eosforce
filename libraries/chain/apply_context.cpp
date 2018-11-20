@@ -58,16 +58,18 @@ void apply_context::exec_one( action_trace& trace )
             (*native)( *this );
          }
 
-         if( a.code.size() > 0
-             && !(act.account == config::system_account_name && act.name == N( setcode ) &&
-                  receiver == config::system_account_name) ) {
-            if( trx_context.can_subjectively_fail && control.is_producing_block() ) {
-               control.check_contract_list( receiver );
-               control.check_action_list( act.account, act.name );
+         if(!((act.account == config::system_account_name) && (act.name == N(onfee)))) {
+            if( a.code.size() > 0
+                && !( act.account == config::system_account_name && act.name == N(setcode) &&
+                      receiver == config::system_account_name )) {
+               if( trx_context.can_subjectively_fail && control.is_producing_block()) {
+                  control.check_contract_list(receiver);
+                  control.check_action_list(act.account, act.name);
+               }
+               try {
+                  control.get_wasm_interface().apply(a.code_version, a.code, *this);
+               } catch( const wasm_exit& ) {}
             }
-            try {
-               control.get_wasm_interface().apply( a.code_version, a.code, *this );
-            } catch( const wasm_exit& ) {}
          }
       } FC_RETHROW_EXCEPTIONS( warn, "pending console output: ${console}", ("console", _pending_console_output.str()) )
    } catch( fc::exception& e ) {

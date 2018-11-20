@@ -213,6 +213,14 @@ abi_def eosio_contract_abi(const abi_def& eosio_system_abi)
    });
 
    eos_abi.structs.emplace_back( struct_def {
+         "onfee", "", {
+               {"actor",  "account_name"},
+               {"fee",    "asset"},
+               {"bpname", "account_name"},
+         }
+   });
+
+   eos_abi.structs.emplace_back( struct_def {
          "onerror", "", {
             {"sender_id", "uint128"},
             {"sent_trx",  "bytes"}

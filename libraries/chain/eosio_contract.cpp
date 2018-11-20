@@ -489,4 +489,37 @@ void apply_eosio_canceldelay(apply_context& context) {
    context.cancel_deferred_transaction(transaction_id_to_sender_id(trx_id), account_name());
 }
 
+void apply_eosio_onfee( apply_context& context ) {
+   const auto data = context.act.data_as<onfee>();
+   const auto& fee = data.fee;
+
+   // need actor authorization
+   // context.require_authorization(data.actor);
+
+   // accounts_table
+   auto acnts_tbl = native_multi_index<N(accounts), memory_db::account_info>{
+         context, N(eosio), N(eosio)
+   };
+   memory_db::account_info account_info_data;
+   acnts_tbl.get(data.actor, account_info_data, "account is not found in accounts table");
+   eosio_contract_assert(fee <= account_info_data.available, "overdrawn available balance");
+
+   // bps_table
+   auto bps_tbl = native_multi_index<N(bps), memory_db::bp_info>{
+         context, N(eosio), N(eosio)
+   };
+   memory_db::bp_info bp_info_data;
+   bps_tbl.get(data.bpname, bp_info_data, "bpname is not registered");
+
+   acnts_tbl.modify(acnts_tbl.find_itr(data.actor), account_info_data, 0,
+                    [fee]( memory_db::account_info& a ) {
+                       a.available -= fee;
+                    });
+
+   bps_tbl.modify(bps_tbl.find_itr(data.bpname), bp_info_data, 0,
+                  [fee]( memory_db::bp_info& a ) {
+                     a.rewards_pool += fee;
+                  });
+}
+
 } } // namespace eosio::chain

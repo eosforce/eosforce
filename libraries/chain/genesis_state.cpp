@@ -26,11 +26,14 @@ chain::chain_id_type genesis_state::compute_chain_id() const {
    // as fc change, we can not got a same id from compute chain id
    const auto res = chain_id_type{enc.result()};
    ilog("chain id is ${id}", ("id", res));
-   if(res == new_chain_id){
+
+   // FIXME By FanYang tmp no check chain id
+
+   //if(res == new_chain_id){
        return chain_id_type{old_chain_id};
-   }else{
-       return res;
-   }
+   //}else{
+   //    return res;
+   //}
 }
 
 } } // namespace eosio::chain

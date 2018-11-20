@@ -330,6 +330,20 @@ namespace bacc = boost::accumulators;
       init( 0 );
    }
 
+   // make_fee_act insert onfee act in trx
+   void transaction_context::make_fee_act( const asset& require_fee, const account_name& producer ) {
+      const auto payer = trx.actions[0].authorization[0].actor;
+      const bytes param_data = fc::raw::pack(fee_paramter{
+            payer, require_fee, producer
+      });
+      onfee_action = action{
+            vector<permission_level>{{payer, config::active_name}},
+            config::system_account_name,
+            N(onfee),
+            param_data,
+      };
+   }
+
    // limit by contract from actions
    // fee_ext ext fee for ext res
    void transaction_context::make_limit_by_contract(const asset &fee_ext){
@@ -430,6 +444,14 @@ namespace bacc = boost::accumulators;
 
    void transaction_context::exec() {
       EOS_ASSERT( is_initialized, transaction_exception, "must first initialize" );
+
+      // exec fee action to cost fee first
+      if( (delay == fc::microseconds()) && (onfee_action.name == N(onfee)) ){
+         // onfee
+         ilog("onfee ${f}", ("f", onfee_action));
+         trace->action_traces.emplace_back();
+         dispatch_action( trace->action_traces.back(), onfee_action );
+      }
 
       if( apply_context_free ) {
          for( const auto& act : trx.context_free_actions ) {

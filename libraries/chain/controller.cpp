@@ -1182,15 +1182,22 @@ struct controller_impl {
                EOS_ASSERT(trx->trx.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
                EOS_ASSERT(txfee.check_transaction(trx->trx) == true, transaction_exception, "transaction include actor more than one");
                fee_ext = trx->trx.fee - fee_required;
-               try {
-                  auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor) );
-                  onftrx->implicit = true;
-                  auto onftrace = push_transaction( onftrx, fc::time_point::maximum(), config::default_min_transaction_cpu_usage, true);
-                  if( onftrace->except ) throw *onftrace->except;
-               }  catch (const fc::exception &e) {
-                  EOS_ASSERT(false, transaction_exception, "on fee transaction failed, exception: ${e}", ("e", e));
-               }  catch ( ... ) {
-                  EOS_ASSERT(false, transaction_exception, "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
+               if( false ) {
+                  try {
+                     auto onftrx = std::make_shared<transaction_metadata>(
+                           get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor));
+                     onftrx->implicit = true;
+                     auto onftrace = push_transaction(onftrx, fc::time_point::maximum(),
+                                                      config::default_min_transaction_cpu_usage, true);
+                     if( onftrace->except ) throw *onftrace->except;
+                  } catch( const fc::exception& e ) {
+                     EOS_ASSERT(false, transaction_exception, "on fee transaction failed, exception: ${e}", ( "e", e ));
+                  } catch( ... ) {
+                     EOS_ASSERT(false, transaction_exception,
+                                "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
+                  }
+               } else {
+                  trx_context.make_fee_act(trx->trx.fee, self.head_block_header().producer);
                }
             }
 
@@ -1205,11 +1212,12 @@ struct controller_impl {
                trx_context.exec();
                trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
              } catch (const fc::exception &e) {
-               trace->except = e;
-               trace->except_ptr = std::current_exception();
+               //trace->except = e;
+               //trace->except_ptr = std::current_exception();
                if (head->block_num != 1) {
-                 elog("---trnasction exe failed--------trace: ${trace}", ("trace", trace));
+                 elog("trnasction exe failed trace: ${trace}", ("trace", trace));
                }
+               throw;
              }
 
             auto restore = make_block_restore_point();

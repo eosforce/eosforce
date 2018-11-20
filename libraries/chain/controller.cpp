@@ -1182,7 +1182,9 @@ struct controller_impl {
                EOS_ASSERT(trx->trx.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
                EOS_ASSERT(txfee.check_transaction(trx->trx) == true, transaction_exception, "transaction include actor more than one");
                fee_ext = trx->trx.fee - fee_required;
-               if( false ) {
+
+               // keep
+               if( true ) {
                   try {
                      auto onftrx = std::make_shared<transaction_metadata>(
                            get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor));
@@ -1212,12 +1214,17 @@ struct controller_impl {
                trx_context.exec();
                trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
              } catch (const fc::exception &e) {
-               //trace->except = e;
-               //trace->except_ptr = std::current_exception();
                if (head->block_num != 1) {
                  elog("trnasction exe failed trace: ${trace}", ("trace", trace));
                }
-               throw;
+
+               // keep
+               if( true ) {
+                  trace->except = e;
+                  trace->except_ptr = std::current_exception();
+               } else {
+                  throw;
+               }
              }
 
             auto restore = make_block_restore_point();

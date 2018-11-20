@@ -1327,9 +1327,8 @@ struct controller_impl {
 
          // when on the specific block : load eosio.msig contract
          if( conf.msig_block_num == head->block_num ) {
-            ilog("update eosio.msig and eosio.bios contract");
+            ilog("update eosio.msig contract");
             initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
-            initialize_contract(N(eosio.bios), conf.bios_code, conf.bios_abi, true);
          }
 
          try {

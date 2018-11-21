@@ -6,6 +6,7 @@
 #include <eosio/chain/config_on_chain.hpp>
 #include <chainbase/chainbase.hpp>
 #include <eosio/chain/contract_types.hpp>
+#include <eosio/chain/apply_context.hpp>
 
 namespace eosio { namespace chain {
 
@@ -56,6 +57,19 @@ void set_config_on_chain( chainbase::database& db, const setconfig &cfg ) {
          c.fee = cfg.fee;
       });
    }
+}
+
+bool is_func_has_open( const apply_context& context, const name &func_typ ) {
+      const auto head_num = static_cast<int64_t>( context.control.head_block_num() );
+      const auto open_num = get_num_config_on_chain( context.control.db(), eosio::chain::name{func_typ} );
+      if( open_num < 0 || head_num < 0 ) {
+         // no cfg
+         return false;
+      }
+
+      //idump((head_num)(open_num)(eosio::chain::accout_name{func_typ}));
+
+      return head_num >= open_num;
 }
 
 

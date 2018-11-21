@@ -12,6 +12,7 @@
 #include <eosio/chain/asset.hpp>
 #include <eosio/chain/multi_index_includes.hpp>
 #include <eosio/chain/contract_types.hpp>
+#include <eosio/chain/apply_context.hpp>
 
 namespace eosio { namespace chain {
 
@@ -48,6 +49,9 @@ void set_num_config_on_chain( chainbase::database& db, const name& typ, const in
 
 // set_config_on_chain set chain cfg
 void set_config_on_chain( chainbase::database& db, const setconfig &cfg );
+
+// is_func_has_open is a func is open
+bool is_func_has_open( const apply_context& context, const name &func_typ );
 
 } } /// namespace eosio::chain
 

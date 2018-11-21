@@ -373,8 +373,6 @@ namespace eosiosystem {
       accounts_table acnts_tbl(_self, _self);
       schedules_table schs_tbl(_self, _self);
 
-      // FIXME By FanYang no reward if user vote for ram
-
       //calculate total staked all of the bps
       int64_t staked_all_bps = 0;
       for( auto it = bps_tbl.cbegin(); it != bps_tbl.cend(); ++it ) {

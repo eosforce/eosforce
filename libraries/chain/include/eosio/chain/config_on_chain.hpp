@@ -21,6 +21,9 @@ namespace config{
       const auto cpu_per_fee = N(res.cpufee);
       const auto net_per_fee = N(res.netfee);
       const auto ram_per_fee = N(res.ramfee);
+      
+      const auto free_ram_per_account = N(res.freeram);
+      const auto ram_rent_b_per_eos   = N(res.ramrent);
    }; 
 };
 

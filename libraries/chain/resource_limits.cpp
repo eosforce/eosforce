@@ -6,6 +6,7 @@
 #include <boost/tuple/tuple_io.hpp>
 #include <eosio/chain/database_utils.hpp>
 #include <eosio/chain/memory_db.hpp>
+#include <eosio/chain/config_on_chain.hpp>
 #include <algorithm>
 
 namespace eosio { namespace chain { namespace resource_limits {
@@ -273,8 +274,8 @@ bool resource_limits_manager::set_account_limits( const account_name& account, i
 inline int64_t get_account_ram_limit( database& db, const account_name& name, const int64_t ram_bytes ) {
    // TODO use new setting after a block num
 
-   // every account can use 12k ram free
-   const int64_t init_ram_size = 12*1024;
+   // every account can use 8k ram free default
+   const int64_t init_ram_size = get_num_config_on_chain(db, config::res_typ::free_ram_per_account, 8*1024);
    // if is account by system use ram unlimit,
    // if is a common account with -1 ram limit use init limit
    if(    name == config::system_account_name
@@ -299,8 +300,14 @@ inline int64_t get_account_ram_limit( database& db, const account_name& name, co
       return init_ram_size;
    }
 
-   // 1 eos for 1 kb
-   return init_ram_size + (vote_info.staked.get_amount() / 10);
+   // default is 1 eos for 1kb
+   const int64_t ram_rent = get_num_config_on_chain(db, config::res_typ::ram_rent_b_per_eos, 1024);
+   const int64_t staked   = vote_info.staked.get_amount();
+
+   // 1 eos for 1 kb, note because staked cannot too much by limit
+   const auto res = ((staked * ram_rent) / 10000);
+
+   return res + init_ram_size;
 }
 
 void resource_limits_manager::get_account_limits( const account_name& account, int64_t& ram_bytes, int64_t& net_weight, int64_t& cpu_weight ) const {

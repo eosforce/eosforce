@@ -19,6 +19,7 @@ add_subdirectory(stltest)
 add_subdirectory(test.inline)
 add_subdirectory(System)
 add_subdirectory(System01)
+add_subdirectory(System02)
 
 #add_subdirectory(bancor)
 add_subdirectory(hello)

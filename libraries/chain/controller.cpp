@@ -771,6 +771,10 @@ struct controller_impl {
       initialize_producer();
       initialize_chain_emergency();
 
+      // vote4ram func, as the early eosforce user's ram not limit
+      // so at first we set freeram to -1 to unlimit user ram
+      set_num_config_on_chain(db, config::res_typ::free_ram_per_account, -1);
+
       auto empty_authority = authority(1, {}, {});
       auto active_producers_authority = authority(1, {}, {});
       active_producers_authority.accounts.push_back({{config::system_account_name, config::active_name}, 1});
@@ -1287,6 +1291,29 @@ struct controller_impl {
    } /// push_transaction
 
 
+   // check_func_open
+   void check_func_open() {
+      // when on the specific block : load new System contract
+      if( conf.System01_contract_block_num == head->block_num ) {
+         ilog("update System contract");
+         initialize_contract(N(eosio), conf.System01_code, conf.System01_abi, true);
+      }
+
+      // when on the specific block : load eosio.msig contract
+      if( conf.msig_block_num == head->block_num ) {
+         ilog("update eosio.msig contract");
+         initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
+      }
+
+      // vote4ram func, as the early eosforce user's ram not limit
+      // so at first we set freeram to -1 to unlimit user ram
+      // when vote4ram open, change to 8kb per user
+      if( is_func_open_in_curr_block(self, config::func_typ::vote_for_ram) ) {
+         set_num_config_on_chain(db, config::res_typ::free_ram_per_account, 8 * 1024);
+      }
+   }
+
+
    void start_block( block_timestamp_type when, uint16_t confirm_block_count, controller::block_status s,
                      const optional<block_id_type>& producer_block_id )
    {
@@ -1338,17 +1365,7 @@ struct controller_impl {
                   });
             }
 
-         // when on the specific block : load new System contract
-         if( conf.System01_contract_block_num == head->block_num ) {
-            ilog("update System contract");
-            initialize_contract(N(eosio), conf.System01_code, conf.System01_abi, true);
-         }
-
-         // when on the specific block : load eosio.msig contract
-         if( conf.msig_block_num == head->block_num ) {
-            ilog("update eosio.msig contract");
-            initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
-         }
+         check_func_open();
 
          try {
             auto onbtrx = std::make_shared<transaction_metadata>( get_on_block_transaction() );

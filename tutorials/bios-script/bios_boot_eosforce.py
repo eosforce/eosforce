@@ -20,17 +20,6 @@ datas = {
 
 unlockTimeout = 999999999
 
-relayPriKey = '5JbykKocbS8Hj3s4xokv5Ej3iXqrSqdwxBcHQFXf5DwUmGELxTi'
-relayPubKey = 'EOS5NiqXiggrB5vyfedTFseDi6mW4U74bBhR7S2KSq181jHdYMNVY'
-
-relayAccounts = [
-    'r.token.in',
-    'r.token.out',
-    'r.acc.map',
-    'r.t.exchange',
-    'force.test'
-]
-
 def jsonArg(a):
     return " '" + json.dumps(a) + "' "
 
@@ -60,15 +49,6 @@ def sleep(t):
     time.sleep(t)
     print('resume')
 
-def addB1Account():
-    run(args.cleos + 'create account eosforce b1 ' + datas["initAccounts"][len(datas["initAccounts"]) - 1]['key'] + " -p eosforce")
-
-def addRelayAccount():
-    for a in relayAccounts:
-        run(args.cleos + 'create account eosforce ' + a + ' ' + relayPubKey)
-        run(args.cleos + 'push action eosio transfer \'{"from":"eosforce","to":"%s","quantity":"100000.0000 EOS","memo":""}\' -p eosforce' % a)
-
-
 def startWallet():
     run('mkdir -p ' + os.path.abspath(args.wallet_dir))
     background(args.keosd + ' --unlock-timeout %d --http-server-address 0.0.0.0:6666 --wallet-dir %s' % (unlockTimeout, os.path.abspath(args.wallet_dir)))
@@ -77,13 +57,10 @@ def startWallet():
 
 def importKeys():
     keys = {}
-    run(args.cleos + 'wallet import --private-key ' + relayPriKey)
     for a in datas["initAccountsKeys"]:
         key = a[1]
         if not key in keys:
             keys[key] = True
-            # note : new develop eosforce change this command to wallet import--private-key pk
-            # so need change this cmd
             run(args.cleos + 'wallet import --private-key ' + key)
 
 def createNodeDir(nodeIndex, bpaccount, key):
@@ -149,11 +126,6 @@ def stepCreateNodeDirs():
     createNodeDirs(datas["initProducers"], datas["initProducerSigKeys"])
     sleep(0.5)
 
-def stepAddAccounts():
-    addB1Account()
-    addRelayAccount()
-    sleep(5)
-
 def stepLog():
     run('tail -n 1000 ' + args.nodes_dir + 'biosbpa.log')
     listProducers()
@@ -178,16 +150,20 @@ def stepMakeGenesis():
 
     run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System01/System01.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System01/System01.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/System02/System02.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.wasm ' + os.path.abspath(args.config_dir))
 
     # testnet will use new System contract from start
-    run('cp ' + args.contracts_dir + '/System01/System01.abi ' + os.path.abspath(args.config_dir) + "/System.abi")
-    run('cp ' + args.contracts_dir + '/System01/System01.wasm ' + os.path.abspath(args.config_dir) + "/System.wasm")
+    run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir) + "/System01.abi")
+    run('cp ' + args.contracts_dir + '/System02/System02.wasm ' + os.path.abspath(args.config_dir) + "/System01.wasm")
+
+    # testnet will use new System contract from start
+    run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir) + "/System.abi")
+    run('cp ' + args.contracts_dir + '/System02/System02.wasm ' + os.path.abspath(args.config_dir) + "/System.wasm")
 
     run(args.root + 'build/programs/genesis/genesis')
     run('mv ./genesis.json ' + os.path.abspath(args.config_dir))
@@ -224,7 +200,6 @@ commands = [
     ('i', 'importKeys',     importKeys,                 True,    "importKeys"),
     ('D', 'createDirs',     stepCreateNodeDirs,         True,    "create dirs for node and log"),
     ('P', 'start-prod',     stepStartProducers,         True,    "Start producers"),
-    ('C', 'createAccs',     stepAddAccounts,            True,    "Create some Accounts"),
     ('l', 'log',            stepLog,                    True,    "Show tail of node's log"),
 ]
 

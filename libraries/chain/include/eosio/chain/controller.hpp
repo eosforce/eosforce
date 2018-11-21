@@ -70,13 +70,11 @@ namespace eosio { namespace chain {
             bool                     contracts_console      =  false;
             bool                     allow_ram_billing_in_notify = false;
             uint32_t                 System01_contract_block_num = 3385100;
-            uint32_t                 msig_block_num = 4154572+28800*6;
+            uint32_t                 msig_block_num = 4356456;
 
             genesis_state            genesis;
             wasm_interface::vm_type  wasm_runtime = chain::config::default_wasm_runtime;
 
-            bytes                                    bios_code;
-            bytes                                    bios_abi;
             bytes                                    msig_code;
             bytes                                    msig_abi;
             bytes                                    System01_code;
@@ -332,7 +330,7 @@ FC_REFLECT( eosio::chain::controller::config,
             (System01_contract_block_num)
             (genesis)
             (wasm_runtime)
-            (bios_code)(bios_abi)(msig_code)(msig_abi)
+            (msig_code)(msig_abi)
             (System01_code)(System01_abi)
             (resource_greylist)
             (trusted_producers)

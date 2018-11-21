@@ -24,6 +24,21 @@ struct newaccount {
    }
 };
 
+struct setconfig {
+   account_name  typ;
+   int64_t       num = 0;
+   account_name  key; // TBD By FanYang will use for cfg future
+   asset         fee; // TBD By FanYang will use for cfg future
+
+   static account_name get_account() {
+      return config::system_account_name;
+   }
+
+   static action_name get_name() {
+      return N(setconfig);
+   }
+};
+
 struct setcode {
    account_name                     account;
    uint8_t                          vmtype = 0;
@@ -189,6 +204,7 @@ struct onerror {
 } } /// namespace eosio::chain
 
 FC_REFLECT( eosio::chain::newaccount                       , (creator)(name)(owner)(active) )
+FC_REFLECT( eosio::chain::setconfig                        , (typ)(num)(key)(fee) )
 FC_REFLECT( eosio::chain::setcode                          , (account)(vmtype)(vmversion)(code) )
 FC_REFLECT( eosio::chain::setfee                           , (account)(action)(fee)(cpu_limit)(net_limit)(ram_limit) )
 FC_REFLECT( eosio::chain::setabi                           , (account)(abi) )

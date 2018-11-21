@@ -89,6 +89,13 @@ extern "C" {
 
    uint32_t  current_block_num();
 
+   /**
+    *  Return if a function is open in curr block num
+    *  @param func_code - func code
+    *  @return - 0 to not open, 1 to has open
+    */
+   int is_func_open( uint64_t func_code );
+
    ///@ } systemcapi
 
 

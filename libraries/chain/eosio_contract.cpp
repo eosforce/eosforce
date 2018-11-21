@@ -22,6 +22,8 @@
 #include <eosio/chain/wasm_interface.hpp>
 #include <eosio/chain/abi_serializer.hpp>
 
+#include <eosio/chain/config_on_chain.hpp>
+
 #include <eosio/chain/authorization_manager.hpp>
 #include <eosio/chain/resource_limits.hpp>
 // #include <eosio/chain/contract_table_objects.hpp>
@@ -487,6 +489,17 @@ void apply_eosio_canceldelay(apply_context& context) {
    const auto& trx_id = cancel.trx_id;
 
    context.cancel_deferred_transaction(transaction_id_to_sender_id(trx_id), account_name());
+}
+
+void apply_eosio_setconfig(apply_context& context) {
+   auto cfg_data = context.act.data_as<setconfig>();
+   if( !( context.has_authorization(config::chain_config_name)
+       || context.has_authorization(config::producers_account_name))) {
+      EOS_THROW(missing_auth_exception, "setconfig need auth by eosio.prods");
+      return;
+   } 
+   
+   set_config_on_chain(context.db, cfg_data);
 }
 
 void apply_eosio_onfee( apply_context& context ) {

@@ -11,11 +11,11 @@
 namespace eosio { namespace chain {
 
 // get_num_config_on_chain return -1 if no found
-int64_t get_num_config_on_chain( const chainbase::database& db, const name& typ ) {
+int64_t get_num_config_on_chain( const chainbase::database& db, const name& typ, const int64_t default_value/* = -1*/ ) {
    const auto cfg_itr = db.find<config_data_object, by_name>(typ);
    if( cfg_itr == nullptr ) {
       //ilog("no found num cfg ${n}", ( "n", typ ));
-      return -1;
+      return default_value;
    }
    return cfg_itr->num;
 }

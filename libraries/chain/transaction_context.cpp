@@ -7,6 +7,7 @@
 #include <eosio/chain/transaction_object.hpp>
 #include <eosio/chain/global_property_object.hpp>
 #include <eosio/chain/txfee_manager.hpp>
+#include <eosio/chain/config_on_chain.hpp>
 
 #pragma push_macro("N")
 #undef N
@@ -417,13 +418,13 @@ namespace bacc = boost::accumulators;
          //
          // For First version we just use const value for main net stable
          //
-         cpu_limit_by_contract += m * 100; // TODO use num in state db
-         net_limit_by_contract += m * 10000;
-         ram_limit_by_contract += m * 10;
+         cpu_limit_by_contract += m * get_num_config_on_chain(db, config::res_typ::cpu_per_fee, 100);
+         net_limit_by_contract += m * get_num_config_on_chain(db, config::res_typ::net_per_fee, 10000);
+         ram_limit_by_contract += m * get_num_config_on_chain(db, config::res_typ::ram_per_fee, 10);
       }
 
       if ( use_limit_by_contract ) {
-         dlog("limit by contract ${cpu} ${net} ${ram}",
+         dlog("limit by contract ${cpu},${net},${ram}",
               ("cpu", cpu_limit_by_contract)("net", net_limit_by_contract)("ram", ram_limit_by_contract));
       }
    }

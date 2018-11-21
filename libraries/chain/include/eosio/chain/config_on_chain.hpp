@@ -16,6 +16,13 @@
 
 namespace eosio { namespace chain {
 
+namespace config{
+   namespace res_typ{
+      const auto cpu_per_fee = N(res.cpufee);
+      const auto net_per_fee = N(res.netfee);
+      const auto ram_per_fee = N(res.ramfee);
+   }; 
+};
 
 // some spec type for fast
 class config_data_object : public chainbase::object<config_data_object_type, config_data_object> {
@@ -42,7 +49,7 @@ using config_data_object_index = chainbase::shared_multi_index_container<
 >;
 
 // get_num_config_on_chain return -1 if no found
-int64_t get_num_config_on_chain( const chainbase::database& db, const name& typ );
+int64_t get_num_config_on_chain( const chainbase::database& db, const name& typ, const int64_t default_value = -1 );
 
 // set_num_config_on_chain if is -1 err
 void set_num_config_on_chain( chainbase::database& db, const name& typ, const int64_t num );

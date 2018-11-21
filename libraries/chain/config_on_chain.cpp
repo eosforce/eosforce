@@ -54,15 +54,13 @@ void set_config_on_chain( chainbase::database& db, const setconfig &cfg ) {
    }
 }
 
-bool is_func_has_open( const apply_context& context, const name &func_typ ) {
-      const auto head_num = static_cast<int64_t>( context.control.head_block_num() );
-      const auto open_num = get_num_config_on_chain( context.control.db(), func_typ );
+bool is_func_has_open( const controller& ctl, const name &func_typ ) {
+      const auto head_num = static_cast<int64_t>( ctl.head_block_num() );
+      const auto open_num = get_num_config_on_chain( ctl.db(), func_typ );
       if( open_num < 0 || head_num < 0 ) {
          // no cfg
          return false;
       }
-
-      //idump((head_num)(open_num)(eosio::chain::accout_name{func_typ}));
 
       return head_num >= open_num;
 }

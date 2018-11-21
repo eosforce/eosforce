@@ -957,7 +957,7 @@ public:
    }
 
    int is_func_open( uint64_t func_typ ) {
-      return is_func_has_open(context, eosio::chain::name{func_typ}) ? 1 : 0;
+      return is_func_has_open(context.control, eosio::chain::name{func_typ}) ? 1 : 0;
    }
 
    void eosio_exit(int32_t code) {

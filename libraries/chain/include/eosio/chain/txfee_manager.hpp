@@ -6,8 +6,7 @@
 
 #include <eosio/chain/types.hpp>
 #include <eosio/chain/asset.hpp>
-
-#include "multi_index_includes.hpp"
+#include <eosio/chain/multi_index_includes.hpp>
 
 namespace eosio { namespace chain {
 

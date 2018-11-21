@@ -16,6 +16,7 @@
 
 #include <eosio/chain/authorization_manager.hpp>
 #include <eosio/chain/txfee_manager.hpp>
+#include <eosio/chain/config_on_chain.hpp>
 #include <eosio/chain/resource_limits.hpp>
 #include <eosio/chain/config.hpp>
 #include <eosio/chain/chain_snapshot.hpp>
@@ -196,6 +197,7 @@ struct controller_impl {
 
    SET_APP_HANDLER( eosio, eosio, newaccount );
    SET_APP_HANDLER( eosio, eosio, setcode );
+   SET_APP_HANDLER( eosio, eosio, setconfig );
    SET_APP_HANDLER( eosio, eosio, setfee );
    SET_APP_HANDLER( eosio, eosio, setabi );
    SET_APP_HANDLER( eosio, eosio, updateauth );
@@ -413,6 +415,7 @@ struct controller_impl {
       contract_database_index_set::add_indices(db);
 
       db.add_index<action_fee_object_index>();
+      db.add_index<config_data_object_index>();
 
       authorization.add_indices();
       resource_limits.add_indices();

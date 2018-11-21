@@ -493,7 +493,7 @@ void apply_eosio_canceldelay(apply_context& context) {
 
 void apply_eosio_setconfig(apply_context& context) {
    auto cfg_data = context.act.data_as<setconfig>();
-   if( !( context.has_authorization(N(force.config))
+   if( !( context.has_authorization(config::chain_config_name)
        || context.has_authorization(config::producers_account_name))) {
       EOS_THROW(missing_auth_exception, "setconfig need auth by eosio.prods");
       return;

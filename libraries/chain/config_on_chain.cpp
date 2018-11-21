@@ -13,7 +13,7 @@ namespace eosio { namespace chain {
 int64_t get_num_config_on_chain( const chainbase::database& db, const name& typ ) {
    const auto cfg_itr = db.find<config_data_object, by_name>(typ);
    if( cfg_itr == nullptr ) {
-      ilog("no found num cfg ${n}", ( "n", typ ));
+      //ilog("no found num cfg ${n}", ( "n", typ ));
       return -1;
    }
    return cfg_itr->num;
@@ -27,7 +27,7 @@ void set_num_config_on_chain( chainbase::database& db, const name& typ, const in
 
    auto itr = db.find<config_data_object, by_name>(typ);
    if( itr == nullptr ) {
-      ilog("set num config ${t} to ${v}", ( "n", typ )("v", num));
+      //ilog("set num config ${t} to ${v}", ( "n", typ )("v", num));
       db.create<config_data_object>([&]( auto& c ) {
          c.typ = typ;
          c.num = num;
@@ -42,7 +42,7 @@ void set_num_config_on_chain( chainbase::database& db, const name& typ, const in
 void set_config_on_chain( chainbase::database& db, const setconfig &cfg ) {
    auto itr = db.find<config_data_object, by_name>(cfg.typ);
    if( itr == nullptr ) {
-      ilog("set num config ${t} to ${v}", ( "n", cfg.typ )("v", cfg));
+      ilog("set num config ${n} to ${v}", ( "n", cfg.typ )("v", cfg));
       db.create<config_data_object>([&]( auto& c ) {
          c.typ = cfg.typ;
          c.num = cfg.num;

@@ -957,14 +957,14 @@ public:
    }
 
    int is_func_open( uint64_t func_typ ) {
-      const auto head_num = static_cast<int64_t>(context.control.head_block_num());
-      const auto open_num = get_num_config_on_chain(context.control.db(), eosio::chain::name{func_typ});
+      const auto head_num = static_cast<int64_t>( context.control.head_block_num() );
+      const auto open_num = get_num_config_on_chain( context.control.db(), eosio::chain::name{func_typ} );
       if( open_num < 0 || head_num < 0 ) {
          // no cfg
          return 0;
       }
 
-      idump((head_num)(open_num)(eosio::chain::name{func_typ}));
+      //idump((head_num)(open_num)(eosio::chain::accout_name{func_typ}));
 
       return head_num >= open_num ? 1 : 0;
    }

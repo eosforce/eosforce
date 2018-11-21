@@ -16,6 +16,7 @@
 
 #include <eosio/chain/authorization_manager.hpp>
 #include <eosio/chain/txfee_manager.hpp>
+#include <eosio/chain/config_on_chain.hpp>
 #include <eosio/chain/resource_limits.hpp>
 #include <eosio/chain/config.hpp>
 #include <eosio/chain/chain_snapshot.hpp>
@@ -196,6 +197,7 @@ struct controller_impl {
 
    SET_APP_HANDLER( eosio, eosio, newaccount );
    SET_APP_HANDLER( eosio, eosio, setcode );
+   SET_APP_HANDLER( eosio, eosio, setconfig );
    SET_APP_HANDLER( eosio, eosio, setfee );
    SET_APP_HANDLER( eosio, eosio, setabi );
    SET_APP_HANDLER( eosio, eosio, updateauth );
@@ -413,6 +415,7 @@ struct controller_impl {
       contract_database_index_set::add_indices(db);
 
       db.add_index<action_fee_object_index>();
+      db.add_index<config_data_object_index>();
 
       authorization.add_indices();
       resource_limits.add_indices();
@@ -1327,9 +1330,8 @@ struct controller_impl {
 
          // when on the specific block : load eosio.msig contract
          if( conf.msig_block_num == head->block_num ) {
-            ilog("update eosio.msig and eosio.bios contract");
+            ilog("update eosio.msig contract");
             initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
-            initialize_contract(N(eosio.bios), conf.bios_code, conf.bios_abi, true);
          }
 
          try {

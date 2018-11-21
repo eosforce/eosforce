@@ -144,6 +144,15 @@ abi_def eosio_contract_abi(const abi_def& eosio_system_abi)
          {"active", "authority"},
       }
    });
+   
+   eos_abi.structs.emplace_back( struct_def {
+      "setconfig", "", {
+         {"typ", "name"},
+         {"num", "int64_t"},
+         {"key", "name"},
+         {"fee", "asset"}
+      }
+   });
 
    eos_abi.structs.emplace_back( struct_def {
       "setcode", "", {

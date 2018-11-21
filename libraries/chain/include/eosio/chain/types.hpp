@@ -173,6 +173,7 @@ namespace eosio { namespace chain {
       action_history_object_type,               ///< Defined by history_plugin
       reversible_block_object_type,
       action_fee_object_type, // Warning !!! the number will diff with eos
+      config_data_object_type, // Warning !!! the number will diff with eos
       OBJECT_TYPE_COUNT ///< Sentry value which contains the number of different object types
    };
 

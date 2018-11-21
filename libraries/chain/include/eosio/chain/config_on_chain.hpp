@@ -11,6 +11,7 @@
 #include <eosio/chain/types.hpp>
 #include <eosio/chain/asset.hpp>
 #include <eosio/chain/multi_index_includes.hpp>
+#include <eosio/chain/contract_types.hpp>
 
 namespace eosio { namespace chain {
 
@@ -20,9 +21,9 @@ class config_data_object : public chainbase::object<config_data_object_type, con
    OBJECT_CTOR(config_data_object);
 
    id_type id;
-   name typ;
+   account_name typ;
    int64_t num = 0;
-   name key; // TBD By FanYang will use for cfg future
+   account_name key; // TBD By FanYang will use for cfg future
    asset fee; // TBD By FanYang will use for cfg future
 };
 
@@ -44,6 +45,9 @@ int64_t get_num_config_on_chain( const chainbase::database& db, const name& typ 
 
 // set_num_config_on_chain if is -1 err
 void set_num_config_on_chain( chainbase::database& db, const name& typ, const int64_t num );
+
+// set_config_on_chain set chain cfg
+void set_config_on_chain( chainbase::database& db, const setconfig &cfg );
 
 } } /// namespace eosio::chain
 

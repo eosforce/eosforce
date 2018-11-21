@@ -5,6 +5,7 @@
 
 #include <eosio/chain/config_on_chain.hpp>
 #include <chainbase/chainbase.hpp>
+#include <eosio/chain/contract_types.hpp>
 
 namespace eosio { namespace chain {
 
@@ -37,5 +38,25 @@ void set_num_config_on_chain( chainbase::database& db, const name& typ, const in
       });
    }
 }
+
+void set_config_on_chain( chainbase::database& db, const setconfig &cfg ) {
+   auto itr = db.find<config_data_object, by_name>(cfg.typ);
+   if( itr == nullptr ) {
+      ilog("set num config ${t} to ${v}", ( "n", cfg.typ )("v", cfg));
+      db.create<config_data_object>([&]( auto& c ) {
+         c.typ = cfg.typ;
+         c.num = cfg.num;
+         c.key = cfg.key;
+         c.fee = cfg.fee;
+      });
+   } else {
+      db.modify<config_data_object>(*itr, [&]( auto& c ) {
+         c.num = cfg.num;
+         c.key = cfg.key;
+         c.fee = cfg.fee;
+      });
+   }
+}
+
 
 } }  /// eosio::chain

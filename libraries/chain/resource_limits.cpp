@@ -272,8 +272,6 @@ bool resource_limits_manager::set_account_limits( const account_name& account, i
 }
 
 inline int64_t get_account_ram_limit( database& db, const account_name& name, const int64_t ram_bytes ) {
-   // TODO use new setting after a block num
-
    // every account can use 8k ram free default
    const int64_t init_ram_size = get_num_config_on_chain(db, config::res_typ::free_ram_per_account, 8*1024);
    // if is account by system use ram unlimit,

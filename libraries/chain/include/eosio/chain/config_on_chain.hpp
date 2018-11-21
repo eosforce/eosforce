@@ -21,7 +21,14 @@ namespace config{
       const auto cpu_per_fee = N(res.cpufee);
       const auto net_per_fee = N(res.netfee);
       const auto ram_per_fee = N(res.ramfee);
-   }; 
+      
+      const auto free_ram_per_account = N(res.freeram);
+      const auto ram_rent_b_per_eos   = N(res.ramrent);
+   };
+
+   namespace func_typ{
+      const auto vote_for_ram = N(f.ram4vote);
+   }
 };
 
 // some spec type for fast
@@ -59,6 +66,9 @@ void set_config_on_chain( chainbase::database& db, const setconfig &cfg );
 
 // is_func_has_open is a func is open
 bool is_func_has_open( const apply_context& context, const name &func_typ );
+
+// is_func_open_in_curr_block if a func is open in curr block
+bool is_func_open_in_curr_block( const controller& context, const name &func_typ );
 
 } } /// namespace eosio::chain
 

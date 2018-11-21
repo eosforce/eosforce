@@ -21,11 +21,6 @@ int64_t get_num_config_on_chain( const chainbase::database& db, const name& typ,
 }
 
 void set_num_config_on_chain( chainbase::database& db, const name& typ, const int64_t num ) {
-   if( num == -1 ) {
-      EOS_THROW(action_validate_exception,
-                "cannot set num cfg -1 for ${n}", ( "n", typ ));
-   }
-
    auto itr = db.find<config_data_object, by_name>(typ);
    if( itr == nullptr ) {
       //ilog("set num config ${t} to ${v}", ( "n", typ )("v", num));
@@ -61,7 +56,7 @@ void set_config_on_chain( chainbase::database& db, const setconfig &cfg ) {
 
 bool is_func_has_open( const apply_context& context, const name &func_typ ) {
       const auto head_num = static_cast<int64_t>( context.control.head_block_num() );
-      const auto open_num = get_num_config_on_chain( context.control.db(), eosio::chain::name{func_typ} );
+      const auto open_num = get_num_config_on_chain( context.control.db(), func_typ );
       if( open_num < 0 || head_num < 0 ) {
          // no cfg
          return false;
@@ -72,5 +67,15 @@ bool is_func_has_open( const apply_context& context, const name &func_typ ) {
       return head_num >= open_num;
 }
 
+// is_func_open_in_curr_block if a func is open in curr block
+bool is_func_open_in_curr_block( const controller& ctl, const name &func_typ ) {
+   const auto head_num = static_cast<int64_t>( ctl.head_block_num() );
+   const auto open_num = get_num_config_on_chain( ctl.db(), func_typ );
+   if( open_num < 0 || head_num < 0 ) {
+      // no cfg
+      return false;
+   }
+   return head_num == open_num;
+}
 
 } }  /// eosio::chain

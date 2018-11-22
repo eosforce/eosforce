@@ -251,6 +251,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
           "In \"light\" mode all incoming blocks headers will be fully validated; transactions in those validated blocks will be trusted \n")
          ("disable-ram-billing-notify-checks", bpo::bool_switch()->default_value(false),
           "Disable the check which subjectively fails a transaction if a contract bills more RAM to another account within the context of a notification handler (i.e. when the receiver is not the code of the action).")
+         ("trusted-producer", bpo::value<vector<string>>()->composing(), "Indicate a producer whose blocks headers signed by it will be fully validated, but transactions in those validated blocks will be trusted.")
          ;
 
 // TODO: rate limiting
@@ -288,7 +289,6 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
           "replace reversible block database with blocks imported from specified file and then exit")
          ("export-reversible-blocks", bpo::value<bfs::path>(),
            "export reversible block database in portable format into specified file and then exit")
-         ("trusted-producer", bpo::value<vector<string>>()->composing(), "Indicate a producer whose blocks headers signed by it will be fully validated, but transactions in those validated blocks will be trusted.")
          ("snapshot", bpo::value<bfs::path>(), "File to read Snapshot State from")
          ;
 
@@ -1105,31 +1105,32 @@ uint64_t read_only::get_table_index_name(const read_only::get_table_rows_params&
 
 template<>
 uint64_t convert_to_type(const string& str, const string& desc) {
-   uint64_t value = 0;
+
    try {
-      value = boost::lexical_cast<uint64_t>(str.c_str(), str.size());
-   } catch( ... ) {
+      return boost::lexical_cast<uint64_t>(str.c_str(), str.size());
+   } catch( ... ) { }
+   
+   try {
+      auto trimmed_str = str;
+      boost::trim(trimmed_str);
+      name s(trimmed_str);
+      return s.value;
+   } catch( ... ) { }
+
+   if (str.find(',') != string::npos) { // fix #6274 only match formats like 4,EOS
       try {
-         auto trimmed_str = str;
-         boost::trim(trimmed_str);
-         name s(trimmed_str);
-         value = s.value;
-      } catch( ... ) {
-         try {
-            auto symb = eosio::chain::symbol::from_string(str);
-            value = symb.value();
-         } catch( ... ) {
-            try {
-               value = ( eosio::chain::string_to_symbol( 0, str.c_str() ) >> 8 );
-            } catch( ... ) {
-               EOS_ASSERT( false, chain_type_exception, "Could not convert ${desc} string '${str}' to any of the following: "
-                                 "uint64_t, valid name, or valid symbol (with or without the precision)",
-                          ("desc", desc)("str", str));
-            }
-         }
-      }
+         auto symb = eosio::chain::symbol::from_string(str);
+         return symb.value();
+      } catch( ... ) { }
    }
-   return value;
+   
+   try {
+      return ( eosio::chain::string_to_symbol( 0, str.c_str() ) >> 8 );
+   } catch( ... ) {
+      EOS_ASSERT( false, chain_type_exception, "Could not convert ${desc} string '${str}' to any of the following: "
+                        "uint64_t, valid name, or valid symbol (with or without the precision)",
+                  ("desc", desc)("str", str));
+   }
 }
 
 abi_def get_abi( const controller& db, const name& account ) {

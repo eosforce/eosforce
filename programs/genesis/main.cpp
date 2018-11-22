@@ -74,6 +74,7 @@ int main( int argc, const char **argv ) {
    my_keymap.add_init_acc(gs, N(force.ram), 1*10000, private_key);
    my_keymap.add_init_acc(gs, N(force.cpu), 1*10000, private_key);
    my_keymap.add_init_acc(gs, N(force.net), 1*10000, private_key);
+   my_keymap.add_init_acc(gs, N(force.config), 1*10000, private_key);
 
    // for relay
    my_keymap.add_init_acc(gs, N(r.token.in), 100*10000, private_key);

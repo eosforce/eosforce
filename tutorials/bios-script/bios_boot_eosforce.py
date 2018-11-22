@@ -49,12 +49,6 @@ def sleep(t):
     time.sleep(t)
     print('resume')
 
-def startWallet():
-    run('mkdir -p ' + os.path.abspath(args.wallet_dir))
-    background(args.keosd + ' --unlock-timeout %d --http-server-address 0.0.0.0:6666 --wallet-dir %s' % (unlockTimeout, os.path.abspath(args.wallet_dir)))
-    sleep(.4)
-    run(args.cleos + 'wallet create --file ./pw')
-
 def importKeys():
     keys = {}
     for a in datas["initAccountsKeys"]:
@@ -113,14 +107,21 @@ def listProducers():
 
 def stepKillAll():
     run('killall keosd nodeos || true')
-    sleep(1.5)
+    sleep(.5)
 
 def stepStartWallet():
-    startWallet()
+    run('rm -rf ' + os.path.abspath(args.wallet_dir))
+    run('mkdir -p ' + os.path.abspath(args.wallet_dir))
+    background(args.keosd + ' --unlock-timeout %d --http-server-address 0.0.0.0:6666 --wallet-dir %s' % (unlockTimeout, os.path.abspath(args.wallet_dir)))
+    sleep(.4)
+
+def stepCreateWallet():
+    run('mkdir -p ' + os.path.abspath(args.wallet_dir))
+    run(args.cleos + 'wallet create --file ./pw')
 
 def stepStartProducers():
     startProducers(datas["initProducers"], datas["initProducerSigKeys"])
-    sleep(10)
+    sleep(3)
 
 def stepCreateNodeDirs():
     createNodeDirs(datas["initProducers"], datas["initProducerSigKeys"])
@@ -176,12 +177,15 @@ def clearData():
     run('rm -rf ' + os.path.abspath(args.config_dir))
     run('rm -rf ' + os.path.abspath(args.nodes_dir))
     run('rm -rf ' + os.path.abspath(args.wallet_dir))
-    sleep(1)
+    run('rm -rf ' + os.path.abspath(args.log_path))
+    run('rm -rf ' + os.path.abspath('./pw'))
+    run('rm -rf ' + os.path.abspath('./config.ini'))
 
 def restart():
     stepKillAll()
     stepMkConfig()
     stepStartWallet()
+    stepCreateWallet()
     importKeys()
     stepStartProducers()
     stepLog()
@@ -197,6 +201,7 @@ commands = [
     ('g', 'mkGenesis',      stepMakeGenesis,            True,    "Make Genesis"),
     ('m', 'mkConfig',       stepMkConfig,               True,    "Make Configs"),
     ('w', 'wallet',         stepStartWallet,            True,    "Start keosd, create wallet, fill with keys"),
+    ('W', 'createWallet',   stepCreateWallet,           True,    "Create wallet"),
     ('i', 'importKeys',     importKeys,                 True,    "importKeys"),
     ('D', 'createDirs',     stepCreateNodeDirs,         True,    "create dirs for node and log"),
     ('P', 'start-prod',     stepStartProducers,         True,    "Start producers"),

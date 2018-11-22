@@ -122,6 +122,7 @@ def stepCreateWallet():
 def stepStartProducers():
     startProducers(datas["initProducers"], datas["initProducerSigKeys"])
     sleep(3)
+    stepSetFuncs()
 
 def stepCreateNodeDirs():
     createNodeDirs(datas["initProducers"], datas["initProducerSigKeys"])
@@ -130,6 +131,8 @@ def stepCreateNodeDirs():
 def stepLog():
     run('tail -n 1000 ' + args.nodes_dir + 'biosbpa.log')
     listProducers()
+    run(args.cleos + ' get info')
+    print('you can use \"alias cleost=\'%s\'\" to call cleos to testnet' % args.cleos)
 
 def stepMkConfig():
     with open(os.path.abspath(args.config_dir) + '/genesis.json') as f:
@@ -171,6 +174,24 @@ def stepMakeGenesis():
 
     run('mv ./key.json ' + os.path.abspath(args.config_dir) + '/keys/')
     run('mv ./sigkey.json ' + os.path.abspath(args.config_dir) + '/keys/')
+
+def setFuncStartBlock(func_typ, num):
+    run(args.cleos +
+        'push action eosio setconfig ' +
+        ('\'{"typ":"%s","num":%s,"key":"","fee":"0.0000 EOS"}\' ' % (func_typ, num)) +
+        '-p force.config' )
+
+def setFee(account, act, fee, cpu, net, ram):
+    run(args.cleos +
+        'set setfee ' +
+        ('%s %s ' % (account, act)) +
+        ('"%s EOS" %d %d %d' % (fee, cpu, net, ram)))
+
+def stepSetFuncs():
+    # we need set some func start block num
+    setFee('eosio', 'setconfig', '0.0100', 100000, 1000000, 1000)
+    setFuncStartBlock('f.ram4vote', 10)
+    setFuncStartBlock('f.onfeeact', 15)
 
 def clearData():
     stepKillAll()

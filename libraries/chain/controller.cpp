@@ -1170,6 +1170,9 @@ struct controller_impl {
                check_actor_list( trx_context.bill_to_accounts ); // Assumes bill_to_accounts is the set of actors authorizing the transaction
             }
 
+            // is_onfee_act on early version eosforce we use a trx contain onfee act before do trx
+            // new version use a onfee act in the trx, when exec trx, a onfee action will do first
+            const auto is_onfee_act = is_func_has_open(self, config::func_typ::onfee_action);
 
             trx_context.delay = fc::seconds(trx->trx.delay_sec);
 
@@ -1191,8 +1194,9 @@ struct controller_impl {
                EOS_ASSERT(txfee.check_transaction(trx->trx) == true, transaction_exception, "transaction include actor more than one");
                fee_ext = trx->trx.fee - fee_required;
 
+
                // keep
-               if( true ) {
+               if( !is_onfee_act ) {
                   try {
                      auto onftrx = std::make_shared<transaction_metadata>(
                            get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor));
@@ -1227,7 +1231,7 @@ struct controller_impl {
                }
 
                // keep
-               if( true ) {
+               if( !is_onfee_act ) {
                   trace->except = e;
                   trace->except_ptr = std::current_exception();
                } else {

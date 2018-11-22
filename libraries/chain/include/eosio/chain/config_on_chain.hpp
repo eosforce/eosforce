@@ -18,16 +18,17 @@ namespace eosio { namespace chain {
 
 namespace config{
    namespace res_typ{
-      const auto cpu_per_fee = N(res.cpufee);
-      const auto net_per_fee = N(res.netfee);
-      const auto ram_per_fee = N(res.ramfee);
-      
-      const auto free_ram_per_account = N(res.freeram);
-      const auto ram_rent_b_per_eos   = N(res.ramrent);
+      static const auto cpu_per_fee = N(res.cpufee);
+      static const auto net_per_fee = N(res.netfee);
+      static const auto ram_per_fee = N(res.ramfee);
+
+      static const auto free_ram_per_account = N(res.freeram);
+      static const auto ram_rent_b_per_eos   = N(res.ramrent);
    };
 
    namespace func_typ{
-      const auto vote_for_ram = N(f.ram4vote);
+      static const auto vote_for_ram = N(f.ram4vote);
+      static const auto onfee_action = N(f.onfeeact);
    }
 };
 

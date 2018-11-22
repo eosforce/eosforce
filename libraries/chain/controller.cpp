@@ -211,6 +211,7 @@ struct controller_impl {
 */
 
    SET_APP_HANDLER( eosio, eosio, canceldelay );
+   SET_APP_HANDLER( eosio, eosio, onfee );
 
    fork_db.irreversible.connect( [&]( auto b ) {
                                  on_irreversible(b);
@@ -1169,6 +1170,9 @@ struct controller_impl {
                check_actor_list( trx_context.bill_to_accounts ); // Assumes bill_to_accounts is the set of actors authorizing the transaction
             }
 
+            // is_onfee_act on early version eosforce we use a trx contain onfee act before do trx
+            // new version use a onfee act in the trx, when exec trx, a onfee action will do first
+            const auto is_onfee_act = is_func_has_open(self, config::func_typ::onfee_action);
 
             trx_context.delay = fc::seconds(trx->trx.delay_sec);
 
@@ -1189,15 +1193,25 @@ struct controller_impl {
                EOS_ASSERT(trx->trx.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
                EOS_ASSERT(txfee.check_transaction(trx->trx) == true, transaction_exception, "transaction include actor more than one");
                fee_ext = trx->trx.fee - fee_required;
-               try {
-                  auto onftrx = std::make_shared<transaction_metadata>( get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor) );
-                  onftrx->implicit = true;
-                  auto onftrace = push_transaction( onftrx, fc::time_point::maximum(), config::default_min_transaction_cpu_usage, true);
-                  if( onftrace->except ) throw *onftrace->except;
-               }  catch (const fc::exception &e) {
-                  EOS_ASSERT(false, transaction_exception, "on fee transaction failed, exception: ${e}", ("e", e));
-               }  catch ( ... ) {
-                  EOS_ASSERT(false, transaction_exception, "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
+
+
+               // keep
+               if( !is_onfee_act ) {
+                  try {
+                     auto onftrx = std::make_shared<transaction_metadata>(
+                           get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor));
+                     onftrx->implicit = true;
+                     auto onftrace = push_transaction(onftrx, fc::time_point::maximum(),
+                                                      config::default_min_transaction_cpu_usage, true);
+                     if( onftrace->except ) throw *onftrace->except;
+                  } catch( const fc::exception& e ) {
+                     EOS_ASSERT(false, transaction_exception, "on fee transaction failed, exception: ${e}", ( "e", e ));
+                  } catch( ... ) {
+                     EOS_ASSERT(false, transaction_exception,
+                                "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
+                  }
+               } else {
+                  trx_context.make_fee_act(trx->trx.fee, self.head_block_header().producer);
                }
             }
 
@@ -1212,10 +1226,16 @@ struct controller_impl {
                trx_context.exec();
                trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
              } catch (const fc::exception &e) {
-               trace->except = e;
-               trace->except_ptr = std::current_exception();
                if (head->block_num != 1) {
-                 elog("---trnasction exe failed--------trace: ${trace}", ("trace", trace));
+                 elog("trnasction exe failed trace: ${trace}", ("trace", trace));
+               }
+
+               // keep
+               if( !is_onfee_act ) {
+                  trace->except = e;
+                  trace->except_ptr = std::current_exception();
+               } else {
+                  throw;
                }
              }
 

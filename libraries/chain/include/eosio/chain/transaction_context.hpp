@@ -38,6 +38,9 @@ namespace eosio { namespace chain {
 
          void init_for_deferred_trx( fc::time_point published );
 
+         // make_fee_act insert onfee act in trx
+         void make_fee_act( const asset& require_fee, const account_name& producer );
+
          void exec();
          void finalize();
          void squash();
@@ -101,6 +104,8 @@ namespace eosio { namespace chain {
          fc::microseconds              leeway = fc::microseconds(3000);
          int64_t                       billed_cpu_time_us = 0;
          bool                          explicit_billed_cpu_time = false;
+
+         action                        onfee_action;
 
       private:
          bool                          is_initialized = false;

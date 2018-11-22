@@ -18,16 +18,17 @@ namespace eosio { namespace chain {
 
 namespace config{
    namespace res_typ{
-      const auto cpu_per_fee = N(res.cpufee);
-      const auto net_per_fee = N(res.netfee);
-      const auto ram_per_fee = N(res.ramfee);
-      
-      const auto free_ram_per_account = N(res.freeram);
-      const auto ram_rent_b_per_eos   = N(res.ramrent);
+      static const auto cpu_per_fee = N(res.cpufee);
+      static const auto net_per_fee = N(res.netfee);
+      static const auto ram_per_fee = N(res.ramfee);
+
+      static const auto free_ram_per_account = N(res.freeram);
+      static const auto ram_rent_b_per_eos   = N(res.ramrent);
    };
 
    namespace func_typ{
-      const auto vote_for_ram = N(f.ram4vote);
+      static const auto vote_for_ram = N(f.ram4vote);
+      static const auto onfee_action = N(f.onfeeact);
    }
 };
 
@@ -65,10 +66,10 @@ void set_num_config_on_chain( chainbase::database& db, const name& typ, const in
 void set_config_on_chain( chainbase::database& db, const setconfig &cfg );
 
 // is_func_has_open is a func is open
-bool is_func_has_open( const apply_context& context, const name &func_typ );
+bool is_func_has_open( const controller& ctl, const name &func_typ );
 
 // is_func_open_in_curr_block if a func is open in curr block
-bool is_func_open_in_curr_block( const controller& context, const name &func_typ );
+bool is_func_open_in_curr_block( const controller& ctl, const name &func_typ );
 
 } } /// namespace eosio::chain
 

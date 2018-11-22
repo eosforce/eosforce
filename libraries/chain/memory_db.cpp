@@ -62,6 +62,17 @@ int memory_db::db_store_i64(
    return 1;
 }
 
+// some imp same as api in wasm interface
+void eosio_contract_assert( bool condition, const char* msg ) {
+   if( !condition ) {
+      std::string message( msg );
+      edump((message));
+      EOS_THROW( eosio_assert_message_exception,
+                 "assertion failure with message: ${s}", ("s",message) );
+   }
+}
+
+
 int memory_db::db_get_i64( const key_value_object* obj , char* buffer, size_t buffer_size ) const {
    auto s = obj->value.size();
    if( buffer_size == 0 ) return s;

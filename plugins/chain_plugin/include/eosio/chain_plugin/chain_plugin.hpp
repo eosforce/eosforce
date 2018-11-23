@@ -471,6 +471,9 @@ public:
       string key_type;
       for( const auto &t : abi.tables ) {
          if( t.name == p.table ) {
+            if( t.key_types.empty() || t.key_names.empty() ){
+               EOS_THROW(chain::contract_table_query_exception, "no key_types in table");
+            }
             key_type = t.key_types[0];
          }
       }
@@ -496,9 +499,6 @@ public:
       const auto& d = db.db();
 
       uint64_t scope = convert_to_type<uint64_t>(p.scope, "scope");
-
-      uint64_t t_key = get_table_key(p, abi);
-
       abi_serializer abis;
       abis.set_abi(abi, abi_serializer_max_time);
       const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(p.code, scope, p.table));
@@ -507,10 +507,10 @@ public:
          decltype(t_id->id) next_tid(t_id->id._id + 1);
          auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
          auto upper = idx.lower_bound(boost::make_tuple(next_tid));
-
          //Return only rows that contain key.
          if( !p.table_key.empty()) {
             const auto& idxk = d.get_index<chain::key_value_index, chain::by_scope_primary>();
+            uint64_t t_key = get_table_key(p, abi);
             lower = idxk.lower_bound(boost::make_tuple(t_id->id, t_key));
             upper = idxk.lower_bound(boost::make_tuple(next_tid, t_key));
             if( lower == idxk.end() || lower->t_id != t_id->id || t_key != lower->primary_key ) {

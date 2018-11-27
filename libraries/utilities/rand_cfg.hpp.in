@@ -1,0 +1,9 @@
+#ifndef EOSIO_RAND_CFG_HPP_IN_H
+#define EOSIO_RAND_CFG_HPP_IN_H
+
+#cmakedefine HAVE_GETENTROPY 1
+#cmakedefine HAVE_GETENTROPY_RAND 1
+#cmakedefine HAVE_SYS_GETRANDOM 1
+#cmakedefine HAVE_SYSCTL_ARND 1
+
+#endif //EOSIO_RAND_CFG_HPP_IN_H

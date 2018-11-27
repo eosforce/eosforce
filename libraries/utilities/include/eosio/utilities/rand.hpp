@@ -5,7 +5,10 @@
 #ifndef RAND_HPP
 #define RAND_HPP 1
 
+#include <stdint.h>
 #include <algorithm>
+
+#include <fc/crypto/sha256.hpp>
 
 namespace eosio { namespace utilities { namespace rand {
 
@@ -38,6 +41,8 @@ public:
         }
     }
 };
+
+bool rand_strong_bytes( const fc::sha256& block_id, unsigned char *out, const std::size_t& num );
 
 } } } //eosio::utilities::rand
 

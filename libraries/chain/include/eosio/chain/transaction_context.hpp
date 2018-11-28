@@ -64,6 +64,11 @@ namespace eosio { namespace chain {
          friend struct controller_impl;
          friend class apply_context;
 
+         const action mk_fee_action( const action& act );
+         void dispatch_fee_action( action_trace& trace, const action& act );
+         void make_limit_by_contract( const asset &fee_ext );
+         void add_limit_by_fee( const action &act );
+
          void add_ram_usage( account_name account, int64_t ram_delta );
 
          void dispatch_action( action_trace& trace, const action& a, account_name receiver, bool context_free = false, uint32_t recurse_depth = 0 );
@@ -105,7 +110,9 @@ namespace eosio { namespace chain {
          int64_t                       billed_cpu_time_us = 0;
          bool                          explicit_billed_cpu_time = false;
 
-         action                        onfee_action;
+         bool                          is_fee_action = false;
+         account_name                  fee_payer;
+         account_name                  bp_name;
 
       private:
          bool                          is_initialized = false;
@@ -136,7 +143,6 @@ namespace eosio { namespace chain {
          int64_t ram_used_by_trx = 0;
          bool use_limit_by_contract = false;
 
-         void make_limit_by_contract(const asset &fee_ext);
          deadline_timer                _deadline_timer;
    };
 

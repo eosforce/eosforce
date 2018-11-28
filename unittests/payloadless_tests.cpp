@@ -32,11 +32,11 @@ class payloadless_tester : public TESTER {
 BOOST_AUTO_TEST_SUITE(payloadless_tests)
 
 BOOST_FIXTURE_TEST_CASE( test_doit, payloadless_tester ) {
-   
+   produce_block();
    create_accounts( {N(payloadless)} );
    set_code( N(payloadless), payloadless_wast );
    set_abi( N(payloadless), payloadless_abi );
-
+   set_fee(N(payloadless), N(doit), asset(100), 0, 0, 0);
    auto trace = push_action(N(payloadless), N(doit), N(payloadless), mutable_variant_object());
    auto msg = trace->action_traces.front().console;
    BOOST_CHECK_EQUAL(msg == "Im a payloadless action", true);
@@ -45,10 +45,12 @@ BOOST_FIXTURE_TEST_CASE( test_doit, payloadless_tester ) {
 // test GH#3916 - contract api action with no parameters fails when called from cleos
 // abi_serializer was failing when action data was empty.
 BOOST_FIXTURE_TEST_CASE( test_abi_serializer, payloadless_tester ) {
-
+   produce_block();
    create_accounts( {N(payloadless)} );
    set_code( N(payloadless), payloadless_wast );
    set_abi( N(payloadless), payloadless_abi );
+
+   set_fee(N(payloadless), N(doit), asset(100), 0, 0, 0);
 
    variant pretty_trx = fc::mutable_variant_object()
       ("actions", fc::variants({
@@ -69,6 +71,7 @@ BOOST_FIXTURE_TEST_CASE( test_abi_serializer, payloadless_tester ) {
    // from_variant is key to this test as abi_serializer was explicitly not allowing empty "data"
    abi_serializer::from_variant(pretty_trx, trx, get_resolver(), abi_serializer_max_time);
    set_transaction_headers(trx);
+
 
    trx.sign( get_private_key( N(payloadless), "active" ), control->get_chain_id() );
    auto trace = push_transaction( trx );

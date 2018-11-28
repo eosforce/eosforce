@@ -46,6 +46,7 @@ public:
       act.name    = name;
       act.data    = abi_ser.variant_to_binary( action_type_name, data, abi_serializer_max_time );
 
+
       return base_tester::push_action( std::move(act), uint64_t(signer));
    }
 

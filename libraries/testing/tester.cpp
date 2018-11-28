@@ -127,6 +127,10 @@ namespace eosio { namespace testing {
       "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
       "asset": "1000000.0000 EOS",
       "name": "b1"
+    },{
+      "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
+      "asset": "1000000.0000 EOS",
+      "name": "force.test"
     }
   ],
   "initial_producer_list": [{
@@ -141,6 +145,7 @@ namespace eosio { namespace testing {
 
 	  cfg.genesis = fc::json::from_string(genesis_string).as<genesis_state>();
 	  cfg.genesis.initial_account_list[0].key = get_public_key( N(eosforce), "active" );
+	  cfg.genesis.initial_account_list[2].key = get_public_key( N(force.test), "active" );
 	  cfg.genesis.initial_producer_list[0].bpkey = get_public_key( N(eosforce), "active" );
 
       cfg.genesis.initial_key = get_public_key( config::system_account_name, "active" );
@@ -371,7 +376,7 @@ namespace eosio { namespace testing {
   void base_tester::set_transaction_headers( transaction& trx, uint32_t expiration, uint32_t delay_sec ) const {
      trx.expiration = control->head_block_time() + fc::seconds(expiration);
      trx.set_reference_block( control->head_block_id() );
-	 trx.fee = asset(10000);
+	 trx.fee = asset(100 * 10000);
 
      trx.max_net_usage_words = 0; // No limit
      trx.max_cpu_usage_ms = 0; // No limit
@@ -425,7 +430,7 @@ namespace eosio { namespace testing {
       trx.sign( get_private_key( creator, "active" ), control->get_chain_id()  );
       auto trace = push_transaction( trx );
       
-      transfer( N(eosforce), a, "100.0000 EOS", "create_account", config::system_account_name );
+      transfer( N(eosforce), a, "100000.0000 EOS", "create_account", config::system_account_name );
       
       return trace;
    }
@@ -831,9 +836,37 @@ namespace eosio { namespace testing {
       } else {
          trx.sign( get_private_key( account, "active" ), control->get_chain_id()  );
       }
-      push_transaction( trx );		 	
+      push_transaction( trx );
    }
 
+   void base_tester::set_fee( account_name auth, 
+   				 account_name account,
+     			 action_name action, 
+   				 asset fee, 
+   				 uint32_t cpu_limit, 
+   				 uint32_t net_limit,
+   				 uint32_t ram_limit,
+   				 const private_key_type* signer) {
+   	  
+   	  signed_transaction trx;
+      trx.actions.emplace_back( vector<permission_level>{{auth,config::active_name}},
+                                setfee{
+                                   .account    = account,
+                                   .action     = action,
+                                   .fee        = fee,
+                                   .cpu_limit  = cpu_limit,
+                                   .net_limit  = net_limit,
+                                   .ram_limit  = ram_limit
+                                });
+
+      set_transaction_headers(trx);
+      if( signer ) {
+         trx.sign( *signer, control->get_chain_id()  );
+      } else {
+         trx.sign( get_private_key( auth, "active" ), control->get_chain_id()  );
+      }
+      push_transaction( trx );
+   }
 
    bool base_tester::chain_has_transaction( const transaction_id_type& txid ) const {
       return chain_transactions.count(txid) != 0;

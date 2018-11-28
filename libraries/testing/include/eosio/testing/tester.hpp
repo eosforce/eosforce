@@ -203,6 +203,14 @@ namespace eosio { namespace testing {
    				 uint32_t net_limit,
    				 uint32_t ram_limit,
    				 const private_key_type* signer = nullptr );
+   	     void set_fee( account_name auth, 
+   				 account_name account,
+     			 action_name action, 
+   				 asset fee, 
+   				 uint32_t cpu_limit, 
+   				 uint32_t net_limit,
+   				 uint32_t ram_limit,
+   				 const private_key_type* signer = nullptr );
 
          bool                          chain_has_transaction( const transaction_id_type& txid ) const;
          const transaction_receipt&    get_transaction_receipt( const transaction_id_type& txid ) const;
@@ -375,6 +383,10 @@ namespace eosio { namespace testing {
       "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
       "asset": "1000000.0000 EOS",
       "name": "b1"
+    },{
+      "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
+      "asset": "1000000.0000 EOS",
+      "name": "force.test"
     }
   ],
   "initial_producer_list": [{
@@ -389,6 +401,7 @@ namespace eosio { namespace testing {
 
 	  	 vcfg.genesis = fc::json::from_string(genesis_string).as<genesis_state>();
 	  	 vcfg.genesis.initial_account_list[0].key = get_public_key( N(eosforce), "active" );
+	  	 vcfg.genesis.initial_account_list[2].key = get_public_key( N(force.test), "active" );
 	  	 vcfg.genesis.initial_producer_list[0].bpkey = get_public_key( N(eosforce), "active" );
 
          //vcfg.genesis.initial_timestamp = fc::time_point::from_iso_string("2020-01-01T00:00:00.000");

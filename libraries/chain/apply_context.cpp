@@ -126,16 +126,14 @@ void apply_context::exec( action_trace& trace ) {
    }
 
    for( const auto& inline_action : _cfa_inline_actions ) {
-      trace.inline_traces.emplace_back();
-      trx_context.dispatch_fee_action(trace.inline_traces.back(), inline_action);
+      trx_context.dispatch_fee_action(trace.inline_traces, inline_action);
       trace.inline_traces.emplace_back();
       trx_context.dispatch_action(trace.inline_traces.back(), inline_action, inline_action.account, true,
                                   recurse_depth + 1);
    }
 
    for( const auto& inline_action : _inline_actions ) {
-      trace.inline_traces.emplace_back();
-      trx_context.dispatch_fee_action(trace.inline_traces.back(), inline_action);
+      trx_context.dispatch_fee_action(trace.inline_traces, inline_action);
       trace.inline_traces.emplace_back();
       trx_context.dispatch_action(trace.inline_traces.back(), inline_action, inline_action.account, false,
                                   recurse_depth + 1);

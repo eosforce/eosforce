@@ -438,7 +438,10 @@ namespace bacc = boost::accumulators;
 
       // no setfee, is native or err by get_require_fee
       if( info == nullptr ) {
-         // do nothing
+         use_limit_by_contract = false;
+         cpu_limit_by_contract = 0;
+         net_limit_by_contract = 0;
+         ram_limit_by_contract = 0;
          return;
       }
 
@@ -485,11 +488,12 @@ namespace bacc = boost::accumulators;
       };
    }
 
-   void transaction_context::dispatch_fee_action( action_trace& trace, const action& act ){
+   void transaction_context::dispatch_fee_action( vector<action_trace>& action_traces, const action& act ){
       if(is_fee_action) {
+         action_traces.emplace_back();
          const auto& fee_act = mk_fee_action(act);
          add_limit_by_fee(fee_act);
-         dispatch_action(trace, fee_act);
+         dispatch_action(action_traces.back(), fee_act);
       }
    }
 
@@ -498,8 +502,7 @@ namespace bacc = boost::accumulators;
 
       if( apply_context_free ) {
          for( const auto& act : trx.context_free_actions ) {
-            trace->action_traces.emplace_back();
-            dispatch_fee_action( trace->action_traces.back(), act );
+            dispatch_fee_action( trace->action_traces, act );
             trace->action_traces.emplace_back();
             dispatch_action( trace->action_traces.back(), act, true );
          }
@@ -507,8 +510,7 @@ namespace bacc = boost::accumulators;
 
       if( delay == fc::microseconds() ) {
          for( const auto& act : trx.actions ) {
-            trace->action_traces.emplace_back();
-            dispatch_fee_action( trace->action_traces.back(), act );
+            dispatch_fee_action( trace->action_traces, act );
             trace->action_traces.emplace_back();
             dispatch_action( trace->action_traces.back(), act );
          }

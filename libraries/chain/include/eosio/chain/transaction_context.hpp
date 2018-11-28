@@ -65,7 +65,7 @@ namespace eosio { namespace chain {
          friend class apply_context;
 
          const action mk_fee_action( const action& act );
-         void dispatch_fee_action( action_trace& trace, const action& act );
+         void dispatch_fee_action( vector<action_trace>& trace, const action& act );
          void make_limit_by_contract( const asset &fee_ext );
          void add_limit_by_fee( const action &act );
 

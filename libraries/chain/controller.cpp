@@ -1222,7 +1222,9 @@ struct controller_impl {
                   EOS_ASSERT(false, transaction_exception, "billed_cpu_time_us is 0");
                }
 
-               trx_context.make_limit_by_contract(fee_ext);
+               if(!is_onfee_act) {
+                  trx_context.make_limit_by_contract(fee_ext);
+               }
                trx_context.exec();
                trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
              } catch (const fc::exception &e) {

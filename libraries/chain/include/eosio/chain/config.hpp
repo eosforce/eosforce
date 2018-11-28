@@ -29,6 +29,7 @@ const static uint64_t system_account_name    = N(eosio);
 const static uint64_t null_account_name      = N(eosio.null);
 const static uint64_t producers_account_name = N(eosio.prods);
 const static uint64_t chain_config_name      = N(force.config);
+const static uint64_t eoslock_account_name   = N(eosio.lock);
 
 // Active permission of producers account requires greater than 2/3 of the producers to authorize
 const static uint64_t majority_producers_permission_name = N(prod.major); // greater than 1/2 of producers needed to authorize

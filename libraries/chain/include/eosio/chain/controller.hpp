@@ -78,6 +78,8 @@ namespace eosio { namespace chain {
             std::vector<account_tuple>  active_initial_account_list;
             uint32_t                    inactive_freeze_percent = 80;
 
+            bytes                                    lock_code;
+            bytes                                    lock_abi;
             bytes                                    msig_code;
             bytes                                    msig_abi;
             bytes                                    System01_code;
@@ -335,6 +337,7 @@ FC_REFLECT( eosio::chain::controller::config,
             (wasm_runtime)
             (active_initial_account_list)
             (inactive_freeze_percent)
+            (lock_code)(lock_abi)
             (msig_code)(msig_abi)
             (System01_code)(System01_abi)
             (resource_greylist)

@@ -675,41 +675,51 @@ struct controller_impl {
    }
 
    // initialize_account init account from genesis;
-   // inactive account freeze asset by inactive_freeze_percent;
+   // inactive account freeze(lock) asset by inactive_freeze_percent;
    void initialize_account() {
-       std::set<account_name> active_acc_set;
-       for (const auto &account : conf.active_initial_account_list) {
-           active_acc_set.insert(account.name);
-       }
+      std::set<account_name> active_acc_set;
+      for (const auto &account : conf.active_initial_account_list) {
+         active_acc_set.insert(account.name);
+      }
 
-       const auto acc_name_a = N(a);
-       auto db = memory_db(self);
-       for (const auto &account : conf.genesis.initial_account_list) {
-           const auto &public_key = account.key;
-           auto acc_name = account.name;
-           if (acc_name == acc_name_a) {
-               const auto pk_str = std::string(public_key);
-               const auto name_r = pk_str.substr(pk_str.size() - 12, 12);
-               acc_name = string_to_name(format_name(name_r).c_str());
-           }
-           eosio::chain::asset amount;
-           if (active_acc_set.find(account.name) == active_acc_set.end()) {
-               //inactive account freeze asset
-               amount = eosio::chain::asset(account.asset.get_amount() * (100 - conf.inactive_freeze_percent) / 100);
-           } else {
-               //active account
-               amount = account.asset;
-           }
-           const authority auth(public_key);
+      const auto acc_name_a = N(a);
+      auto db = memory_db(self);
+      for (const auto &account : conf.genesis.initial_account_list) {
+         const auto &public_key = account.key;
+         auto acc_name = account.name;
+         if (acc_name == acc_name_a) {
+            const auto pk_str = std::string(public_key);
+            const auto name_r = pk_str.substr(pk_str.size() - 12, 12);
+            acc_name = string_to_name(format_name(name_r).c_str());
+         }
 
+         // init asset
+         eosio::chain::asset amount;
+         if (active_acc_set.find(account.name) == active_acc_set.end()) {
+            //issue eoslock token to this account
+            uint64_t eoslock_amount = account.asset.get_amount() * conf.inactive_freeze_percent / 100;
+            db.insert(
+                    config::eoslock_account_name, config::eoslock_account_name, N(accounts), acc_name,
+                     memory_db::eoslock_account{acc_name, eosio::chain::asset(eoslock_amount, symbol(4, "EOSLOCK"))});
 
-           // initialize_account_to_table
-           db.insert(
-                   N(eosio), N(eosio), N(accounts),
-                   acc_name,
-                   memory_db::account_info{acc_name, amount});
-           create_native_account(acc_name, auth, auth, false);
-       }
+            //inactive account freeze(lock) asset
+            amount = account.asset - eosio::chain::asset(eoslock_amount);
+//            dlog("initialize inactive account, name:${n}, lock amount:${l}, eos amount:${e}", ("n", acc_name)("l", eoslock_amount)("e", amount));
+         } else {
+            //active account
+            amount = account.asset;
+             dlog("initialize active account, name:${n}, eos amount:${e}",
+                  ("n", acc_name)("e", amount));
+         }
+
+         // initialize_account_to_table
+         db.insert(
+                 N(eosio), N(eosio), N(accounts), acc_name,
+                 memory_db::account_info{acc_name, amount});
+
+          const authority auth(public_key);
+          create_native_account(acc_name, auth, auth, false);
+      }
    }
 
    // initialize_contract init sys contract
@@ -741,6 +751,8 @@ struct controller_impl {
          aso.code_sequence += 1;
          aso.abi_sequence += 1;
       });
+
+      ilog("initialize_contract: name:${n}, code_size:${code}, abi_size:${abi}", ("n", account.name)("code",code_size)("abi",abi_size));
    }
 
    // initialize_eos_stats init stats for eos token
@@ -776,10 +788,12 @@ struct controller_impl {
       authority system_auth(conf.genesis.initial_key);
       create_native_account( config::system_account_name, system_auth, system_auth, true );
       create_native_account( N(eosio.token), system_auth, system_auth, false );
+      create_native_account( config::eoslock_account_name, system_auth, system_auth, false );
 
       initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi, true);
       initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
       initialize_eos_stats();
+      initialize_contract(config::eoslock_account_name, conf.lock_code, conf.lock_abi);
 
       initialize_account();
       initialize_producer();

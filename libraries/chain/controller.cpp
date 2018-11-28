@@ -28,6 +28,7 @@
 #include <fc/variant_object.hpp>
 
 #include <eosio/chain/eosio_contract.hpp>
+#include <set>
 
 namespace eosio { namespace chain {
 
@@ -673,29 +674,42 @@ struct controller_impl {
             memory_db::chain_status{N(chainstatus), false});
    }
 
-   // initialize_account init account from genesis
+   // initialize_account init account from genesis;
+   // inactive account freeze asset by inactive_freeze_percent;
    void initialize_account() {
-      const auto acc_name_a = N(a);
-      auto db = memory_db(self);
-      for( const auto& account : conf.genesis.initial_account_list ) {
-         const auto& public_key = account.key;
-         const auto& amount = account.asset;
-         const authority auth(public_key);
+       std::set<account_name> active_acc_set;
+       for (const auto &account : conf.active_initial_account_list) {
+           active_acc_set.insert(account.name);
+       }
 
-         auto acc_name = account.name;
-         if( acc_name == acc_name_a ) {
-            const auto pk_str = std::string(public_key);
-            const auto name_r = pk_str.substr(pk_str.size() - 12, 12);
-            acc_name = string_to_name(format_name(name_r).c_str());
-         }
+       const auto acc_name_a = N(a);
+       auto db = memory_db(self);
+       for (const auto &account : conf.genesis.initial_account_list) {
+           const auto &public_key = account.key;
+           auto acc_name = account.name;
+           if (acc_name == acc_name_a) {
+               const auto pk_str = std::string(public_key);
+               const auto name_r = pk_str.substr(pk_str.size() - 12, 12);
+               acc_name = string_to_name(format_name(name_r).c_str());
+           }
+           eosio::chain::asset amount;
+           if (active_acc_set.find(account.name) == active_acc_set.end()) {
+               //inactive account freeze asset
+               amount = eosio::chain::asset(account.asset.get_amount() * (100 - conf.inactive_freeze_percent) / 100);
+           } else {
+               //active account
+               amount = account.asset;
+           }
+           const authority auth(public_key);
 
-         // initialize_account_to_table
-         db.insert(
-               N(eosio), N(eosio), N(accounts),
-               acc_name,
-               memory_db::account_info{acc_name, amount});
-         create_native_account(acc_name, auth, auth, false);
-      }
+
+           // initialize_account_to_table
+           db.insert(
+                   N(eosio), N(eosio), N(accounts),
+                   acc_name,
+                   memory_db::account_info{acc_name, amount});
+           create_native_account(acc_name, auth, auth, false);
+       }
    }
 
    // initialize_contract init sys contract

@@ -568,8 +568,8 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       const auto genesis_file = app().config_dir() / "genesis.json";
       my->chain_config->genesis = fc::json::from_file(genesis_file).as<genesis_state>();
 
-      const auto inactive_file = app().config_dir() / "inactive.json";
-      my->chain_config->inactive_initial_account_list = fc::json::from_file(inactive_file).as<std::vector<account_tuple>>();
+      const auto active_account_file = app().config_dir() / "activeacc.json";
+      my->chain_config->active_initial_account_list = fc::json::from_file(active_account_file).as<std::vector<account_tuple>>();
 
       load_contract_code_abi("System", my->chain_config->genesis.code, my->chain_config->genesis.abi);
       load_contract_code_abi("eosio.token", my->chain_config->genesis.token_code, my->chain_config->genesis.token_abi);

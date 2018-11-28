@@ -75,7 +75,8 @@ namespace eosio { namespace chain {
             genesis_state            genesis;
             wasm_interface::vm_type  wasm_runtime = chain::config::default_wasm_runtime;
 
-            std::vector<account_tuple>  inactive_initial_account_list;
+            std::vector<account_tuple>  active_initial_account_list;
+            uint32_t                    inactive_freeze_percent = 80;
 
             bytes                                    msig_code;
             bytes                                    msig_abi;
@@ -332,7 +333,8 @@ FC_REFLECT( eosio::chain::controller::config,
             (System01_contract_block_num)
             (genesis)
             (wasm_runtime)
-            (inactive_initial_account_list)
+            (active_initial_account_list)
+            (inactive_freeze_percent)
             (msig_code)(msig_abi)
             (System01_code)(System01_abi)
             (resource_greylist)

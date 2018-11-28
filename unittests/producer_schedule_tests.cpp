@@ -194,7 +194,7 @@ BOOST_AUTO_TEST_SUITE(producer_schedule_tests)
       confirm_header_schd_ver_correctness(3, eff_third_prod_schd_block_num);
 
    } FC_LOG_AND_RETHROW()
-#endif
+
 
 
 BOOST_FIXTURE_TEST_CASE( producer_schedule_promotion_test, TESTER ) try {
@@ -259,5 +259,5 @@ BOOST_FIXTURE_TEST_CASE( producer_schedule_promotion_test, TESTER ) try {
 
    BOOST_REQUIRE_EQUAL( validate(), true );
 } FC_LOG_AND_RETHROW()
-
+#endif
 BOOST_AUTO_TEST_SUITE_END()

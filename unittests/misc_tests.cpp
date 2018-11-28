@@ -584,7 +584,7 @@ BOOST_AUTO_TEST_CASE(alphabetic_sort)
 
 } FC_LOG_AND_RETHROW() }
 
-
+/*
 BOOST_AUTO_TEST_CASE(transaction_test) { try {
 
    testing::TESTER test;
@@ -644,7 +644,7 @@ BOOST_AUTO_TEST_CASE(transaction_test) { try {
    BOOST_CHECK_EQUAL(raw.size(), raw2.size());
 
 } FC_LOG_AND_RETHROW() }
-
+*/
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace eosio

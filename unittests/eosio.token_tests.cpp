@@ -24,11 +24,11 @@ public:
    eosio_token_tester() {
       produce_blocks( 2 );
 
-      create_accounts( { N(alice), N(bob), N(carol), N(eosio.token) } );
+      create_accounts( { N(alice), N(bob), N(carol)/*, N(eosio.token)*/ } );
       produce_blocks( 2 );
 
-      set_code( N(eosio.token), eosio_token_wast );
-      set_abi( N(eosio.token), eosio_token_abi );
+      //set_code( N(eosio.token), eosio_token_wast );
+      //set_abi( N(eosio.token), eosio_token_abi );
 
       produce_blocks();
 
@@ -68,7 +68,7 @@ public:
    action_result create( account_name issuer,
                 asset        maximum_supply ) {
 
-      return push_action( N(eosio.token), N(create), mvo()
+      return push_action( N(eosforce)/*N(eosio.token)*/, N(create), mvo()
            ( "issuer", issuer)
            ( "maximum_supply", maximum_supply)
       );

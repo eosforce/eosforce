@@ -166,7 +166,7 @@ transaction eosio_sudo_tester::reqauth( account_name from, const vector<permissi
    trx.actions.push_back( std::move(act) );
    return trx;
 }
-
+#if 0
 BOOST_AUTO_TEST_SUITE(eosio_sudo_tests)
 
 BOOST_FIXTURE_TEST_CASE( sudo_exec_direct, eosio_sudo_tester ) try {
@@ -365,3 +365,4 @@ BOOST_FIXTURE_TEST_CASE( sudo_with_msig_producers_change, eosio_sudo_tester ) tr
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
+#endif

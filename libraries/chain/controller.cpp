@@ -195,6 +195,10 @@ struct controller_impl {
 #define SET_APP_HANDLER( receiver, contract, action) \
    set_apply_handler( #receiver, #contract, #action, &BOOST_PP_CAT(apply_, BOOST_PP_CAT(contract, BOOST_PP_CAT(_,action) ) ) )
 
+   // add a asset if system account is change, if it changed, next SET_APP_HANDLER need also change
+   BOOST_STATIC_ASSERT(N(eosio)       == config::system_account_name);
+   BOOST_STATIC_ASSERT(N(eosio.token) == config::token_account_name);
+
    SET_APP_HANDLER( eosio, eosio, newaccount );
    SET_APP_HANDLER( eosio, eosio, setcode );
    SET_APP_HANDLER( eosio, eosio, setconfig );

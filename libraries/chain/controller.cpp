@@ -618,7 +618,7 @@ struct controller_impl {
 
    void create_native_account( account_name name, const authority& owner, const authority& active, bool is_privileged = false ) {
       if (db.find<account_object, by_name>(name) != nullptr) {
-        elog("create_native_account, This account already exists : ${name}", ("name", name));
+        // elog("create_native_account, This account already exists : ${name}", ("name", name));
         return;
       }
       db.create<account_object>([&](auto& a) {

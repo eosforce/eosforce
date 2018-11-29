@@ -1733,15 +1733,13 @@ read_only::get_account_results read_only::get_account( const get_account_params&
    abi_def abi;
    if( abi_serializer::to_abi(code_account.abi, abi) ) {
       abi_serializer abis( abi, abi_serializer_max_time );
-
-      const auto token_code = N(eosio.token);
-
       auto core_symbol = extract_core_symbol();
 
       if (params.expected_core_symbol.valid()) 
          core_symbol = *(params.expected_core_symbol);
 
-      const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple( token_code, params.account_name, N(accounts) ));
+      const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(
+            boost::make_tuple( config::token_account_name, params.account_name, N(accounts) ));
       if( t_id != nullptr ) {
          const auto &idx = d.get_index<key_value_index, by_scope_primary>();
          auto it = idx.find(boost::make_tuple( t_id->id, core_symbol.to_symbol_code() ));

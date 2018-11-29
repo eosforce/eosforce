@@ -195,6 +195,10 @@ struct controller_impl {
 #define SET_APP_HANDLER( receiver, contract, action) \
    set_apply_handler( #receiver, #contract, #action, &BOOST_PP_CAT(apply_, BOOST_PP_CAT(contract, BOOST_PP_CAT(_,action) ) ) )
 
+   // add a asset if system account is change, if it changed, next SET_APP_HANDLER need also change
+   BOOST_STATIC_ASSERT(N(eosio)       == config::system_account_name);
+   BOOST_STATIC_ASSERT(N(eosio.token) == config::token_account_name);
+
    SET_APP_HANDLER( eosio, eosio, newaccount );
    SET_APP_HANDLER( eosio, eosio, setcode );
    SET_APP_HANDLER( eosio, eosio, setconfig );
@@ -655,7 +659,7 @@ struct controller_impl {
          create_native_account(producer.name, auth, auth, false);
 
          // store bp data in bp table
-         db.insert(N(eosio), N(eosio), N(bps),
+         db.insert(config::system_account_name, config::system_account_name, N(bps),
                    producer.name,
                    memory_db::bp_info{
                          producer.name,
@@ -668,8 +672,8 @@ struct controller_impl {
    // initialize_chain_emergency init chain emergency stat
    void initialize_chain_emergency() {
       memory_db(self).insert(
-            N(eosio), N(eosio), N(chainstatus),
-            N(eosio),
+            config::system_account_name, config::system_account_name, N(chainstatus),
+            config::system_account_name,
             memory_db::chain_status{N(chainstatus), false});
    }
 
@@ -691,7 +695,7 @@ struct controller_impl {
 
          // initialize_account_to_table
          db.insert(
-               N(eosio), N(eosio), N(accounts),
+               config::system_account_name, config::system_account_name, N(accounts),
                acc_name,
                memory_db::account_info{acc_name, amount});
          create_native_account(acc_name, auth, auth, false);
@@ -732,12 +736,12 @@ struct controller_impl {
    // initialize_eos_stats init stats for eos token
    void initialize_eos_stats() {
       const auto& sym = symbol(CORE_SYMBOL).to_symbol_code();
-      memory_db(self).insert(N(eosio.token), sym, N(stat),
-                             N(eosio.token),
+      memory_db(self).insert(config::token_account_name, sym, N(stat),
+                             config::token_account_name,
                              memory_db::currency_stats{
                                    asset(10000000),
                                    asset(100000000000),
-                                   N(eosio.token)});
+                                   config::token_account_name});
    }
 
    void initialize_database() {
@@ -759,12 +763,12 @@ struct controller_impl {
       authorization.initialize_database();
       resource_limits.initialize_database();
 
-      authority system_auth(conf.genesis.initial_key);
+      authority system_auth( conf.genesis.initial_key );
       create_native_account( config::system_account_name, system_auth, system_auth, true );
-      create_native_account( N(eosio.token), system_auth, system_auth, false );
+      create_native_account( config::token_account_name, system_auth, system_auth, false );
 
-      initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi, true);
-      initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
+      initialize_contract( config::system_account_name, conf.genesis.code, conf.genesis.abi, true );
+      initialize_contract( config::token_account_name, conf.genesis.token_code, conf.genesis.token_abi );
       initialize_eos_stats();
 
       initialize_account();
@@ -1100,7 +1104,7 @@ struct controller_impl {
 
    bool check_chainstatus() const {
       const auto *cstatus_tid = db.find<table_id_object, by_code_scope_table>(
-            boost::make_tuple(N(eosio), N(eosio), N(chainstatus)));
+            boost::make_tuple(config::system_account_name, config::system_account_name, N(chainstatus)));
 
       EOS_ASSERT(cstatus_tid != nullptr, fork_database_exception, "get chainstatus fatal");
 
@@ -1217,9 +1221,8 @@ struct controller_impl {
 
             try {
                if(explicit_billed_cpu_time && billed_cpu_time_us == 0){
-                  elog("billed_cpu_time_us is 0 : ${trx}", ("trx", trx->id));
-                  edump((trx->packed_trx.get_transaction()));
-                  EOS_ASSERT(false, transaction_exception, "billed_cpu_time_us is 0");
+                  EOS_ASSERT(false, transaction_exception, "error trx",
+                      ("block", head->block_num)("trx", trx->trx.id())("actios", trx->trx.actions));
                }
 
                if(!is_onfee_act) {
@@ -1228,10 +1231,6 @@ struct controller_impl {
                trx_context.exec();
                trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
              } catch (const fc::exception &e) {
-               if (head->block_num != 1) {
-                 elog("trnasction exe failed trace: ${trace}", ("trace", trace));
-               }
-
                // keep
                if( !is_onfee_act ) {
                   trace->except = e;
@@ -1300,15 +1299,15 @@ struct controller_impl {
    // check_func_open
    void check_func_open() {
       // when on the specific block : load new System contract
-      if( conf.System01_contract_block_num == head->block_num ) {
+      if( is_func_open_in_curr_block( self, config::func_typ::use_system01, 3385100 ) ) {
          ilog("update System contract");
-         initialize_contract(N(eosio), conf.System01_code, conf.System01_abi, true);
+         initialize_contract(config::system_account_name, conf.System01_code, conf.System01_abi, true);
       }
 
       // when on the specific block : load eosio.msig contract
-      if( conf.msig_block_num == head->block_num ) {
+      if( is_func_open_in_curr_block( self, config::func_typ::use_msig, 4356456 ) ) {
          ilog("update eosio.msig contract");
-         initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
+         initialize_contract(config::msig_account_name, conf.msig_code, conf.msig_abi, true);
       }
 
       // vote4ram func, as the early eosforce user's ram not limit
@@ -1431,11 +1430,11 @@ struct controller_impl {
             bool transaction_can_fail = receipt.status == transaction_receipt_header::hard_fail && receipt.trx.contains<transaction_id_type>();
             if( transaction_failed && !transaction_can_fail) {
                edump((*trace));
-                // the eosio 's block not contain the block which has error,
-                // so general a block 's push_transaction func called by apply_block in other pb should no exception.
-                // but in eosforce block will include error, this will make chain error,
-                // so eosforce should no throw
-                // throw *trace->except;
+               // the eosio 's block not contain the block which has error,
+               // so general a block 's push_transaction func called by apply_block in other pb should no exception.
+               // but in eosforce block will include error, this will make chain error,
+               // so eosforce should no throw
+               // throw *trace->except;
             }
 
             EOS_ASSERT( pending->_pending_block_state->block->transactions.size() > 0,

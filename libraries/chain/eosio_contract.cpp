@@ -110,7 +110,7 @@ void apply_eosio_newaccount(apply_context& context) {
 
    // accounts_table
    memory_db(db).insert(
-         N(eosio), N(eosio), N(accounts),
+         config::system_account_name, config::system_account_name, N(accounts),
          create.name,
          memory_db::account_info{create.name, asset(0)});
 
@@ -506,12 +506,13 @@ void apply_eosio_onfee( apply_context& context ) {
    const auto data = context.act.data_as<onfee>();
    const auto& fee = data.fee;
 
+   // fee is just can push by system auto, so it need less check
    // need actor authorization
    // context.require_authorization(data.actor);
 
    // accounts_table
    auto acnts_tbl = native_multi_index<N(accounts), memory_db::account_info>{
-         context, N(eosio), N(eosio)
+         context, config::system_account_name, config::system_account_name
    };
    memory_db::account_info account_info_data;
    acnts_tbl.get(data.actor, account_info_data, "account is not found in accounts table");
@@ -519,7 +520,7 @@ void apply_eosio_onfee( apply_context& context ) {
 
    // bps_table
    auto bps_tbl = native_multi_index<N(bps), memory_db::bp_info>{
-         context, N(eosio), N(eosio)
+         context, config::system_account_name, config::system_account_name
    };
    memory_db::bp_info bp_info_data;
    bps_tbl.get(data.bpname, bp_info_data, "bpname is not registered");

@@ -277,13 +277,13 @@ inline int64_t get_account_ram_limit( database& db, const account_name& name, co
    // if is account by system use ram unlimit,
    // if is a common account with -1 ram limit use init limit
    if(    name == config::system_account_name
-       || name == N(force.ram)
-       || name == N(force.cpu)
-       || name == N(force.net)
-       || name == N(force.test)
-       || name == N(eosio.token)
-       || name == N(eosio.msig)
-       || name == N(eosio.bios) ) {
+       || name == N(force.ram) // keep for some func
+       || name == N(force.cpu) // keep for some func
+       || name == N(force.net) // keep for some func
+       || name == N(force.test) // keep for some func
+       || name == config::token_account_name
+       || name == config::msig_account_name
+       || name == config::bios_account_name ) {
       return -1;
    }
 

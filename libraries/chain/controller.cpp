@@ -1307,7 +1307,7 @@ struct controller_impl {
       // when on the specific block : load eosio.msig contract
       if( is_func_open_in_curr_block( self, config::func_typ::use_msig, 4356456 ) ) {
          ilog("update eosio.msig contract");
-         initialize_contract(config::bios_account_name, conf.msig_code, conf.msig_abi, true);
+         initialize_contract(config::msig_account_name, conf.msig_code, conf.msig_abi, true);
       }
 
       // vote4ram func, as the early eosforce user's ram not limit

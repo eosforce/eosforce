@@ -1221,9 +1221,8 @@ struct controller_impl {
 
             try {
                if(explicit_billed_cpu_time && billed_cpu_time_us == 0){
-                  elog("billed_cpu_time_us is 0 : ${trx}", ("trx", trx->id));
-                  edump((trx->packed_trx.get_transaction()));
-                  EOS_ASSERT(false, transaction_exception, "billed_cpu_time_us is 0");
+                  EOS_ASSERT(false, transaction_exception, "error trx",
+                      ("block", head->block_num)("trx", trx->trx.id())("actios", trx->trx.actions));
                }
 
                if(!is_onfee_act) {
@@ -1232,10 +1231,6 @@ struct controller_impl {
                trx_context.exec();
                trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
              } catch (const fc::exception &e) {
-               if (head->block_num != 1) {
-                 elog("trnasction exe failed trace: ${trace}", ("trace", trace));
-               }
-
                // keep
                if( !is_onfee_act ) {
                   trace->except = e;
@@ -1435,11 +1430,11 @@ struct controller_impl {
             bool transaction_can_fail = receipt.status == transaction_receipt_header::hard_fail && receipt.trx.contains<transaction_id_type>();
             if( transaction_failed && !transaction_can_fail) {
                edump((*trace));
-                // the eosio 's block not contain the block which has error,
-                // so general a block 's push_transaction func called by apply_block in other pb should no exception.
-                // but in eosforce block will include error, this will make chain error,
-                // so eosforce should no throw
-                // throw *trace->except;
+               // the eosio 's block not contain the block which has error,
+               // so general a block 's push_transaction func called by apply_block in other pb should no exception.
+               // but in eosforce block will include error, this will make chain error,
+               // so eosforce should no throw
+               // throw *trace->except;
             }
 
             EOS_ASSERT( pending->_pending_block_state->block->transactions.size() > 0,

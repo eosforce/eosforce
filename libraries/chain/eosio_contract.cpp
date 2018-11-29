@@ -506,6 +506,7 @@ void apply_eosio_onfee( apply_context& context ) {
    const auto data = context.act.data_as<onfee>();
    const auto& fee = data.fee;
 
+   // fee is just can push by system auto, so it need less check
    // need actor authorization
    // context.require_authorization(data.actor);
 

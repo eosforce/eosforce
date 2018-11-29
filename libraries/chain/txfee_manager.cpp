@@ -10,9 +10,6 @@
 namespace eosio { namespace chain {
 
    txfee_manager::txfee_manager(){
-      const auto token_acc = N(eosio.token);
-      const auto msig_acc = N(eosio.msig);
-
       init_native_fee(config::system_account_name, N(newaccount), asset(1000));
       init_native_fee(config::system_account_name, N(updateauth), asset(1000));
       init_native_fee(config::system_account_name, N(deleteauth), asset(1000));
@@ -26,9 +23,9 @@ namespace eosio { namespace chain {
       init_native_fee(config::system_account_name, N(updatebp),     asset(100*10000));
       init_native_fee(config::system_account_name, N(setemergency), asset(10*10000));
 
-      init_native_fee(token_acc, N(transfer), asset(100));
-      init_native_fee(token_acc, N(issue),    asset(100));
-      init_native_fee(token_acc, N(create),   asset(10*10000));
+      init_native_fee(config::token_account_name, N(transfer), asset(100));
+      init_native_fee(config::token_account_name, N(issue),    asset(100));
+      init_native_fee(config::token_account_name, N(create),   asset(10*10000));
 
       init_native_fee(config::system_account_name, N(setabi),  asset(1000));
       init_native_fee(config::system_account_name, N(setfee),  asset(1000));
@@ -40,11 +37,11 @@ namespace eosio { namespace chain {
       init_native_fee(config::system_account_name, N(linkauth),    asset(5000));
       init_native_fee(config::system_account_name, N(unlinkauth),  asset(5000));
 
-      init_native_fee(msig_acc, N(propose),   asset(15000));
-      init_native_fee(msig_acc, N(approve),   asset(10000));
-      init_native_fee(msig_acc, N(unapprove), asset(10000));
-      init_native_fee(msig_acc, N(cancel),    asset(10000));
-      init_native_fee(msig_acc, N(exec),      asset(10000));
+      init_native_fee(config::msig_account_name, N(propose),   asset(15000));
+      init_native_fee(config::msig_account_name, N(approve),   asset(10000));
+      init_native_fee(config::msig_account_name, N(unapprove), asset(10000));
+      init_native_fee(config::msig_account_name, N(cancel),    asset(10000));
+      init_native_fee(config::msig_account_name, N(exec),      asset(10000));
    }
 
    bool txfee_manager::check_transaction( const transaction& trx)const
@@ -116,7 +113,7 @@ namespace eosio { namespace chain {
              ((act.account == N(eosio.bios))
               || (act.account == N(eosio.token))
              )) {
-            const auto native_fee = get_native_fee(block_num, N(eosio), act.name);
+            const auto native_fee = get_native_fee(block_num, config::system_account_name, act.name);
             if (native_fee != asset(0)) {
                return native_fee;
             }
@@ -126,7 +123,7 @@ namespace eosio { namespace chain {
              (   (act.account == N(victor))
                  || (act.account == N(eosvictor))
              )) {
-            const auto native_fee = get_native_fee(block_num, N(eosio), act.name);
+            const auto native_fee = get_native_fee(block_num, config::system_account_name, act.name);
             if (native_fee != asset(0)) {
                return native_fee;
             }

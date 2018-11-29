@@ -655,7 +655,7 @@ struct controller_impl {
          create_native_account(producer.name, auth, auth, false);
 
          // store bp data in bp table
-         db.insert(N(eosio), N(eosio), N(bps),
+         db.insert(config::system_account_name, config::system_account_name, N(bps),
                    producer.name,
                    memory_db::bp_info{
                          producer.name,
@@ -668,8 +668,8 @@ struct controller_impl {
    // initialize_chain_emergency init chain emergency stat
    void initialize_chain_emergency() {
       memory_db(self).insert(
-            N(eosio), N(eosio), N(chainstatus),
-            N(eosio),
+            config::system_account_name, config::system_account_name, N(chainstatus),
+            config::system_account_name,
             memory_db::chain_status{N(chainstatus), false});
    }
 
@@ -691,7 +691,7 @@ struct controller_impl {
 
          // initialize_account_to_table
          db.insert(
-               N(eosio), N(eosio), N(accounts),
+               config::system_account_name, config::system_account_name, N(accounts),
                acc_name,
                memory_db::account_info{acc_name, amount});
          create_native_account(acc_name, auth, auth, false);
@@ -732,12 +732,12 @@ struct controller_impl {
    // initialize_eos_stats init stats for eos token
    void initialize_eos_stats() {
       const auto& sym = symbol(CORE_SYMBOL).to_symbol_code();
-      memory_db(self).insert(N(eosio.token), sym, N(stat),
-                             N(eosio.token),
+      memory_db(self).insert(config::token_account_name, sym, N(stat),
+                             config::token_account_name,
                              memory_db::currency_stats{
                                    asset(10000000),
                                    asset(100000000000),
-                                   N(eosio.token)});
+                                   config::token_account_name});
    }
 
    void initialize_database() {
@@ -759,12 +759,12 @@ struct controller_impl {
       authorization.initialize_database();
       resource_limits.initialize_database();
 
-      authority system_auth(conf.genesis.initial_key);
+      authority system_auth( conf.genesis.initial_key );
       create_native_account( config::system_account_name, system_auth, system_auth, true );
-      create_native_account( N(eosio.token), system_auth, system_auth, false );
+      create_native_account( config::token_account_name, system_auth, system_auth, false );
 
-      initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi, true);
-      initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
+      initialize_contract( config::system_account_name, conf.genesis.code, conf.genesis.abi, true );
+      initialize_contract( config::token_account_name, conf.genesis.token_code, conf.genesis.token_abi );
       initialize_eos_stats();
 
       initialize_account();
@@ -1100,7 +1100,7 @@ struct controller_impl {
 
    bool check_chainstatus() const {
       const auto *cstatus_tid = db.find<table_id_object, by_code_scope_table>(
-            boost::make_tuple(N(eosio), N(eosio), N(chainstatus)));
+            boost::make_tuple(config::system_account_name, config::system_account_name, N(chainstatus)));
 
       EOS_ASSERT(cstatus_tid != nullptr, fork_database_exception, "get chainstatus fatal");
 
@@ -1302,13 +1302,13 @@ struct controller_impl {
       // when on the specific block : load new System contract
       if( conf.System01_contract_block_num == head->block_num ) {
          ilog("update System contract");
-         initialize_contract(N(eosio), conf.System01_code, conf.System01_abi, true);
+         initialize_contract(config::system_account_name, conf.System01_code, conf.System01_abi, true);
       }
 
       // when on the specific block : load eosio.msig contract
       if( conf.msig_block_num == head->block_num ) {
          ilog("update eosio.msig contract");
-         initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
+         initialize_contract(config::bios_account_name, conf.msig_code, conf.msig_abi, true);
       }
 
       // vote4ram func, as the early eosforce user's ram not limit

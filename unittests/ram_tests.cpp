@@ -21,7 +21,7 @@
 
 #define DISABLE_EOSLIB_SERIALIZE
 #include <test_api/test_api_common.hpp>
-
+#if 0
 /*
  * register test suite `ram_tests`
  */
@@ -263,3 +263,4 @@ BOOST_FIXTURE_TEST_CASE(ram_tests, eosio_system::eosio_system_tester) { try {
 } FC_LOG_AND_RETHROW() }
 
 BOOST_AUTO_TEST_SUITE_END()
+#endif

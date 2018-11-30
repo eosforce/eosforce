@@ -711,8 +711,6 @@ struct controller_impl {
          } else {
             //active account
             amount = account.asset;
-             dlog("initialize active account, name:${n}, eos amount:${e}",
-                  ("n", acc_name)("e", amount));
          }
 
          // initialize_account_to_table

@@ -160,6 +160,8 @@ def stepMakeGenesis():
     run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.lock/eosio.lock.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.lock/eosio.lock.wasm ' + os.path.abspath(args.config_dir))
 
     # testnet will use new System contract from start
     run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir) + "/System01.abi")
@@ -174,6 +176,8 @@ def stepMakeGenesis():
 
     run('mv ./key.json ' + os.path.abspath(args.config_dir) + '/keys/')
     run('mv ./sigkey.json ' + os.path.abspath(args.config_dir) + '/keys/')
+
+    run('echo "[]" >> ' + os.path.abspath(args.config_dir) + '/activeacc.json')
 
 def setFuncStartBlock(func_typ, num):
     run(args.cleos +

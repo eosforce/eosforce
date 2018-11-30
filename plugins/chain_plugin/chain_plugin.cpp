@@ -251,6 +251,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
           "In \"light\" mode all incoming blocks headers will be fully validated; transactions in those validated blocks will be trusted \n")
          ("disable-ram-billing-notify-checks", bpo::bool_switch()->default_value(false),
           "Disable the check which subjectively fails a transaction if a contract bills more RAM to another account within the context of a notification handler (i.e. when the receiver is not the code of the action).")
+         ("trusted-producer", bpo::value<vector<string>>()->composing(), "Indicate a producer whose blocks headers signed by it will be fully validated, but transactions in those validated blocks will be trusted.")
          ;
 
 // TODO: rate limiting
@@ -288,7 +289,6 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
           "replace reversible block database with blocks imported from specified file and then exit")
          ("export-reversible-blocks", bpo::value<bfs::path>(),
            "export reversible block database in portable format into specified file and then exit")
-         ("trusted-producer", bpo::value<vector<string>>()->composing(), "Indicate a producer whose blocks headers signed by it will be fully validated, but transactions in those validated blocks will be trusted.")
          ("snapshot", bpo::value<bfs::path>(), "File to read Snapshot State from")
          ;
 
@@ -568,13 +568,17 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       const auto genesis_file = app().config_dir() / "genesis.json";
       my->chain_config->genesis = fc::json::from_file(genesis_file).as<genesis_state>();
 
+      const auto active_account_file = app().config_dir() / "activeacc.json";
+      my->chain_config->active_initial_account_list = fc::json::from_file(active_account_file).as<std::vector<account_tuple>>();
+
       load_contract_code_abi("System", my->chain_config->genesis.code, my->chain_config->genesis.abi);
       load_contract_code_abi("eosio.token", my->chain_config->genesis.token_code, my->chain_config->genesis.token_abi);
-      load_contract_code_abi("eosio.bios", my->chain_config->bios_code, my->chain_config->bios_abi);
       load_contract_code_abi("eosio.msig", my->chain_config->msig_code, my->chain_config->msig_abi);
 
-      //sunshuhan: load new System contract to my->chain_config->
+      // load new System contract
       load_contract_code_abi("System01", my->chain_config->System01_code, my->chain_config->System01_abi);
+
+      load_contract_code_abi("eosio.lock", my->chain_config->lock_code, my->chain_config->lock_abi);
 
       // some config need change
       my->chain_config->genesis.initial_configuration.max_block_cpu_usage = 1000000;
@@ -1106,31 +1110,32 @@ uint64_t read_only::get_table_index_name(const read_only::get_table_rows_params&
 
 template<>
 uint64_t convert_to_type(const string& str, const string& desc) {
-   uint64_t value = 0;
+
    try {
-      value = boost::lexical_cast<uint64_t>(str.c_str(), str.size());
-   } catch( ... ) {
+      return boost::lexical_cast<uint64_t>(str.c_str(), str.size());
+   } catch( ... ) { }
+   
+   try {
+      auto trimmed_str = str;
+      boost::trim(trimmed_str);
+      name s(trimmed_str);
+      return s.value;
+   } catch( ... ) { }
+
+   if (str.find(',') != string::npos) { // fix #6274 only match formats like 4,EOS
       try {
-         auto trimmed_str = str;
-         boost::trim(trimmed_str);
-         name s(trimmed_str);
-         value = s.value;
-      } catch( ... ) {
-         try {
-            auto symb = eosio::chain::symbol::from_string(str);
-            value = symb.value();
-         } catch( ... ) {
-            try {
-               value = ( eosio::chain::string_to_symbol( 0, str.c_str() ) >> 8 );
-            } catch( ... ) {
-               EOS_ASSERT( false, chain_type_exception, "Could not convert ${desc} string '${str}' to any of the following: "
-                                 "uint64_t, valid name, or valid symbol (with or without the precision)",
-                          ("desc", desc)("str", str));
-            }
-         }
-      }
+         auto symb = eosio::chain::symbol::from_string(str);
+         return symb.value();
+      } catch( ... ) { }
    }
-   return value;
+   
+   try {
+      return ( eosio::chain::string_to_symbol( 0, str.c_str() ) >> 8 );
+   } catch( ... ) {
+      EOS_ASSERT( false, chain_type_exception, "Could not convert ${desc} string '${str}' to any of the following: "
+                        "uint64_t, valid name, or valid symbol (with or without the precision)",
+                  ("desc", desc)("str", str));
+   }
 }
 
 abi_def get_abi( const controller& db, const name& account ) {
@@ -1733,15 +1738,13 @@ read_only::get_account_results read_only::get_account( const get_account_params&
    abi_def abi;
    if( abi_serializer::to_abi(code_account.abi, abi) ) {
       abi_serializer abis( abi, abi_serializer_max_time );
-
-      const auto token_code = N(eosio.token);
-
       auto core_symbol = extract_core_symbol();
 
       if (params.expected_core_symbol.valid()) 
          core_symbol = *(params.expected_core_symbol);
 
-      const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple( token_code, params.account_name, N(accounts) ));
+      const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(
+            boost::make_tuple( config::token_account_name, params.account_name, N(accounts) ));
       if( t_id != nullptr ) {
          const auto &idx = d.get_index<key_value_index, by_scope_primary>();
          auto it = idx.find(boost::make_tuple( t_id->id, core_symbol.to_symbol_code() ));

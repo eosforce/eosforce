@@ -7,6 +7,7 @@
 #include <eosio/chain/transaction_object.hpp>
 #include <eosio/chain/global_property_object.hpp>
 #include <eosio/chain/txfee_manager.hpp>
+#include <eosio/chain/config_on_chain.hpp>
 
 #pragma push_macro("N")
 #undef N
@@ -330,6 +331,13 @@ namespace bacc = boost::accumulators;
       init( 0 );
    }
 
+   // make_fee_act insert onfee act in trx
+   void transaction_context::make_fee_act( const asset& require_fee, const account_name& producer ) {
+      fee_payer = trx.actions[0].authorization[0].actor;
+      bp_name = producer;
+      is_fee_action = true;
+   }
+
    // limit by contract from actions
    // fee_ext ext fee for ext res
    void transaction_context::make_limit_by_contract(const asset &fee_ext){
@@ -417,14 +425,75 @@ namespace bacc = boost::accumulators;
          //
          // For First version we just use const value for main net stable
          //
-         cpu_limit_by_contract += m * 100; // TODO use num in state db
-         net_limit_by_contract += m * 10000;
-         ram_limit_by_contract += m * 10;
+         cpu_limit_by_contract += m * get_num_config_on_chain(db, config::res_typ::cpu_per_fee, 100);
+         net_limit_by_contract += m * get_num_config_on_chain(db, config::res_typ::net_per_fee, 10000);
+         ram_limit_by_contract += m * get_num_config_on_chain(db, config::res_typ::ram_per_fee, 10);
+      }
+   }
+
+   void transaction_context::add_limit_by_fee( const action &act ) {
+      auto &db = control.db();
+      const auto info = db.find<action_fee_object, by_action_name>(
+            boost::make_tuple(act.account, act.name));
+
+      // no setfee, is native or err by get_require_fee
+      if( info == nullptr ) {
+         use_limit_by_contract = false;
+         cpu_limit_by_contract = 0;
+         net_limit_by_contract = 0;
+         ram_limit_by_contract = 0;
+         return;
       }
 
-      if ( use_limit_by_contract ) {
-         dlog("limit by contract ${cpu} ${net} ${ram}",
-              ("cpu", cpu_limit_by_contract)("net", net_limit_by_contract)("ram", ram_limit_by_contract));
+      // setfee, if a trx has both native act and setfee act, will use res limit
+      use_limit_by_contract = true;
+
+      if(    (info->cpu_limit > 0)
+          || (info->net_limit > 0)
+          || (info->ram_limit > 0) ) {
+         // setfee with res limit
+         //dlog("get limit by contract ${con} ${cpu} ${net} ${ram}",
+         //      ("con", act.name)("cpu", info->cpu_limit)("net", info->net_limit)("ram", info->ram_limit));
+         cpu_limit_by_contract = info->cpu_limit;
+         net_limit_by_contract = info->net_limit;
+         ram_limit_by_contract = info->ram_limit;
+      } else {
+         // setfee with zero res limit
+         // calc res limit like fee_ext
+
+         const auto m = info->fee.get_amount() / 100; // 100 mine 0.01 eos
+         //
+         // For First version we just use const value for main net stable
+         //
+         cpu_limit_by_contract = m * get_num_config_on_chain(db, config::res_typ::cpu_per_fee, 100);
+         net_limit_by_contract = m * get_num_config_on_chain(db, config::res_typ::net_per_fee, 10000);
+         ram_limit_by_contract = m * get_num_config_on_chain(db, config::res_typ::ram_per_fee, 10);
+      }
+
+      dlog("limit res ${acc}:${act} ${fee} ${cpu},${net},${ram}",
+            ("acc", act.account)("act", act.name)
+            ("fee", info->fee)("cpu", cpu_limit_by_contract)("net", net_limit_by_contract)("ram", ram_limit_by_contract));
+   }
+
+   const action transaction_context::mk_fee_action( const action& act ) {
+      const auto fee = control.get_txfee_manager().get_required_fee(control, act);
+      const bytes param_data = fc::raw::pack(fee_paramter{
+            fee_payer, fee, bp_name
+      });
+      return action{
+            vector<permission_level>{{fee_payer, config::active_name}},
+            config::system_account_name,
+            N(onfee),
+            param_data,
+      };
+   }
+
+   void transaction_context::dispatch_fee_action( vector<action_trace>& action_traces, const action& act ){
+      if(is_fee_action) {
+         action_traces.emplace_back();
+         const auto& fee_act = mk_fee_action(act);
+         add_limit_by_fee(fee_act);
+         dispatch_action(action_traces.back(), fee_act);
       }
    }
 
@@ -433,6 +502,7 @@ namespace bacc = boost::accumulators;
 
       if( apply_context_free ) {
          for( const auto& act : trx.context_free_actions ) {
+            dispatch_fee_action( trace->action_traces, act );
             trace->action_traces.emplace_back();
             dispatch_action( trace->action_traces.back(), act, true );
          }
@@ -440,6 +510,7 @@ namespace bacc = boost::accumulators;
 
       if( delay == fc::microseconds() ) {
          for( const auto& act : trx.actions ) {
+            dispatch_fee_action( trace->action_traces, act );
             trace->action_traces.emplace_back();
             dispatch_action( trace->action_traces.back(), act );
          }

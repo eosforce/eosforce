@@ -12,6 +12,7 @@
 #include <eosio/chain/wasm_eosio_injection.hpp>
 #include <eosio/chain/global_property_object.hpp>
 #include <eosio/chain/account_object.hpp>
+#include <eosio/chain/config_on_chain.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/crypto/sha256.hpp>
 #include <fc/crypto/sha1.hpp>
@@ -955,6 +956,10 @@ public:
       }
    }
 
+   int is_func_open( uint64_t func_typ ) {
+      return is_func_has_open(context.control, eosio::chain::name{func_typ}) ? 1 : 0;
+   }
+
    void eosio_exit(int32_t code) {
       context.control.get_wasm_interface().exit();
    }
@@ -1333,11 +1338,9 @@ class transaction_api : public context_aware_api {
       }
 
       void send_deferred( const uint128_t& sender_id, account_name payer, array_ptr<char> data, size_t data_len, uint32_t replace_existing) {
-         try {
-            transaction trx;
-            fc::raw::unpack<transaction>(data, data_len, trx);
-            context.schedule_deferred_transaction(sender_id, payer, std::move(trx), replace_existing);
-         } FC_RETHROW_EXCEPTIONS(warn, "data as hex: ${data}", ("data", fc::to_hex(data, data_len)))
+         transaction trx;
+         fc::raw::unpack<transaction>(data, data_len, trx);
+         context.schedule_deferred_transaction(sender_id, payer, std::move(trx), replace_existing);
       }
 
       bool cancel_deferred( const unsigned __int128& val ) {
@@ -1796,6 +1799,7 @@ REGISTER_INTRINSICS(context_free_system_api,
    (eosio_assert,         void(int, int)      )
    (eosio_assert_message, void(int, int, int) )
    (eosio_assert_code,    void(int, int64_t)  )
+   (is_func_open,         int(int64_t)        )
    (eosio_exit,           void(int)           )
 );
 

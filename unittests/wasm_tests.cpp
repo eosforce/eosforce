@@ -94,6 +94,8 @@ BOOST_FIXTURE_TEST_CASE( basic_test, TESTER ) try {
                                 assertdef {1, "Should Not Assert!"} );
       trx.actions[0].authorization = {{N(asserter),config::active_name}};
 
+	  set_fee(trx.actions[0].authorization[0].actor, trx.actions[0].name, asset(100), 0, 0, 0);
+
       set_transaction_headers(trx);
       trx.sign( get_private_key( N(asserter), "active" ), control->get_chain_id() );
       auto result = push_transaction( trx );
@@ -146,6 +148,7 @@ BOOST_FIXTURE_TEST_CASE( prove_mem_reset, TESTER ) try {
    set_code(N(asserter), asserter_wast);
    produce_blocks(1);
 
+   set_fee(N(asserter), provereset::get_name(), asset(100), 0, 0, 0);
    // repeat the action multiple times, each time the action handler checks for the expected
    // default value then modifies the value which should not survive until the next invoction
    for (int i = 0; i < 5; i++) {
@@ -208,6 +211,7 @@ BOOST_FIXTURE_TEST_CASE( abi_from_variant, TESTER ) try {
    signed_transaction trx;
    abi_serializer::from_variant(pretty_trx, trx, resolver, abi_serializer_max_time);
    set_transaction_headers(trx);
+   set_fee(trx.actions[0].authorization[0].actor, trx.actions[0].name, asset(100), 0, 0, 0);
    trx.sign( get_private_key( N(asserter), "active" ), control->get_chain_id() );
    push_transaction( trx );
    produce_blocks(1);
@@ -233,6 +237,7 @@ BOOST_FIXTURE_TEST_CASE( f32_tests, TESTER ) try {
       act.authorization = vector<permission_level>{{N(f32_tests),config::active_name}};
       trx.actions.push_back(act);
 
+	  set_fee(trx.actions[0].authorization[0].actor, trx.actions[0].name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
       trx.sign(get_private_key( N(f32_tests), "active" ), control->get_chain_id());
       push_transaction(trx);
@@ -256,6 +261,7 @@ BOOST_FIXTURE_TEST_CASE( f32_test_bitwise, TESTER ) try {
       act.authorization = vector<permission_level>{{N(f32_tests),config::active_name}};
       trx.actions.push_back(act);
 
+	  set_fee(trx.actions[0].authorization[0].actor, trx.actions[0].name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
       trx.sign(get_private_key( N(f32_tests), "active" ), control->get_chain_id());
       push_transaction(trx);
@@ -279,6 +285,7 @@ BOOST_FIXTURE_TEST_CASE( f32_test_cmp, TESTER ) try {
       act.authorization = vector<permission_level>{{N(f32_tests),config::active_name}};
       trx.actions.push_back(act);
 
+	  set_fee(trx.actions[0].authorization[0].actor, trx.actions[0].name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
       trx.sign(get_private_key( N(f32_tests), "active" ), control->get_chain_id());
       push_transaction(trx);
@@ -304,6 +311,7 @@ BOOST_FIXTURE_TEST_CASE( f64_tests, TESTER ) try {
       act.authorization = vector<permission_level>{{N(f_tests),config::active_name}};
       trx.actions.push_back(act);
 
+	  set_fee(trx.actions[0].authorization[0].actor, trx.actions[0].name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
       trx.sign(get_private_key( N(f_tests), "active" ), control->get_chain_id());
       push_transaction(trx);
@@ -327,6 +335,7 @@ BOOST_FIXTURE_TEST_CASE( f64_test_bitwise, TESTER ) try {
       act.authorization = vector<permission_level>{{N(f_tests),config::active_name}};
       trx.actions.push_back(act);
 
+	  set_fee(trx.actions[0].authorization[0].actor, trx.actions[0].name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
       trx.sign(get_private_key( N(f_tests), "active" ), control->get_chain_id());
       push_transaction(trx);
@@ -350,6 +359,7 @@ BOOST_FIXTURE_TEST_CASE( f64_test_cmp, TESTER ) try {
       act.authorization = vector<permission_level>{{N(f_tests),config::active_name}};
       trx.actions.push_back(act);
 
+	  set_fee(trx.actions[0].authorization[0].actor, trx.actions[0].name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
       trx.sign(get_private_key( N(f_tests), "active" ), control->get_chain_id());
       push_transaction(trx);
@@ -376,6 +386,7 @@ BOOST_FIXTURE_TEST_CASE( f32_f64_conversion_tests, tester ) try {
       act.authorization = vector<permission_level>{{N(f_tests),config::active_name}};
       trx.actions.push_back(act);
 
+      set_fee(trx.actions[0].authorization[0].actor, trx.actions[0].name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
       trx.sign(get_private_key( N(f_tests), "active" ), control->get_chain_id());
       push_transaction(trx);
@@ -388,6 +399,7 @@ BOOST_FIXTURE_TEST_CASE( f32_f64_conversion_tests, tester ) try {
 // test softfloat conversion operations
 BOOST_FIXTURE_TEST_CASE( f32_f64_overflow_tests, tester ) try {
    int count = 0;
+   produce_blocks(1);
    auto check = [&](const char *wast_template, const char *op, const char *param) -> bool {
       count+=16;
       create_accounts( {N(f_tests)+count} );
@@ -405,6 +417,7 @@ BOOST_FIXTURE_TEST_CASE( f32_f64_overflow_tests, tester ) try {
       act.authorization = vector<permission_level>{{N(f_tests)+count,config::active_name}};
       trx.actions.push_back(act);
 
+	  set_fee(trx.actions[0].authorization[0].actor, trx.actions[0].name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
       trx.sign(get_private_key( N(f_tests)+count, "active" ), control->get_chain_id());
 
@@ -503,6 +516,7 @@ BOOST_FIXTURE_TEST_CASE(misaligned_tests, tester ) try {
       act.authorization = vector<permission_level>{{N(aligncheck),config::active_name}};
       trx.actions.push_back(act);
 
+	  set_fee(trx.actions[0].authorization[0].actor, trx.actions[0].name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
       trx.sign(get_private_key( N(aligncheck), "active" ), control->get_chain_id());
       push_transaction(trx);
@@ -590,6 +604,7 @@ BOOST_FIXTURE_TEST_CASE(cpu_usage_tests, tester ) try {
 // test weighted cpu limit
 BOOST_FIXTURE_TEST_CASE(weighted_cpu_limit_tests, tester ) try {
 // TODO Increase the robustness of this test.
+   produce_blocks(1);
    resource_limits_manager mgr = control->get_mutable_resource_limits_manager();
    create_accounts( {N(f_tests)} );
    create_accounts( {N(acc2)} );
@@ -626,11 +641,11 @@ BOOST_FIXTURE_TEST_CASE(weighted_cpu_limit_tests, tester ) try {
          act.name = N() + (i * 16);
          act.authorization = vector<permission_level>{{N(f_tests),config::active_name}};
          trx.actions.push_back(act);
+         set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
       }
 
       set_transaction_headers(trx);
       trx.sign(get_private_key( N(f_tests), "active" ), control->get_chain_id());
-
       try {
          push_transaction(trx, fc::time_point::maximum(), 0);
          produce_block();
@@ -668,6 +683,7 @@ BOOST_FIXTURE_TEST_CASE( check_entry_behavior, TESTER ) try {
    act.authorization = vector<permission_level>{{N(entrycheck),config::active_name}};
    trx.actions.push_back(act);
 
+   set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
    set_transaction_headers(trx);
    trx.sign(get_private_key( N(entrycheck), "active" ), control->get_chain_id());
    push_transaction(trx);
@@ -692,6 +708,7 @@ BOOST_FIXTURE_TEST_CASE( check_entry_behavior_2, TESTER ) try {
    act.authorization = vector<permission_level>{{N(entrycheck),config::active_name}};
    trx.actions.push_back(act);
 
+   set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
    set_transaction_headers(trx);
    trx.sign(get_private_key( N(entrycheck), "active" ), control->get_chain_id());
    push_transaction(trx);
@@ -724,6 +741,7 @@ BOOST_FIXTURE_TEST_CASE( simple_no_memory_check, TESTER ) try {
    trx.expiration = control->head_block_time();
    set_transaction_headers(trx);
    trx.sign(get_private_key( N(nomem), "active" ), control->get_chain_id());
+   set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
    BOOST_CHECK_THROW(push_transaction( trx ), wasm_execution_error);
 } FC_LOG_AND_RETHROW()
 
@@ -744,6 +762,7 @@ BOOST_FIXTURE_TEST_CASE( check_global_reset, TESTER ) try {
    act.name = name(0ULL);
    act.authorization = vector<permission_level>{{N(globalreset),config::active_name}};
    trx.actions.push_back(act);
+   set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
    }
    {
    action act;
@@ -751,6 +770,7 @@ BOOST_FIXTURE_TEST_CASE( check_global_reset, TESTER ) try {
    act.name = 1ULL;
    act.authorization = vector<permission_level>{{N(globalreset),config::active_name}};
    trx.actions.push_back(act);
+   set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
    }
 
    set_transaction_headers(trx);
@@ -792,6 +812,7 @@ BOOST_FIXTURE_TEST_CASE( stl_test, TESTER ) try {
                                              );
         trx.actions.push_back(std::move(msg_act));
 
+		set_fee(msg_act.authorization[0].actor, msg_act.name, asset(100), 0, 0, 0);
         set_transaction_headers(trx);
         trx.sign(get_private_key(N(stltest), "active"), control->get_chain_id());
         push_transaction(trx);
@@ -822,6 +843,7 @@ BOOST_FIXTURE_TEST_CASE( big_memory, TESTER ) try {
    act.authorization = vector<permission_level>{{N(bigmem),config::active_name}};
    trx.actions.push_back(act);
 
+   set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
    set_transaction_headers(trx);
    trx.sign(get_private_key( N(bigmem), "active" ), control->get_chain_id());
    //but should not be able to grow beyond largest page
@@ -1110,6 +1132,7 @@ BOOST_FIXTURE_TEST_CASE(noop, TESTER) try {
 
       trx.actions.emplace_back(std::move(act));
 
+      set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
       trx.sign(get_private_key(N(noop), "active"), control->get_chain_id());
       push_transaction(trx);
@@ -1135,6 +1158,7 @@ BOOST_FIXTURE_TEST_CASE(noop, TESTER) try {
 
       trx.actions.emplace_back(std::move(act));
 
+	  set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
       trx.sign(get_private_key(N(alice), "active"), control->get_chain_id());
       push_transaction(trx);
@@ -1683,6 +1707,8 @@ BOOST_FIXTURE_TEST_CASE( mem_growth_memset, TESTER ) try {
    act.account = N(grower);
    act.name = N();
    act.authorization = vector<permission_level>{{N(grower),config::active_name}};
+
+   set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
 
    set_code(N(grower), memory_growth_memset_store);
    {

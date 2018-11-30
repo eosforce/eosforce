@@ -711,8 +711,6 @@ struct controller_impl {
          } else {
             //active account
             amount = account.asset;
-             dlog("initialize active account, name:${n}, eos amount:${e}",
-                  ("n", acc_name)("e", amount));
          }
 
          // initialize_account_to_table
@@ -1336,6 +1334,12 @@ struct controller_impl {
          initialize_contract(config::msig_account_name, conf.msig_code, conf.msig_abi, true);
       }
 
+      // when on the specific block : update eosio owner and active auth to eosio.prods@active
+      if( is_func_open_in_curr_block( self, config::func_typ::use_eosio_prods) ) {
+         ilog("update eosio owner and active auth to eosio.prods@active");
+         update_eosio_authority();
+      }
+
       // vote4ram func, as the early eosforce user's ram not limit
       // so at first we set freeram to -1 to unlimit user ram
       // when vote4ram open, change to 8kb per user
@@ -1680,6 +1684,20 @@ struct controller_impl {
       create_block_summary(p->id);
 
    } FC_CAPTURE_AND_RETHROW() }
+
+    void update_eosio_authority() {
+       auto auth = authority(1, {}, {});
+       auth.accounts.push_back({{config::producers_account_name, config::active_name}, 1});
+       auto permission_active = authorization.get_permission({config::system_account_name, config::active_name});
+       auto permission_owner = authorization.get_permission({config::system_account_name, config::owner_name});
+       ilog("update_eosio_authority modify permission");
+       db.modify(permission_active, [&](auto &po) {
+           po.auth = auth;
+       });
+       db.modify(permission_owner, [&](auto &po) {
+           po.auth = auth;
+       });
+    }
 
    void update_producers_authority() {
       const auto& producers = pending->_pending_block_state->active_schedule.producers;

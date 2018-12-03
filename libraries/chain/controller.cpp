@@ -1698,7 +1698,6 @@ struct controller_impl {
         };
 
         update_permission( authorization.get_permission({config::system_account_name, config::active_name}), 1);
-        update_permission( authorization.get_permission({config::system_account_name, config::owner_name}), 1);
     }
 
    void update_producers_authority() {

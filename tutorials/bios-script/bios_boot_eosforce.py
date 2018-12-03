@@ -160,6 +160,8 @@ def stepMakeGenesis():
     run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.lock/eosio.lock.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.lock/eosio.lock.wasm ' + os.path.abspath(args.config_dir))
 
     # testnet will use new System contract from start
     run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir) + "/System01.abi")
@@ -174,6 +176,7 @@ def stepMakeGenesis():
 
     run('mv ./key.json ' + os.path.abspath(args.config_dir) + '/keys/')
     run('mv ./sigkey.json ' + os.path.abspath(args.config_dir) + '/keys/')
+    run('echo "[]" >> ' + os.path.abspath(args.config_dir) + '/activeacc.json')
 
 def setFuncStartBlock(func_typ, num):
     run(args.cleos +
@@ -192,6 +195,8 @@ def stepSetFuncs():
     setFee('eosio', 'setconfig', '0.0100', 100000, 1000000, 1000)
     setFuncStartBlock('f.ram4vote', 10)
     setFuncStartBlock('f.onfeeact', 15)
+    setFuncStartBlock('f.system1', 19)
+    setFuncStartBlock('f.msig', 500)
 
 def clearData():
     stepKillAll()

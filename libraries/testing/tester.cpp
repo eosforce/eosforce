@@ -196,11 +196,11 @@ namespace eosio { namespace testing {
          cfg.msig_code.assign(wasm.begin(), wasm.end());
          abi  = fc::json::from_string(eosio_msig_abi).as<abi_def>();
          cfg.msig_abi = fc::raw::pack(abi);
-         
-         wasm = wast_to_wasm(eosio_bios_wast);
-         cfg.bios_code.assign(wasm.begin(), wasm.end());
-         abi  = fc::json::from_string(eosio_bios_abi).as<abi_def>();
-         cfg.bios_abi = fc::raw::pack(abi);
+
+        //  wasm = wast_to_wasm(eosio_bios_wast);
+        //  cfg.bios_code.assign(wasm.begin(), wasm.end());
+        //  abi  = fc::json::from_string(eosio_bios_abi).as<abi_def>();
+        //  cfg.bios_abi = fc::raw::pack(abi);
 /*         
          ./libraries/chain/controller.cpp:782:      initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi, true);
 ./libraries/chain/controller.cpp:783:      initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
@@ -336,7 +336,9 @@ namespace eosio { namespace testing {
             produce_empty_block();
       } else {
          for( uint32_t i = 0; i < n; ++i )
+         {
             produce_block();
+          }
       }
    }
 
@@ -387,7 +389,6 @@ namespace eosio { namespace testing {
    transaction_trace_ptr base_tester::create_account( account_name a, account_name creator, bool multisig, bool include_code ) {
       signed_transaction trx;
       set_transaction_headers(trx);
-
       authority owner_auth;
       if( multisig ) {
          // multisig between account's owner key and creators active permission
@@ -429,9 +430,7 @@ namespace eosio { namespace testing {
       
       trx.sign( get_private_key( creator, "active" ), control->get_chain_id()  );
       auto trace = push_transaction( trx );
-      
-      transfer( N(eosforce), a, "100000.0000 EOS", "create_account", config::system_account_name );
-      
+      transfer( N(eosforce), a, "10000.0000 EOS", "create_account", config::system_account_name );
       return trace;
    }
 
@@ -818,7 +817,8 @@ namespace eosio { namespace testing {
    				 uint32_t net_limit,
    				 uint32_t ram_limit,
    				 const private_key_type* signer) {
-   	  
+   	  if(fee_map[action] == account) return ;
+        fee_map[action] = account;
    	  signed_transaction trx;
       trx.actions.emplace_back( vector<permission_level>{{account,config::active_name}},
                                 setfee{
@@ -847,7 +847,8 @@ namespace eosio { namespace testing {
    				 uint32_t net_limit,
    				 uint32_t ram_limit,
    				 const private_key_type* signer) {
-   	  
+   	  if(fee_map[action] == account) return ;
+        fee_map[action] = account;
    	  signed_transaction trx;
       trx.actions.emplace_back( vector<permission_level>{{auth,config::active_name}},
                                 setfee{
@@ -980,7 +981,7 @@ namespace eosio { namespace testing {
       //set_code(config::system_account_name, eosio_bios_wast);
 
       //set_abi(config::system_account_name, eosio_bios_abi);
-      //produce_block();
+      produce_block();
    }
 
    vector<producer_key> base_tester::get_producer_keys( const vector<account_name>& producer_names )const {

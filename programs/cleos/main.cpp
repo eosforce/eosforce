@@ -573,12 +573,12 @@ chain::action create_delegate(const name& from, const name& receiver, const asse
                         config::system_account_name, N(delegatebw), act_payload);
 }
 
-fc::variant regproducer_variant(const account_name& producer, const public_key_type& key, const string& url, uint16_t location) {
+fc::variant regproducer_variant(const account_name& producer, const public_key_type& key, const string& url, uint32_t location) {
    return fc::mutable_variant_object()
-            ("producer", producer)
-            ("producer_key", key)
+            ("bpname", producer)
+            ("block_signing_key", key)
+            ("commission_rate", location)
             ("url", url)
-            ("location", location)
             ;
 }
 
@@ -841,7 +841,7 @@ void ensure_keosd_running(CLI::App* app) {
     if (app->get_subcommand("create")->got_subcommand("key")) // create key does not require wallet
        return;
     if (auto* subapp = app->get_subcommand("system")) {
-       if (subapp->got_subcommand("listproducers") || subapp->got_subcommand("listbw") || subapp->got_subcommand("bidnameinfo")) // system list* do not require wallet
+       if (subapp->got_subcommand("listbps") /*|| subapp->got_subcommand("listbw")*/ /*|| subapp->got_subcommand("bidnameinfo")*/) // system list* do not require wallet
          return;
     }
     if (wallet_url != default_wallet_url)
@@ -924,6 +924,32 @@ struct register_producer_subcommand {
                   create_action({permission_level{producer_str,config::active_name}},
                         config::system_account_name, N(regproducer), regprod_var)
                }, 1000, packed_transaction::none);
+      });
+   }
+};
+
+struct update_bp_subcommand {
+   string producer_str;
+   string producer_key_str;
+   string url;
+   uint32_t loc = 0;
+
+   update_bp_subcommand(CLI::App* actionRoot) {
+      auto register_producer = actionRoot->add_subcommand("updatebp", localized("update bp information"));
+      register_producer->add_option("account", producer_str, localized("The account to register as a producer"))->required();
+      register_producer->add_option("producer_key", producer_key_str, localized("The producer's public key"))->required();
+      register_producer->add_option("commission_rate", loc, localized("relative location for purpose of nearest neighbor scheduling"), true);
+      register_producer->add_option("url", url, localized("url where info about producer can be found"), true);
+      add_standard_transaction_options(register_producer);
+
+
+      register_producer->set_callback([this] {
+         public_key_type producer_key;
+         try {
+            producer_key = public_key_type(producer_key_str);
+         } EOS_RETHROW_EXCEPTIONS(public_key_type_exception, "Invalid producer public key: ${public_key}", ("public_key", producer_key_str))
+         auto regprod_var = regproducer_variant(producer_str, producer_key, url, loc );
+         send_actions({create_action({permission_level{producer_str,config::active_name}}, config::system_account_name, N(updatebp), regprod_var)});
       });
    }
 };
@@ -1017,136 +1043,108 @@ struct unregister_producer_subcommand {
    }
 };
 
-struct vote_producer_proxy_subcommand {
+struct vote_producer_claim_subcommand {
    string voter_str;
-   string proxy_str;
+   string bpname_str;
 
-   vote_producer_proxy_subcommand(CLI::App* actionRoot) {
-      auto vote_proxy = actionRoot->add_subcommand("proxy", localized("Vote your stake through a proxy"));
+   vote_producer_claim_subcommand(CLI::App* actionRoot) {
+      auto vote_proxy = actionRoot->add_subcommand("claim", localized("Receive dividends on the bp"));
       vote_proxy->add_option("voter", voter_str, localized("The voting account"))->required();
-      vote_proxy->add_option("proxy", proxy_str, localized("The proxy account"))->required();
+      vote_proxy->add_option("bpname", bpname_str, localized("Receive the dividend bp name"))->required();
       add_standard_transaction_options(vote_proxy);
+      
 
+          vote_proxy->set_callback([this] {
+         fc::variant act_payload = fc::mutable_variant_object()
+                  ("voter", voter_str)
+                  ("bpname", bpname_str)
+                  ;
+         send_actions({create_action({permission_level{voter_str,config::active_name}}, config::system_account_name, N(claim), act_payload)});  
+      });
+   }
+};
+
+struct vote_producer_unfreeze_subcommand {
+   string voter_str;
+   string bpname_str;
+
+   vote_producer_unfreeze_subcommand(CLI::App* actionRoot) {
+      auto vote_proxy = actionRoot->add_subcommand("unfreeze", localized("unfreeze the EOSC which Withdrawal of voting"));
+      vote_proxy->add_option("voter", voter_str, localized("The voting account"))->required();
+      vote_proxy->add_option("bpname", bpname_str, localized("Receive the dividend bp name"))->required();
+      add_standard_transaction_options(vote_proxy);
+      
       vote_proxy->set_callback([this] {
          fc::variant act_payload = fc::mutable_variant_object()
                   ("voter", voter_str)
-                  ("proxy", proxy_str)
-                  ("producers", std::vector<account_name>{});
-         send_actions({create_action({permission_level{voter_str,config::active_name}}, config::system_account_name, N(voteproducer), act_payload)});
+                  ("bpname", bpname_str)
+                  ;
+         send_actions({create_action({permission_level{voter_str,config::active_name}}, config::system_account_name, N(unfreeze), act_payload)});  
       });
    }
 };
 
-struct vote_producers_subcommand {
+struct vote_producer_list_subcommand {
    string voter_str;
-   vector<eosio::name> producer_names;
+   
 
-   vote_producers_subcommand(CLI::App* actionRoot) {
-      auto vote_producers = actionRoot->add_subcommand("prods", localized("Vote for one or more producers"));
-      vote_producers->add_option("voter", voter_str, localized("The voting account"))->required();
-      vote_producers->add_option("producers", producer_names, localized("The account(s) to vote for. All options from this position and following will be treated as the producer list."))->required();
-      add_standard_transaction_options(vote_producers);
+   vote_producer_list_subcommand(CLI::App* actionRoot) {
+      auto vote_proxy = actionRoot->add_subcommand("list", localized("Get all of Voting information for the voter"));
+      vote_proxy->add_option("voter", voter_str, localized("The voting account"))->required();
+      
+      //add_standard_transaction_options(vote_proxy);
+      
+      vote_proxy->set_callback([this] {
+          auto result = call(get_table_func, fc::mutable_variant_object("json", true)
+                               ("code", name(config::system_account_name).to_string())
+                               ("scope", voter_str)
+                               ("table", "votes")
+                               );
+          std::cout << fc::json::to_pretty_string(result)
+                << std::endl;
+      });
+   }
+};
 
-      vote_producers->set_callback([this] {
 
-         std::sort( producer_names.begin(), producer_names.end() );
+struct vote_producer_vote_subcommand {
+   string voter_str;
+   string bpname_str;
+   string amount;
+   //string con = "eosio";
 
+   vote_producer_vote_subcommand(CLI::App* actionRoot) {
+      auto vote_proxy = actionRoot->add_subcommand("vote", localized("Vote your stake to a bp"));
+      vote_proxy->add_option("voter", voter_str, localized("The voting account"))->required();
+      vote_proxy->add_option("bpname", bpname_str, localized("The account(s) to vote for."))->required();
+      vote_proxy->add_option("amount", amount, localized("The amount of EOS to vote"))->required();
+      add_standard_transaction_options(vote_proxy);
+      
+      vote_proxy->set_callback([this] {
+          amount = amount + " EOS";
          fc::variant act_payload = fc::mutable_variant_object()
                   ("voter", voter_str)
-                  ("proxy", "")
-                  ("producers", producer_names);
-         send_actions({create_action({permission_level{voter_str,config::active_name}}, config::system_account_name, N(voteproducer), act_payload)});
+                  ("bpname", bpname_str)
+                  ("stake", asset::from_string( amount ));
+         send_actions({create_action({permission_level{voter_str,config::active_name}}, config::system_account_name, N(vote), act_payload)});
       });
    }
 };
 
-struct approve_producer_subcommand {
-   eosio::name voter;
-   eosio::name producer_name;
-
-   approve_producer_subcommand(CLI::App* actionRoot) {
-      auto approve_producer = actionRoot->add_subcommand("approve", localized("Add one producer to list of voted producers"));
-      approve_producer->add_option("voter", voter, localized("The voting account"))->required();
-      approve_producer->add_option("producer", producer_name, localized("The account to vote for"))->required();
-      add_standard_transaction_options(approve_producer);
-
-      approve_producer->set_callback([this] {
-            auto result = call(get_table_func, fc::mutable_variant_object("json", true)
+struct list_bp_subcommand {
+   string voter_str;
+   uint32_t limit = 50;
+   list_bp_subcommand(CLI::App* actionRoot) {
+      auto list_bps = actionRoot->add_subcommand("listbps", localized("Get all of bp information"));
+      list_bps->add_option("-l,--limit", limit, localized("The maximum number of rows to return"));
+      list_bps->set_callback([this] {
+          auto result = call(get_table_func, fc::mutable_variant_object("json", true)
                                ("code", name(config::system_account_name).to_string())
-                               ("scope", name(config::system_account_name).to_string())
-                               ("table", "voters")
-                               ("table_key", "owner")
-                               ("lower_bound", voter.value)
-                               ("limit", 1)
-            );
-            auto res = result.as<eosio::chain_apis::read_only::get_table_rows_result>();
-            if ( res.rows.empty() || res.rows[0]["owner"].as_string() != name(voter).to_string() ) {
-               std::cerr << "Voter info not found for account " << voter << std::endl;
-               return;
-            }
-            EOS_ASSERT( 1 == res.rows.size(), multiple_voter_info, "More than one voter_info for account" );
-            auto prod_vars = res.rows[0]["producers"].get_array();
-            vector<eosio::name> prods;
-            for ( auto& x : prod_vars ) {
-               prods.push_back( name(x.as_string()) );
-            }
-            prods.push_back( producer_name );
-            std::sort( prods.begin(), prods.end() );
-            auto it = std::unique( prods.begin(), prods.end() );
-            if (it != prods.end() ) {
-               std::cerr << "Producer \"" << producer_name << "\" is already on the list." << std::endl;
-               return;
-            }
-            fc::variant act_payload = fc::mutable_variant_object()
-               ("voter", voter)
-               ("proxy", "")
-               ("producers", prods);
-            send_actions({create_action({permission_level{voter,config::active_name}}, config::system_account_name, N(voteproducer), act_payload)});
-      });
-   }
-};
-
-struct unapprove_producer_subcommand {
-   eosio::name voter;
-   eosio::name producer_name;
-
-   unapprove_producer_subcommand(CLI::App* actionRoot) {
-      auto approve_producer = actionRoot->add_subcommand("unapprove", localized("Remove one producer from list of voted producers"));
-      approve_producer->add_option("voter", voter, localized("The voting account"))->required();
-      approve_producer->add_option("producer", producer_name, localized("The account to remove from voted producers"))->required();
-      add_standard_transaction_options(approve_producer);
-
-      approve_producer->set_callback([this] {
-            auto result = call(get_table_func, fc::mutable_variant_object("json", true)
-                               ("code", name(config::system_account_name).to_string())
-                               ("scope", name(config::system_account_name).to_string())
-                               ("table", "voters")
-                               ("table_key", "owner")
-                               ("lower_bound", voter.value)
-                               ("limit", 1)
-            );
-            auto res = result.as<eosio::chain_apis::read_only::get_table_rows_result>();
-            if ( res.rows.empty() || res.rows[0]["owner"].as_string() != name(voter).to_string() ) {
-               std::cerr << "Voter info not found for account " << voter << std::endl;
-               return;
-            }
-            EOS_ASSERT( 1 == res.rows.size(), multiple_voter_info, "More than one voter_info for account" );
-            auto prod_vars = res.rows[0]["producers"].get_array();
-            vector<eosio::name> prods;
-            for ( auto& x : prod_vars ) {
-               prods.push_back( name(x.as_string()) );
-            }
-            auto it = std::remove( prods.begin(), prods.end(), producer_name );
-            if (it == prods.end() ) {
-               std::cerr << "Cannot remove: producer \"" << producer_name << "\" is not on the list." << std::endl;
-               return;
-            }
-            prods.erase( it, prods.end() ); //should always delete only one element
-            fc::variant act_payload = fc::mutable_variant_object()
-               ("voter", voter)
-               ("proxy", "")
-               ("producers", prods);
-            send_actions({create_action({permission_level{voter,config::active_name}}, config::system_account_name, N(voteproducer), act_payload)});
+                               ("scope", "eosio")
+                               ("table", "bps")
+                               ("limit",limit));
+          std::cout << fc::json::to_pretty_string(result)
+                << std::endl;
       });
    }
 };
@@ -3184,32 +3182,24 @@ int main( int argc, char** argv ) {
    auto system = app.add_subcommand("system", localized("Send eosio.system contract action to the blockchain."), false);
    system->require_subcommand();
 
-   auto createAccountSystem = create_account_subcommand( system, false /*simple*/ );
-   auto registerProducer = register_producer_subcommand(system);
-   auto unregisterProducer = unregister_producer_subcommand(system);
+   //auto createAccountSystem = create_account_subcommand( system, false /*simple*/ );
+   //auto registerProducer = register_producer_subcommand(system);
+   //auto unregisterProducer = unregister_producer_subcommand(system);
+  
+   auto registerProducer = update_bp_subcommand(system);
 
    auto voteProducer = system->add_subcommand("voteproducer", localized("Vote for a producer"));
    voteProducer->require_subcommand();
-   auto voteProxy = vote_producer_proxy_subcommand(voteProducer);
-   auto voteProducers = vote_producers_subcommand(voteProducer);
-   auto approveProducer = approve_producer_subcommand(voteProducer);
-   auto unapproveProducer = unapprove_producer_subcommand(voteProducer);
+   auto vote = vote_producer_vote_subcommand(voteProducer);
+   auto voteList = vote_producer_list_subcommand(voteProducer);
+   auto claim = vote_producer_claim_subcommand(voteProducer);
+   auto unfreeze = vote_producer_unfreeze_subcommand(voteProducer);
+   //auto listProducers = list_producers_subcommand(system);
 
-   auto listProducers = list_producers_subcommand(system);
+   auto listbps = list_bp_subcommand(system);
 
-   auto delegateBandWidth = delegate_bandwidth_subcommand(system);
-   auto undelegateBandWidth = undelegate_bandwidth_subcommand(system);
-   auto listBandWidth = list_bw_subcommand(system);
-   auto bidname = bidname_subcommand(system);
-   auto bidnameinfo = bidname_info_subcommand(system);
-
-   auto biyram = buyram_subcommand(system);
-   auto sellram = sellram_subcommand(system);
-
-   auto claimRewards = claimrewards_subcommand(system);
-
-   auto regProxy = regproxy_subcommand(system);
-   auto unregProxy = unregproxy_subcommand(system);
+   //auto regProxy = regproxy_subcommand(system);
+   //auto unregProxy = unregproxy_subcommand(system);
 
    auto cancelDelay = canceldelay_subcommand(system);
 

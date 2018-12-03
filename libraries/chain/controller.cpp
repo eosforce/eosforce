@@ -1334,9 +1334,9 @@ struct controller_impl {
          initialize_contract(config::msig_account_name, conf.msig_code, conf.msig_abi, true);
       }
 
-      // when on the specific block : update eosio owner and active auth to eosio.prods@active
+      // when on the specific block : update auth eosio@active to eosio.prods@active
       if( is_func_open_in_curr_block( self, config::func_typ::use_eosio_prods) ) {
-         ilog("update eosio owner and active auth to eosio.prods@active");
+         ilog("update auth eosio@active to eosio.prods@active");
          update_eosio_authority();
       }
 

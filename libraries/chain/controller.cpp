@@ -18,6 +18,7 @@
 #include <eosio/chain/txfee_manager.hpp>
 #include <eosio/chain/config_on_chain.hpp>
 #include <eosio/chain/resource_limits.hpp>
+#include <eosio/chain/resource_limits_private.hpp>
 #include <eosio/chain/config.hpp>
 #include <eosio/chain/chain_snapshot.hpp>
 
@@ -750,6 +751,11 @@ struct controller_impl {
       db.modify(account_sequence, [&]( auto& aso ) {
          aso.code_sequence += 1;
          aso.abi_sequence += 1;
+      });
+
+      const auto& usage  = db.get<resource_limits::resource_usage_object, resource_limits::by_owner>( contract );
+      db.modify( usage, [&]( auto& u ) {
+          u.ram_usage += (code_size + abi_size) * config::setcode_ram_bytes_multiplier;
       });
 
       ilog("initialize_contract: name:${n}, code_size:${code}, abi_size:${abi}", ("n", account.name)("code",code_size)("abi",abi_size));
@@ -1698,7 +1704,6 @@ struct controller_impl {
         };
 
         update_permission( authorization.get_permission({config::system_account_name, config::active_name}), 1);
-        update_permission( authorization.get_permission({config::system_account_name, config::owner_name}), 1);
     }
 
    void update_producers_authority() {

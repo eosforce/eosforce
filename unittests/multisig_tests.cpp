@@ -32,8 +32,10 @@ public:
 
    eosio_msig_tester() {
       produce_blocks(6);
-      create_accounts( { N(eosio.msig), N(eosio.stake), N(eosio.ram), N(eosio.ramfee), N(alice), N(bob), N(carol), N(wang), N(zhang) } );
-
+      create_accounts( { N(eosio.msig), N(eosio.stake), N(eosio.ram), N(eosio.ramfee), N(alice), N(bob), N(carol), N(wang), N(zhang),N(force.config) } );
+      set_fee(name("force.test"),name(config::system_account_name),"setconfig",asset(100),10,10,10);
+      set_config("f.system1",20);
+      set_config("f.msig",30);
       produce_blocks(100);
       const auto& accnt = control->db().get<account_object,by_name>( N(eosio.msig) );
       abi_def abi;
@@ -73,7 +75,7 @@ public:
    void approve(const account_name &proposer,const string &proposal_name,const string &perm,const account_name &approver);
    void unapprove(const account_name &proposer,const string &proposal_name,const string &perm,const account_name &approver);
    void exec(const account_name &proposer,const string &proposal_name,const account_name &executer);
-   void setconfig(std::string typ,int num);
+   void set_config(const std::string typ,int num);
    transaction_trace_ptr push_action( const account_name& signer, const action_name& name, const variant_object& data, bool auth = true ) {
       vector<account_name> accounts;
       if( auth )
@@ -86,21 +88,25 @@ public:
    abi_serializer abi_ser;
 };
 
-void eosio_msig_tester::setconfig(std::string typ,int num)
+void eosio_msig_tester::set_config(const std::string typ,int num)
 {
       auto args = fc::mutable_variant_object()
                   ("typ", typ )
                   ("num", num)
-                  ("key","")
-                  ("fee", "0.0000 EOS");
-      vector<account_name> accounts;
-      accounts.push_back( config::system_account_name );
-      std::cout<<"xuyapeng add for test "<<__LINE__<<std::endl;
-      auto trace = base_tester::push_action( config::system_account_name, "setconifg", accounts, args );
-      std::cout<<"xuyapeng add for test "<<__LINE__<<std::endl;
-      produce_block();
-      BOOST_REQUIRE_EQUAL( true, chain_has_transaction(trace->id) );
-     // return trace;
+                  ("key", "")
+                  ("fee", "0.0100 EOS");
+      vector<permission_level> auths;
+      auths.push_back( permission_level{"force.config", "active"} );
+
+      base_tester::push_action(action{
+         auths,
+         setconfig{
+               .typ   = typ,
+               .num    = num,
+               .key = "",
+               .fee       = asset(100)
+         }
+      },N(force.config));
 }
 
 void eosio_msig_tester::propose(const string &proposal_name ,const string &requested_perm,const string &transaction_perm,const account_name &contract_name,

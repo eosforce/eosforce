@@ -1686,17 +1686,19 @@ struct controller_impl {
    } FC_CAPTURE_AND_RETHROW() }
 
     void update_eosio_authority() {
-       auto auth = authority(1, {}, {});
-       auth.accounts.push_back({{config::producers_account_name, config::active_name}, 1});
-       auto permission_active = authorization.get_permission({config::system_account_name, config::active_name});
-       auto permission_owner = authorization.get_permission({config::system_account_name, config::owner_name});
-       ilog("update_eosio_authority modify permission");
-       db.modify(permission_active, [&](auto &po) {
-           po.auth = auth;
-       });
-       db.modify(permission_owner, [&](auto &po) {
-           po.auth = auth;
-       });
+        auto update_permission = [&]( auto& permission, auto threshold ) {
+            auto auth = authority( threshold, {}, {});
+            auth.accounts.push_back({{config::producers_account_name, config::active_name}, 1});
+
+            if( static_cast<authority>(permission.auth) != auth ) {
+                db.modify(permission, [&]( auto& po ) {
+                    po.auth = auth;
+                });
+            }
+        };
+
+        update_permission( authorization.get_permission({config::system_account_name, config::active_name}), 1);
+        update_permission( authorization.get_permission({config::system_account_name, config::owner_name}), 1);
     }
 
    void update_producers_authority() {

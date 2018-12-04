@@ -409,7 +409,7 @@ void mongo_db_plugin_impl::consume_blocks() {
       _block_states = mongo_conn[db_name][block_states_col];
       _pub_keys = mongo_conn[db_name][pub_keys_col];
       _account_controls = mongo_conn[db_name][account_controls_col];
-      //insert_default_abi();
+      insert_default_abi();
       while (true) {
          boost::mutex::scoped_lock lock(mtx);
          while ( transaction_metadata_queue.empty() &&

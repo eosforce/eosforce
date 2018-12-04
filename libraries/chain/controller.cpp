@@ -28,6 +28,7 @@
 #include <fc/variant_object.hpp>
 
 #include <eosio/chain/eosio_contract.hpp>
+#include <eosio/utilities/rand.hpp>
 
 namespace eosio { namespace chain {
 
@@ -1144,6 +1145,10 @@ struct controller_impl {
       EOS_ASSERT(trx->trx.context_free_actions.size()==0, transaction_exception, "context free actions size should be zero!");
       check_action(trx->trx.actions);
 
+      ilog("head ${id} ${num}", ("id", head->id)("num", head->block_num));
+      ilog("pending ${id} ${num}", ("id", pending->_pending_block_state->block->id())("num", pending->_pending_block_state->block->block_num()));
+      ilog("push trx ctx ${rand2}",("rand2", self.head_block_state()->block->get_random_seed()));
+
       transaction_trace_ptr trace;
       try {
          transaction_context trx_context(self, trx->trx, trx->id);
@@ -1319,7 +1324,7 @@ struct controller_impl {
 
 
    void start_block( block_timestamp_type when, uint16_t confirm_block_count, controller::block_status s,
-                     const optional<block_id_type>& producer_block_id )
+                     const optional<block_id_type>& producer_block_id, bool is_producing = false )
    {
       EOS_ASSERT( !pending, block_validate_exception, "pending block already exists" );
 
@@ -1344,6 +1349,17 @@ struct controller_impl {
       pending->_pending_block_state->set_confirmed(confirm_block_count);
 
       auto was_pending_promoted = pending->_pending_block_state->maybe_promote_pending();
+
+      // gen random if is produceing block
+      if(is_producing) {
+         EOS_ASSERT(pending->_pending_block_state->block->block_extensions.empty(), block_validate_exception, "should no ext data before random");
+         int64_t rand_seed = 0;
+         if(!utilities::rand::rand_strong_bytes(*producer_block_id, (unsigned char *)(&rand_seed), sizeof(rand_seed))){
+            elog("rand err");
+         }
+         pending->_pending_block_state->block->set_random_seed(rand_seed);
+         ilog("set random seed ${rand_seed}", ("rand_seed", rand_seed));
+      }
 
       //modify state in speculative block only if we are speculative reads mode (other wise we need clean state for head or irreversible reads)
       if ( read_mode == db_read_mode::SPECULATIVE || pending->_block_status != controller::block_status::incomplete ) {
@@ -1407,7 +1423,7 @@ struct controller_impl {
 
    void apply_block( const signed_block_ptr& b, controller::block_status s ) { try {
       try {
-         EOS_ASSERT( b->block_extensions.size() == 0, block_validate_exception, "no supported extensions" );
+         //EOS_ASSERT( b->block_extensions.size() == 0, block_validate_exception, "no supported extensions" );
          auto producer_block_id = b->id();
          start_block( b->timestamp, b->confirmed, s , producer_block_id);
 
@@ -1881,9 +1897,9 @@ chainbase::database& controller::mutable_db()const { return my->db; }
 const fork_database& controller::fork_db()const { return my->fork_db; }
 
 
-void controller::start_block( block_timestamp_type when, uint16_t confirm_block_count) {
+void controller::start_block( block_timestamp_type when, uint16_t confirm_block_count, bool is_producing/* = false*/) {
    validate_db_available_size();
-   my->start_block(when, confirm_block_count, block_status::incomplete, optional<block_id_type>() );
+   my->start_block(when, confirm_block_count, block_status::incomplete, optional<block_id_type>(), is_producing );
 }
 
 void controller::finalize_block() {

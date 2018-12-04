@@ -55,12 +55,59 @@ namespace eosio { namespace chain {
    /**
     */
    struct signed_block : public signed_block_header {
+   public:
       using signed_block_header::signed_block_header;
       signed_block() = default;
       signed_block( const signed_block_header& h ):signed_block_header(h){}
 
       vector<transaction_receipt>   transactions; /// new or generated transactions
       extensions_type               block_extensions;
+
+      enum ext_typ : uint16_t {
+         null = 0,
+         random_seed,
+      };
+
+      // set_random_seed set random seed to signed_block when pb producer
+      void set_random_seed(const int64_t& seed){
+         set_block_ext_data(ext_typ::random_seed, seed);
+      }
+
+      // get_random_seed get random seed for this block, when
+      int64_t get_random_seed()const{
+         int64_t res = 0;
+         if(!get_block_ext_data(ext_typ::random_seed, res)){
+            return 0;
+         }
+         return res;
+      }
+
+
+   private:
+      template<typename T> void set_block_ext_data(const ext_typ& typ, const T& data) {
+         chain::bytes data_bytes(fc::raw::pack_size(data));
+         fc::datastream<char*> data_ds{data_bytes.data(), data_bytes.size()};
+         fc::raw::pack(data_ds, data);
+
+         for(auto& itr : block_extensions) {
+            if(itr.first == typ) {
+               itr.second = data_bytes;
+               return;
+            }
+         }
+         block_extensions.push_back(std::make_pair(typ, data_bytes));
+      }
+
+      template<typename T> bool get_block_ext_data(const ext_typ& typ, T& out) const {
+         for(const auto& itr : block_extensions) {
+            if(itr.first == typ) {
+               fc::datastream<const char*> ds(itr.second.data(), itr.second.size());
+               fc::raw::unpack(ds, out);
+               return true;
+            }
+         }
+         return false;
+      }
    };
    using signed_block_ptr = std::shared_ptr<signed_block>;
 

@@ -332,6 +332,7 @@ class producer_plugin_impl : public std::enable_shared_from_this<producer_plugin
 
 
          if( fc::time_point::now() - block->timestamp < fc::minutes(5) || (block->block_num() % 1000 == 0) ) {
+            idump((*block));
             ilog("Received block ${id}... #${n} @ ${t} signed by ${p} [trxs: ${count}, lib: ${lib}, conf: ${confs}, latency: ${latency} ms]",
                  ("p",block->producer)("id",fc::variant(block->id()).as_string().substr(8,16))
                  ("n",block_header::num_from_id(block->id()))("t",block->timestamp)
@@ -398,6 +399,8 @@ class producer_plugin_impl : public std::enable_shared_from_this<producer_plugin
          }
 
          try {
+            // TODO By FanYang add a static rand num to trx also rand num COULD NOT FIT like block num
+            ilog("push by rpc, rand will 0");
             auto trace = chain.push_transaction(std::make_shared<transaction_metadata>(*trx), deadline);
             if (trace->except) {
                if (failure_is_subjective(*trace->except, deadline_is_subjective)) {
@@ -1082,7 +1085,7 @@ producer_plugin_impl::start_block_result producer_plugin_impl::start_block(bool 
       }
 
       chain.abort_block();
-      chain.start_block(block_time, blocks_to_confirm);
+      chain.start_block(block_time, blocks_to_confirm, _pending_block_mode == pending_block_mode::producing);
    } FC_LOG_AND_DROP();
 
    const auto& pbs = chain.pending_block_state();

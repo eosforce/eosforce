@@ -449,7 +449,6 @@ namespace bacc = boost::accumulators;
       // exec fee action to cost fee first
       if( (delay == fc::microseconds()) && (onfee_action.name == N(onfee)) ){
          // onfee
-         ilog("onfee ${f}", ("f", onfee_action));
          trace->action_traces.emplace_back();
          dispatch_action( trace->action_traces.back(), onfee_action );
       }

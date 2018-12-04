@@ -1,10 +1,6 @@
 {
   "version": "eosio::abi/1.0",
-  "types": [{
-      "new_type_name": "account_name",
-      "type": "name"
-    }
-  ],
+  "types": [],
   "structs": [{
       "name": "anyaction",
       "base": "",

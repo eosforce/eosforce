@@ -21,13 +21,18 @@ const static auto default_reversible_guard_size = 2*1024*1024ll;/// 1MB * 340 bl
 const static auto default_state_dir_name     = "state";
 const static auto forkdb_filename            = "forkdb.dat";
 const static auto default_state_size            = 1*1024*1024*1024ll;
-const static auto default_trx_size           = 100*1024ll;
+const static auto default_trx_size           = 1000*1024ll;
 const static auto default_state_guard_size      =    128*1024*1024ll;
 
 
 const static uint64_t system_account_name    = N(eosio);
 const static uint64_t null_account_name      = N(eosio.null);
 const static uint64_t producers_account_name = N(eosio.prods);
+const static uint64_t chain_config_name      = N(force.config);
+const static uint64_t token_account_name     = N(eosio.token);
+const static uint64_t msig_account_name      = N(eosio.msig);
+const static uint64_t bios_account_name      = N(eosio.bios);
+const static uint64_t eoslock_account_name   = N(eosio.lock);
 
 // Active permission of producers account requires greater than 2/3 of the producers to authorize
 const static uint64_t majority_producers_permission_name = N(prod.major); // greater than 1/2 of producers needed to authorize

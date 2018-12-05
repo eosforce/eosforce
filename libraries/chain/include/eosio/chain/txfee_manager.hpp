@@ -6,13 +6,13 @@
 
 #include <eosio/chain/types.hpp>
 #include <eosio/chain/asset.hpp>
-
-#include "multi_index_includes.hpp"
+#include <eosio/chain/multi_index_includes.hpp>
 
 namespace eosio { namespace chain {
 
    class controller;
    struct transaction;
+   struct action;
 
    class txfee_manager {
       public:
@@ -22,7 +22,7 @@ namespace eosio { namespace chain {
          bool check_transaction( const transaction& trx)const;
 
          asset get_required_fee( const controller& ctl, const transaction& trx)const;
-
+         asset get_required_fee( const controller& ctl, const action& act)const;
 
       private:
 

@@ -41,9 +41,6 @@ class currency_tester : public TESTER {
          act.authorization = vector<permission_level>{{signer, config::active_name}};
          act.data = abi_ser.variant_to_binary(action_type_name, data, abi_serializer_max_time);
 
-		 produce_block();
-		 //set_fee(act.authorization[0].actor, act.name, asset(1), 0, 0, 0);
-
          signed_transaction trx;
          trx.actions.emplace_back(std::move(act));
 

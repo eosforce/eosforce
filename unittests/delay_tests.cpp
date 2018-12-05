@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE( link_delay_direct_test ) { try {
            ("parent", "active")
            ("auth",  authority(chain.get_public_key(tester_account, "first")))
    );
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
    chain.push_action(config::system_account_name, linkauth::get_name(), tester_account, fc::mutable_variant_object()
            ("account", "tester")
            ("code", eosio_token)
@@ -268,7 +268,7 @@ BOOST_AUTO_TEST_CASE(delete_auth_test) { try {
            ("auth",  authority(chain.get_public_key(tester_account, "first")))
    );
 
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
 
    // link auth
    chain.push_action(config::system_account_name, linkauth::get_name(), tester_account, fc::mutable_variant_object()
@@ -392,7 +392,7 @@ BOOST_AUTO_TEST_CASE( link_delay_direct_parent_permission_test ) { try {
            ("parent", "active")
            ("auth",  authority(chain.get_public_key(tester_account, "first")))
    );
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
    chain.push_action(config::system_account_name, linkauth::get_name(), tester_account, fc::mutable_variant_object()
            ("account", "tester")
            ("code", eosio_token)
@@ -676,7 +676,7 @@ BOOST_AUTO_TEST_CASE( link_delay_permission_change_test ) { try {
            ("parent", "active")
            ("auth",  authority(chain.get_public_key(tester_account, "first"), 10))
    );
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
    chain.push_action(config::system_account_name, linkauth::get_name(), tester_account, fc::mutable_variant_object()
            ("account", "tester")
            ("code", eosio_token)
@@ -874,7 +874,7 @@ BOOST_AUTO_TEST_CASE( link_delay_permission_change_with_delay_heirarchy_test ) {
            ("parent", "first")
            ("auth",  authority(chain.get_public_key(tester_account, "second")))
    );
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
    chain.push_action(config::system_account_name, linkauth::get_name(), tester_account, fc::mutable_variant_object()
            ("account", "tester")
            ("code", eosio_token)
@@ -1066,7 +1066,7 @@ BOOST_AUTO_TEST_CASE( link_delay_link_change_test ) { try {
            ("parent", "active")
            ("auth",  authority(chain.get_public_key(tester_account, "first"), 10))
    );
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
    chain.push_action(config::system_account_name, linkauth::get_name(), tester_account, fc::mutable_variant_object()
            ("account", "tester")
            ("code", eosio_token)
@@ -1130,7 +1130,7 @@ BOOST_AUTO_TEST_CASE( link_delay_link_change_test ) { try {
    liquid_balance = get_currency_balance(chain, N(tester2));
    BOOST_REQUIRE_EQUAL(asset::from_string("0.0000 CUR"), liquid_balance);
 
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
    BOOST_REQUIRE_EXCEPTION(
       chain.push_action( config::system_account_name, linkauth::get_name(),
                          vector<permission_level>{permission_level{tester_account, N(first)}},
@@ -1270,7 +1270,7 @@ BOOST_AUTO_TEST_CASE( link_delay_unlink_test ) { try {
            ("parent", "active")
            ("auth",  authority(chain.get_public_key(tester_account, "first"), 10))
    );
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
    chain.push_action(config::system_account_name, linkauth::get_name(), tester_account, fc::mutable_variant_object()
            ("account", "tester")
            ("code", eosio_token)
@@ -1466,7 +1466,7 @@ BOOST_AUTO_TEST_CASE( link_delay_link_change_heirarchy_test ) { try {
            ("parent", "first")
            ("auth",  authority(chain.get_public_key(tester_account, "first")))
    );
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
    chain.push_action(config::system_account_name, linkauth::get_name(), tester_account, fc::mutable_variant_object()
            ("account", "tester")
            ("code", eosio_token)
@@ -1530,7 +1530,7 @@ BOOST_AUTO_TEST_CASE( link_delay_link_change_heirarchy_test ) { try {
    liquid_balance = get_currency_balance(chain, N(tester2));
    BOOST_REQUIRE_EQUAL(asset::from_string("0.0000 CUR"), liquid_balance);
 
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
    // this transaction will be delayed 20 blocks
    chain.push_action(config::system_account_name, linkauth::get_name(), tester_account, fc::mutable_variant_object()
            ("account", "tester")
@@ -1786,7 +1786,7 @@ BOOST_AUTO_TEST_CASE( canceldelay_test ) { try {
            ("auth",  authority(chain.get_public_key(tester_account, "first"), 10))
    );
    
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
    chain.push_action(config::system_account_name, linkauth::get_name(), tester_account, fc::mutable_variant_object()
            ("account", "tester")
            ("code", "eosio.token")
@@ -1920,7 +1920,7 @@ BOOST_AUTO_TEST_CASE( canceldelay_test ) { try {
    trx.actions.emplace_back(vector<permission_level>{{N(tester), config::active_name}},
                             chain::canceldelay{{N(tester), config::active_name}, ids[0]});
 
-   chain.set_fee(N(force.test), config::system_account_name, chain::canceldelay::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, chain::canceldelay::get_name(), asset(100), 11110, 0, 0);
 
    chain.set_transaction_headers(trx);
    trx.sign(chain.get_private_key(N(tester), "active"), chain.control->get_chain_id());
@@ -2033,7 +2033,7 @@ BOOST_AUTO_TEST_CASE( canceldelay_test2 ) { try {
           ("auth",  authority(chain.get_public_key(tester_account, "second")))
    );
    
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
    chain.push_action(config::system_account_name, linkauth::get_name(), tester_account, fc::mutable_variant_object()
            ("account", "tester")
            ("code", eosio_token)
@@ -2099,7 +2099,7 @@ BOOST_AUTO_TEST_CASE( canceldelay_test2 ) { try {
       // attempt canceldelay with wrong canceling_auth for delayed transfer of 1.0000 CUR
       {
          signed_transaction trx;
-         chain.set_fee(tester_account, chain::canceldelay::get_name(), asset(100), 0, 0, 0);
+         //chain.set_fee(tester_account, chain::canceldelay::get_name(), asset(100), 0, 0, 0);
          trx.actions.emplace_back(vector<permission_level>{{N(tester), config::active_name}},
                                   chain::canceldelay{{N(tester), config::active_name}, trx_id});
          chain.set_transaction_headers(trx);
@@ -2327,7 +2327,7 @@ BOOST_AUTO_TEST_CASE( max_transaction_delay_execute ) { try {
    );
    BOOST_REQUIRE_EQUAL(transaction_receipt::executed, trace->receipt->status);
 
-   chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
+   //chain.set_fee(N(force.test), config::system_account_name, linkauth::get_name(), asset(100), 11110, 0, 0);
    trace = chain.push_action(config::system_account_name, linkauth::get_name(), tester_account, fc::mutable_variant_object()
                      ("account", "tester")
                      ("code", "eosio.token")

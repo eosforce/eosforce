@@ -116,7 +116,7 @@ struct transfer_args {
 
 FC_REFLECT( transfer_args, (from)(to)(quantity)(memo) )
 
-
+#if 0
 BOOST_AUTO_TEST_SUITE(whitelist_blacklist_tests)
 
 BOOST_AUTO_TEST_CASE( actor_whitelist ) { try {
@@ -437,3 +437,4 @@ BOOST_AUTO_TEST_CASE( blacklist_onerror ) { try {
 } FC_LOG_AND_RETHROW() }
  
 BOOST_AUTO_TEST_SUITE_END()
+#endif

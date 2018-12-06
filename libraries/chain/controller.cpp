@@ -16,6 +16,7 @@
 
 #include <eosio/chain/authorization_manager.hpp>
 #include <eosio/chain/txfee_manager.hpp>
+#include <eosio/chain/config_on_chain.hpp>
 #include <eosio/chain/resource_limits.hpp>
 #include <eosio/chain/config.hpp>
 #include <eosio/chain/chain_snapshot.hpp>
@@ -27,6 +28,7 @@
 #include <fc/variant_object.hpp>
 
 #include <eosio/chain/eosio_contract.hpp>
+#include <set>
 
 namespace eosio { namespace chain {
 
@@ -40,7 +42,9 @@ using controller_index_set = index_set<
    block_summary_multi_index,
    transaction_multi_index,
    generated_transaction_multi_index,
-   table_id_multi_index
+   table_id_multi_index,
+   action_fee_object_index,
+   config_data_object_index
 >;
 
 using contract_database_index_set = index_set<
@@ -412,7 +416,8 @@ struct controller_impl {
       controller_index_set::add_indices(db);
       contract_database_index_set::add_indices(db);
 
-      db.add_index<action_fee_object_index>();
+      //db.add_index<action_fee_object_index>();
+      //db.add_index<config_data_object_index>();
 
       authorization.add_indices();
       resource_limits.add_indices();
@@ -646,64 +651,51 @@ struct controller_impl {
    void initialize_producer() {
       auto db = memory_db(self);
       for( const auto& producer : conf.genesis.initial_producer_list ) {
-         const auto& name = producer.name;
-         const auto& public_key = producer.bpkey;
-
          // create accpimt for init bps
-         const authority auth(public_key);
-         create_native_account(name, auth, auth, false);
+         const authority auth(producer.bpkey);
+         create_native_account(producer.name, auth, auth, false);
 
          // store bp data in bp table
-         memory_db::bp_info obj;
-         obj.name = name;
-         obj.producer_key = public_key;
-         obj.commission_rate = producer.commission_rate;
-         obj.url = producer.url;
-
-         const auto data = fc::raw::pack(obj);
-         db.db_store_i64(N(eosio), N(eosio), N(bps),
-                         name, obj.primary_key(),
-                         data.data(), data.size());
+         db.insert(config::system_account_name, config::system_account_name, N(bps),
+                   producer.name,
+                   memory_db::bp_info{
+                         producer.name,
+                         producer.bpkey,
+                         producer.commission_rate,
+                         producer.url});
       }
    }
 
    // initialize_chain_emergency init chain emergency stat
    void initialize_chain_emergency() {
-      const memory_db::chain_status obj{N(chainstatus), false};
-      const auto data = fc::raw::pack(obj);
-      auto db = memory_db(self);
-      db.db_store_i64(N(eosio), N(eosio), N(chainstatus),
-                      N(eosio), obj.primary_key(),
-                      data.data(), data.size());
+      memory_db(self).insert(
+            config::system_account_name, config::system_account_name, N(chainstatus),
+            config::system_account_name,
+            memory_db::chain_status{N(chainstatus), false});
    }
 
-   // initialize_account_to_table init account data in accounts table
-   void initialize_account_to_table( const account_name& name, const asset& balance ) {
-      const memory_db::account_info obj{name, balance};
-      const auto data = fc::raw::pack(obj);
-      auto db = memory_db(self);
-      db.db_store_i64(N(eosio), N(eosio), N(accounts),
-                      name, obj.primary_key(),
-                      data.data(), data.size());
-   }
+ 
 
    // initialize_account init account from genesis
    void initialize_account() {
       const auto acc_name_a = N(a);
-      for( const auto& account : conf.genesis.initial_account_list ) {
-         const auto& public_key = account.key;
-         const auto& amount = account.asset;
-         const authority auth(public_key);
+      auto db = memory_db(self);
+      for (const auto &account : conf.genesis.initial_account_list) {
+         const auto &public_key = account.key;
          auto acc_name = account.name;
          if( acc_name == acc_name_a ) {
             const auto pk_str = std::string(public_key);
             const auto name_r = pk_str.substr(pk_str.size() - 12, 12);
             acc_name = string_to_name(format_name(name_r).c_str());
-            ilog("name:${pk_str} -> ${name_r} -> ${acc}, publickey: ${pb}, amount: ${amount}",
-                 ("pk_str", pk_str)("name_r", name_r)("acc", acc_name)
-                 ("pb", public_key)("amount", amount));
          }
-         initialize_account_to_table(acc_name, amount);
+         //active account
+         eosio::chain::asset amount;
+		 amount = account.asset;
+         // initialize_account_to_table
+         db.insert(
+                 config::system_account_name, config::system_account_name, N(accounts), acc_name,
+                 memory_db::account_info{acc_name, amount});
+         const authority auth(public_key);
          create_native_account(acc_name, auth, auth, false);
       }
    }
@@ -737,22 +729,19 @@ struct controller_impl {
          aso.code_sequence += 1;
          aso.abi_sequence += 1;
       });
+
+      ilog("initialize_contract: name:${n}, code_size:${code}, abi_size:${abi}", ("n", account.name)("code",code_size)("abi",abi_size));
    }
 
    // initialize_eos_stats init stats for eos token
    void initialize_eos_stats() {
-      const memory_db::currency_stats obj{
-            asset(10000000),
-            asset(100000000000),
-            N(eosio.token)
-      };
       const auto& sym = symbol(CORE_SYMBOL).to_symbol_code();
-      const auto& data = fc::raw::pack(obj);
-
-      auto db = memory_db(self);
-      db.db_store_i64(N(eosio.token), sym, N(stat),
-                      N(eosio.token), obj.primary_key(),
-                      data.data(), data.size());
+      memory_db(self).insert(config::token_account_name, sym, N(stat),
+                             config::token_account_name,
+                             memory_db::currency_stats{
+                                   asset(10000000),
+                                   asset(100000000000),
+                                   config::token_account_name});
    }
 
    void initialize_database() {
@@ -1111,7 +1100,7 @@ struct controller_impl {
 
    bool check_chainstatus() const {
       const auto *cstatus_tid = db.find<table_id_object, by_code_scope_table>(
-            boost::make_tuple(N(eosio), N(eosio), N(chainstatus)));
+            boost::make_tuple(config::system_account_name, config::system_account_name, N(chainstatus)));
 
       EOS_ASSERT(cstatus_tid != nullptr, fork_database_exception, "get chainstatus fatal");
 
@@ -1181,6 +1170,9 @@ struct controller_impl {
                check_actor_list( trx_context.bill_to_accounts ); // Assumes bill_to_accounts is the set of actors authorizing the transaction
             }
 
+            // is_onfee_act on early version eosforce we use a trx contain onfee act before do trx
+            // new version use a onfee act in the trx, when exec trx, a onfee action will do first
+            const auto is_onfee_act = is_func_has_open(self, config::func_typ::onfee_action);
 
             trx_context.delay = fc::seconds(trx->trx.delay_sec);
 
@@ -1225,7 +1217,7 @@ struct controller_impl {
                trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
              } catch (const fc::exception &e) {
                trace->except = e;
-               trace->except_ptr = std::current_exception();
+               trace->except_ptr = std::current_exception();               
                if (head->block_num != 1) {
                  elog("---trnasction exe failed--------trace: ${trace}", ("trace", trace));
                }

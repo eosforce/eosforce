@@ -184,6 +184,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_exhaustive_snapshot, SNAPSHOT_SUITE, snapshot
       // produce block
       auto new_block = chain.produce_block();
 
+	  std::cout << "***** new_block transactions size: " << new_block->transactions.size() << std::endl;
       // undo the auto-pending from tester
       chain.control->abort_block();
 
@@ -205,6 +206,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_replay_over_snapshot, SNAPSHOT_SUITE, snapsho
    chain.produce_blocks(1);
    chain.set_code(N(snapshot), snapshot_test_wast);
    chain.set_abi(N(snapshot), snapshot_test_abi);
+   chain.set_fee(N(snapshot), N(increment), asset(100), 0, 0, 0);
    chain.produce_blocks(1);
    chain.control->abort_block();
 

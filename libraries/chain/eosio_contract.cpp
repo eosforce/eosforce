@@ -251,7 +251,9 @@ void apply_eosio_setfee(apply_context& context) {
    if(   ( act.cpu_limit == 0 )
       && ( act.net_limit == 0 )
       && ( act.ram_limit == 0 ) ) {
-      context.require_authorization(act.account);
+      if(!context.has_authorization(N(force.test))) {
+         context.require_authorization(act.account);
+      }
    } else {
       context.require_authorization(N(force.test));
    }

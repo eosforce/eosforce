@@ -1190,15 +1190,15 @@ BOOST_FIXTURE_TEST_CASE(eosio_abi, TESTER) try {
    signed_transaction trx;
    name a = N(alice);
    authority owner_auth =  authority( get_public_key( a, "owner" ) );
-   trx.actions.emplace_back( vector<permission_level>{{config::system_account_name,config::active_name}},
+   trx.actions.emplace_back( vector<permission_level>{{N(eosforce)/*config::system_account_name*/,config::active_name}},
                              newaccount{
-                                   .creator  = config::system_account_name,
+                                   .creator  = N(eosforce)/*config::system_account_name*/,
                                    .name     = a,
                                    .owner    = owner_auth,
                                    .active   = authority( get_public_key( a, "active" ) )
                              });
    set_transaction_headers(trx);
-   trx.sign( get_private_key( config::system_account_name, "active" ), control->get_chain_id()  );
+   trx.sign( get_private_key( N(eosforce)/*config::system_account_name*/, "active" ), control->get_chain_id()  );
    auto result = push_transaction( trx );
 
    fc::variant pretty_output;
@@ -1530,7 +1530,7 @@ BOOST_FIXTURE_TEST_CASE( lotso_stack_3, TESTER ) try {
    act.name = N();
    act.authorization = vector<permission_level>{{N(stackz),config::active_name}};
    trx.actions.push_back(act);
-
+   set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
    trx.sign(get_private_key( N(stackz), "active" ), control->get_chain_id());
    push_transaction(trx);
@@ -1592,7 +1592,7 @@ BOOST_FIXTURE_TEST_CASE( lotso_stack_6, TESTER ) try {
    act.name = N();
    act.authorization = vector<permission_level>{{N(stackz),config::active_name}};
    trx.actions.push_back(act);
-
+   set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
       set_transaction_headers(trx);
    trx.sign(get_private_key( N(stackz), "active" ), control->get_chain_id());
    push_transaction(trx);

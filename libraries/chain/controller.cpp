@@ -1145,9 +1145,15 @@ struct controller_impl {
       EOS_ASSERT(trx->trx.context_free_actions.size()==0, transaction_exception, "context free actions size should be zero!");
       check_action(trx->trx.actions);
 
-      ilog("head ${id} ${num}", ("id", head->id)("num", head->block_num));
-      ilog("pending ${id} ${num}", ("id", pending->_pending_block_state->block->id())("num", pending->_pending_block_state->block->block_num()));
-      ilog("push trx ctx ${rand2}",("rand2", self.head_block_state()->block->get_random_seed()));
+      // if in producing block data in pending or apply in head
+      // id is not finial id
+      if(pending->_block_status == controller::block_status::incomplete){
+         ilog("pending ${num}", ("num", pending->_pending_block_state->block->block_num()));
+         ilog("push trx p ctx ${rand2}",("rand2", pending->_pending_block_state->block->get_block_ext_bytes(signed_block::ext_typ::random_seed)));
+      }else{
+         ilog("head ${num}", ("num", head->block_num));
+         ilog("push trx h ctx ${rand2}",("rand2", self.head_block_state()->block->get_block_ext_bytes(signed_block::ext_typ::random_seed)));
+      }
 
       transaction_trace_ptr trace;
       try {
@@ -1434,6 +1440,7 @@ struct controller_impl {
             if( receipt.trx.contains<packed_transaction>() ) {
                auto& pt = receipt.trx.get<packed_transaction>();
                auto mtrx = std::make_shared<transaction_metadata>(pt);
+               ilog("apply_block push_transaction ${tid} ${num} ${id}", ("tid", pt.id())("num", b->block_num())("id", b->id()));
                trace = push_transaction( mtrx, fc::time_point::maximum(), receipt.cpu_usage_us, true );
             } else if( receipt.trx.contains<transaction_id_type>() ) {
                trace = push_scheduled_transaction( receipt.trx.get<transaction_id_type>(), fc::time_point::maximum(), receipt.cpu_usage_us, true );

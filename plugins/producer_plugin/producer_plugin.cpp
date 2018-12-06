@@ -400,7 +400,10 @@ class producer_plugin_impl : public std::enable_shared_from_this<producer_plugin
 
          try {
             // TODO By FanYang add a static rand num to trx also rand num COULD NOT FIT like block num
-            ilog("push by rpc, rand will 0");
+            // if producing to produce block state is in pending_block_state
+            ilog("handler trx ${tid} ${num} ${rr1}",
+                  ("tid", trx->id())("num", chain.pending_block_state()->block_num)
+                  ("rr1", chain.pending_block_state()->block->get_block_ext_bytes(signed_block::ext_typ::random_seed)));
             auto trace = chain.push_transaction(std::make_shared<transaction_metadata>(*trx), deadline);
             if (trace->except) {
                if (failure_is_subjective(*trace->except, deadline_is_subjective)) {

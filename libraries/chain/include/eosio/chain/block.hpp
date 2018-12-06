@@ -82,8 +82,6 @@ namespace eosio { namespace chain {
          return res;
       }
 
-
-   private:
       template<typename T> void set_block_ext_data(const ext_typ& typ, const T& data) {
          chain::bytes data_bytes(fc::raw::pack_size(data));
          fc::datastream<char*> data_ds{data_bytes.data(), data_bytes.size()};
@@ -107,6 +105,15 @@ namespace eosio { namespace chain {
             }
          }
          return false;
+      }
+
+      vector<char> get_block_ext_bytes(const ext_typ& typ)const{
+         for(const auto& itr : block_extensions) {
+            if(itr.first == typ) {
+               return itr.second;
+            }
+         }
+         return vector<char>();
       }
    };
    using signed_block_ptr = std::shared_ptr<signed_block>;

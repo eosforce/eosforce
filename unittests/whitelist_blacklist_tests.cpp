@@ -66,15 +66,15 @@ class whitelist_blacklist_tester {
 
          if( !bootstrap ) return;
 
-         chain->create_accounts({N(eosio.token), N(alice), N(bob), N(charlie)});
-         chain->set_code(N(eosio.token), eosio_token_wast);
-         chain->set_abi(N(eosio.token), eosio_token_abi);
-         chain->push_action( N(eosio.token), N(create), N(eosio.token), mvo()
-              ( "issuer", "eosio.token" )
+         chain->create_accounts({/*N(eosio.token), */N(alice), N(bob), N(charlie)});
+         //chain->set_code(N(eosio.token), eosio_token_wast);
+         //chain->set_abi(N(eosio.token), eosio_token_abi);
+         chain->push_action( N(eosio.token), N(create), N(eosforce)/*N(eosio.token)*/, mvo()
+              ( "issuer", "eosforce"/*"eosio.token"*/ )
               ( "maximum_supply", "1000000.00 TOK" )
          );
-         chain->push_action( N(eosio.token), N(issue), N(eosio.token), mvo()
-              ( "to", "eosio.token" )
+         chain->push_action( N(eosio.token), N(issue), N(eosforce)/*N(eosio.token)*/, mvo()
+              ( "to", "eosforce"/*"eosio.token"*/ )
               ( "quantity", "1000000.00 TOK" )
               ( "memo", "issue" )
          );
@@ -121,10 +121,10 @@ BOOST_AUTO_TEST_SUITE(whitelist_blacklist_tests)
 
 BOOST_AUTO_TEST_CASE( actor_whitelist ) { try {
    whitelist_blacklist_tester<> test;
-   test.actor_whitelist = {config::system_account_name, N(eosio.token), N(alice)};
+   test.actor_whitelist = {config::system_account_name, N(eosio.token), N(alice), N(eosforce)};
    test.init();
 
-   test.transfer( N(eosio.token), N(alice), "1000.00 TOK" );
+   test.transfer( N(eosforce)/*N(eosio.token)*/, N(alice), "1000.00 TOK" );
 
    test.transfer( N(alice), N(bob),  "100.00 TOK" );
 
@@ -435,5 +435,5 @@ BOOST_AUTO_TEST_CASE( blacklist_onerror ) { try {
                         );
 
 } FC_LOG_AND_RETHROW() }
-
+ 
 BOOST_AUTO_TEST_SUITE_END()

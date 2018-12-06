@@ -153,14 +153,18 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_exhaustive_snapshot, SNAPSHOT_SUITE, snapshot
 {
    tester chain;
 
+   chain.produce_blocks(1);
    chain.create_account(N(snapshot));
    chain.produce_blocks(1);
    chain.set_code(N(snapshot), snapshot_test_wast);
    chain.set_abi(N(snapshot), snapshot_test_abi);
+   
+   chain.set_fee(N(snapshot), N(increment), asset(100), 0, 0, 0);
+   
    chain.produce_blocks(1);
    chain.control->abort_block();
 
-   static const int generation_count = 8;
+   static const int generation_count = /*8*/1;
    std::list<snapshotted_tester> sub_testers;
 
    for (int generation = 0; generation < generation_count; generation++) {

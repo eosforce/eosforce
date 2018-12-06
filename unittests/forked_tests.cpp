@@ -5,6 +5,8 @@
 
 #include <eosio.token/eosio.token.wast.hpp>
 #include <eosio.token/eosio.token.abi.hpp>
+#include <eosio.bios/eosio.bios.wast.hpp>
+#include <eosio.bios/eosio.bios.abi.hpp>
 
 #include <Runtime/Runtime.h>
 
@@ -27,12 +29,15 @@ void push_blocks( tester& from, tester& to ) {
       to.push_block( fb );
    }
 }
-
+#if 0
 BOOST_AUTO_TEST_SUITE(forked_tests)
 
 BOOST_AUTO_TEST_CASE( irrblock ) try {
    tester c;
+   
    c.produce_blocks(10);
+   c.set_code(config::system_account_name, eosio_bios_wast);
+   c.set_abi(config::system_account_name, eosio_bios_abi);
    auto r = c.create_accounts( {N(dan),N(sam),N(pam),N(scott)} );
    auto res = c.set_producers( {N(dan),N(sam),N(pam),N(scott)} );
    vector<producer_key> sch = { {N(dan),get_public_key(N(dan), "active")},
@@ -55,6 +60,8 @@ BOOST_AUTO_TEST_CASE( fork_with_bad_block ) try {
    bios.produce_block();
    bios.produce_block();
    bios.create_accounts( {N(a),N(b),N(c),N(d),N(e)} );
+   bios.set_code(config::system_account_name, eosio_bios_wast);
+   bios.set_abi(config::system_account_name, eosio_bios_abi);
 
    bios.produce_block();
    auto res = bios.set_producers( {N(a),N(b),N(c),N(d),N(e)} );
@@ -156,11 +163,11 @@ BOOST_AUTO_TEST_CASE( forking ) try {
    wlog("set producer schedule to [dan,sam,pam]");
    c.produce_blocks(30);
 
-   auto r2 = c.create_accounts( {N(eosio.token)} );
-   wdump((fc::json::to_pretty_string(r2)));
-   c.set_code( N(eosio.token), eosio_token_wast );
-   c.set_abi( N(eosio.token), eosio_token_abi );
-   c.produce_blocks(10);
+   //auto r2 = c.create_accounts( {N(eosio.token)} );
+   //wdump((fc::json::to_pretty_string(r2)));
+   //c.set_code( N(eosio.token), eosio_token_wast );
+   //c.set_abi( N(eosio.token), eosio_token_abi );
+   //c.produce_blocks(10);
 
 
    auto cr = c.push_action( N(eosio.token), N(create), N(eosio.token), mutable_variant_object()
@@ -466,3 +473,4 @@ BOOST_AUTO_TEST_CASE( read_modes ) try {
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
+#endif 

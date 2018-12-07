@@ -20,17 +20,6 @@ datas = {
 
 unlockTimeout = 999999999
 
-relayPriKey = '5JbykKocbS8Hj3s4xokv5Ej3iXqrSqdwxBcHQFXf5DwUmGELxTi'
-relayPubKey = 'EOS5NiqXiggrB5vyfedTFseDi6mW4U74bBhR7S2KSq181jHdYMNVY'
-
-relayAccounts = [
-    'r.token.in',
-    'r.token.out',
-    'r.acc.map',
-    'r.t.exchange',
-    'force.test'
-]
-
 def jsonArg(a):
     return " '" + json.dumps(a) + "' "
 
@@ -60,30 +49,12 @@ def sleep(t):
     time.sleep(t)
     print('resume')
 
-def addB1Account():
-    run(args.cleos + 'create account eosforce b1 ' + datas["initAccounts"][len(datas["initAccounts"]) - 1]['key'] + " -p eosforce")
-
-def addRelayAccount():
-    for a in relayAccounts:
-        run(args.cleos + 'create account eosforce ' + a + ' ' + relayPubKey)
-        run(args.cleos + 'push action eosio transfer \'{"from":"eosforce","to":"%s","quantity":"100000.0000 EOS","memo":""}\' -p eosforce' % a)
-
-
-def startWallet():
-    run('mkdir -p ' + os.path.abspath(args.wallet_dir))
-    background(args.keosd + ' --unlock-timeout %d --http-server-address 0.0.0.0:6666 --wallet-dir %s' % (unlockTimeout, os.path.abspath(args.wallet_dir)))
-    sleep(.4)
-    run(args.cleos + 'wallet create --file ./pw')
-
 def importKeys():
     keys = {}
-    run(args.cleos + 'wallet import --private-key ' + relayPriKey)
     for a in datas["initAccountsKeys"]:
         key = a[1]
         if not key in keys:
             keys[key] = True
-            # note : new develop eosforce change this command to wallet import--private-key pk
-            # so need change this cmd
             run(args.cleos + 'wallet import --private-key ' + key)
 
 def createNodeDir(nodeIndex, bpaccount, key):
@@ -136,27 +107,32 @@ def listProducers():
 
 def stepKillAll():
     run('killall keosd nodeos || true')
-    sleep(1.5)
+    sleep(.5)
 
 def stepStartWallet():
-    startWallet()
+    run('rm -rf ' + os.path.abspath(args.wallet_dir))
+    run('mkdir -p ' + os.path.abspath(args.wallet_dir))
+    background(args.keosd + ' --unlock-timeout %d --http-server-address 0.0.0.0:6666 --wallet-dir %s' % (unlockTimeout, os.path.abspath(args.wallet_dir)))
+    sleep(.4)
+
+def stepCreateWallet():
+    run('mkdir -p ' + os.path.abspath(args.wallet_dir))
+    run(args.cleos + 'wallet create --file ./pw')
 
 def stepStartProducers():
     startProducers(datas["initProducers"], datas["initProducerSigKeys"])
-    sleep(10)
+    sleep(3)
+    stepSetFuncs()
 
 def stepCreateNodeDirs():
     createNodeDirs(datas["initProducers"], datas["initProducerSigKeys"])
     sleep(0.5)
 
-def stepAddAccounts():
-    addB1Account()
-    addRelayAccount()
-    sleep(5)
-
 def stepLog():
     run('tail -n 1000 ' + args.nodes_dir + 'biosbpa.log')
     listProducers()
+    run(args.cleos + ' get info')
+    print('you can use \"alias cleost=\'%s\'\" to call cleos to testnet' % args.cleos)
 
 def stepMkConfig():
     with open(os.path.abspath(args.config_dir) + '/genesis.json') as f:
@@ -178,16 +154,22 @@ def stepMakeGenesis():
 
     run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System01/System01.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System01/System01.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/System02/System02.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.lock/eosio.lock.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.lock/eosio.lock.wasm ' + os.path.abspath(args.config_dir))
 
     # testnet will use new System contract from start
-    run('cp ' + args.contracts_dir + '/System01/System01.abi ' + os.path.abspath(args.config_dir) + "/System.abi")
-    run('cp ' + args.contracts_dir + '/System01/System01.wasm ' + os.path.abspath(args.config_dir) + "/System.wasm")
+    run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir) + "/System01.abi")
+    run('cp ' + args.contracts_dir + '/System02/System02.wasm ' + os.path.abspath(args.config_dir) + "/System01.wasm")
+
+    # testnet will use new System contract from start
+    run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir) + "/System.abi")
+    run('cp ' + args.contracts_dir + '/System02/System02.wasm ' + os.path.abspath(args.config_dir) + "/System.wasm")
 
     run(args.root + 'build/programs/genesis/genesis')
     run('mv ./genesis.json ' + os.path.abspath(args.config_dir))
@@ -195,17 +177,40 @@ def stepMakeGenesis():
     run('mv ./key.json ' + os.path.abspath(args.config_dir) + '/keys/')
     run('mv ./sigkey.json ' + os.path.abspath(args.config_dir) + '/keys/')
 
+    run('echo "[]" >> ' + os.path.abspath(args.config_dir) + '/activeacc.json')
+
+def setFuncStartBlock(func_typ, num):
+    run(args.cleos +
+        'push action eosio setconfig ' +
+        ('\'{"typ":"%s","num":%s,"key":"","fee":"0.0000 EOS"}\' ' % (func_typ, num)) +
+        '-p force.config' )
+
+def setFee(account, act, fee, cpu, net, ram):
+    run(args.cleos +
+        'set setfee ' +
+        ('%s %s ' % (account, act)) +
+        ('"%s EOS" %d %d %d' % (fee, cpu, net, ram)))
+
+def stepSetFuncs():
+    # we need set some func start block num
+    setFee('eosio', 'setconfig', '0.0100', 100000, 1000000, 1000)
+    setFuncStartBlock('f.ram4vote', 10)
+    setFuncStartBlock('f.onfeeact', 15)
+
 def clearData():
     stepKillAll()
     run('rm -rf ' + os.path.abspath(args.config_dir))
     run('rm -rf ' + os.path.abspath(args.nodes_dir))
     run('rm -rf ' + os.path.abspath(args.wallet_dir))
-    sleep(1)
+    run('rm -rf ' + os.path.abspath(args.log_path))
+    run('rm -rf ' + os.path.abspath('./pw'))
+    run('rm -rf ' + os.path.abspath('./config.ini'))
 
 def restart():
     stepKillAll()
     stepMkConfig()
     stepStartWallet()
+    stepCreateWallet()
     importKeys()
     stepStartProducers()
     stepLog()
@@ -221,10 +226,10 @@ commands = [
     ('g', 'mkGenesis',      stepMakeGenesis,            True,    "Make Genesis"),
     ('m', 'mkConfig',       stepMkConfig,               True,    "Make Configs"),
     ('w', 'wallet',         stepStartWallet,            True,    "Start keosd, create wallet, fill with keys"),
+    ('W', 'createWallet',   stepCreateWallet,           True,    "Create wallet"),
     ('i', 'importKeys',     importKeys,                 True,    "importKeys"),
     ('D', 'createDirs',     stepCreateNodeDirs,         True,    "create dirs for node and log"),
     ('P', 'start-prod',     stepStartProducers,         True,    "Start producers"),
-    ('C', 'createAccs',     stepAddAccounts,            True,    "Create some Accounts"),
     ('l', 'log',            stepLog,                    True,    "Show tail of node's log"),
 ]
 

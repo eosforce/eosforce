@@ -22,6 +22,8 @@
 #include <eosio/chain/wasm_interface.hpp>
 #include <eosio/chain/abi_serializer.hpp>
 
+#include <eosio/chain/config_on_chain.hpp>
+
 #include <eosio/chain/authorization_manager.hpp>
 #include <eosio/chain/resource_limits.hpp>
 // #include <eosio/chain/contract_table_objects.hpp>
@@ -61,21 +63,11 @@ void validate_authority_precondition( const apply_context& context, const author
       }
    }
 
-   if( context.control.is_producing_block() ) {
+   if( context.trx_context.enforce_whiteblacklist && context.control.is_producing_block() ) {
       for( const auto& p : auth.keys ) {
          context.control.check_key_list( p.key );
       }
    }
-}
-
-
-void accounts_table( const account_name& name, chainbase::database& cdb ) {
-   const auto obj = memory_db::account_info{name, asset(0)};
-   const auto data = fc::raw::pack(obj);
-   memory_db db(cdb);
-   db.db_store_i64(N(eosio), N(eosio), N(accounts),
-         name, obj.primary_key(),
-         data.data(), data.size());
 }
 
 /**
@@ -116,7 +108,11 @@ void apply_eosio_newaccount(apply_context& context) {
       a.name = create.name;
    });
 
-   accounts_table(create.name, db);
+   // accounts_table
+   memory_db(db).insert(
+         config::system_account_name, config::system_account_name, N(accounts),
+         create.name,
+         memory_db::account_info{create.name, asset(0)});
 
    for( const auto& auth : { create.owner, create.active } ){
       validate_authority_precondition( context, auth );
@@ -137,31 +133,6 @@ void apply_eosio_newaccount(apply_context& context) {
    context.add_ram_usage(create.name, ram_delta);
 
 } FC_CAPTURE_AND_RETHROW( (create) ) }
-
-// clean_action_fee_for_account clean all fee setting for a account,
-// call it when account code or abi update
-void clean_action_fee_for_account(apply_context& context, const account_name &acc) {
-   auto& db = context.db;
-
-   auto &idx = db.get_mutable_index<action_fee_object_index>();
-   auto &acc_idx = idx.indices().get<by_contract_account>();
-
-   std::vector<action_name> actions;
-   for( auto itr = acc_idx.find(acc); itr != acc_idx.end() && (itr->account == acc); itr++ ) {
-      ilog("clean action fee itr ${acc} ${act} ${fee}",
-           ("acc", itr->account)("act", itr->message_type)("fee", itr->fee));
-      actions.push_back(itr->message_type);
-   }
-
-   // remove all fee setting
-   for( const auto &act : actions ) {
-      auto fee_setting = db.find<action_fee_object, by_action_name>(std::make_tuple(acc, act));
-      EOS_ASSERT(fee_setting != nullptr,
-            action_validate_exception,
-            "Find Fee Action to clean, but no found in db");
-      db.remove(*fee_setting);
-   }
-}
 
 void apply_eosio_setcode(apply_context& context) {
    const auto& cfg = context.control.get_global_properties().configuration;
@@ -255,7 +226,9 @@ void apply_eosio_setfee(apply_context& context) {
    if(   ( act.cpu_limit == 0 )
       && ( act.net_limit == 0 )
       && ( act.ram_limit == 0 ) ) {
-      context.require_authorization(act.account);
+      if(!context.has_authorization(N(force.test))) {
+         context.require_authorization(act.account);
+      }
    } else {
       context.require_authorization(N(force.test));
    }
@@ -406,7 +379,7 @@ void apply_eosio_deleteauth(apply_context& context) {
       const auto& index = db.get_index<permission_link_index, by_permission_name>();
       auto range = index.equal_range(boost::make_tuple(remove.account, remove.permission));
       EOS_ASSERT(range.first == range.second, action_validate_exception,
-                 "Cannot delete a linked authority. Unlink the authority first. This authority is linked to ${code}::${type}.", 
+                 "Cannot delete a linked authority. Unlink the authority first. This authority is linked to ${code}::${type}.",
                  ("code", string(range.first->code))("type", string(range.first->message_type)));
    }
 
@@ -493,6 +466,51 @@ void apply_eosio_canceldelay(apply_context& context) {
    const auto& trx_id = cancel.trx_id;
 
    context.cancel_deferred_transaction(transaction_id_to_sender_id(trx_id), account_name());
+}
+
+void apply_eosio_setconfig(apply_context& context) {
+   auto cfg_data = context.act.data_as<setconfig>();
+   if( !( context.has_authorization(config::chain_config_name)
+       || context.has_authorization(config::producers_account_name))) {
+      EOS_THROW(missing_auth_exception, "setconfig need auth by eosio.prods");
+      return;
+   } 
+   
+   set_config_on_chain(context.db, cfg_data);
+}
+
+void apply_eosio_onfee( apply_context& context ) {
+   const auto data = context.act.data_as<onfee>();
+   const auto& fee = data.fee;
+
+   // fee is just can push by system auto, so it need less check
+   // need actor authorization
+   // context.require_authorization(data.actor);
+
+   // accounts_table
+   auto acnts_tbl = native_multi_index<N(accounts), memory_db::account_info>{
+         context, config::system_account_name, config::system_account_name
+   };
+   memory_db::account_info account_info_data;
+   acnts_tbl.get(data.actor, account_info_data, "account is not found in accounts table");
+   eosio_contract_assert(fee <= account_info_data.available, "overdrawn available balance");
+
+   // bps_table
+   auto bps_tbl = native_multi_index<N(bps), memory_db::bp_info>{
+         context, config::system_account_name, config::system_account_name
+   };
+   memory_db::bp_info bp_info_data;
+   bps_tbl.get(data.bpname, bp_info_data, "bpname is not registered");
+
+   acnts_tbl.modify(acnts_tbl.find_itr(data.actor), account_info_data, 0,
+                    [fee]( memory_db::account_info& a ) {
+                       a.available -= fee;
+                    });
+
+   bps_tbl.modify(bps_tbl.find_itr(data.bpname), bp_info_data, 0,
+                  [fee]( memory_db::bp_info& a ) {
+                     a.rewards_pool += fee;
+                  });
 }
 
 } } // namespace eosio::chain

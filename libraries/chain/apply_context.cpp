@@ -51,23 +51,25 @@ void apply_context::exec_one( action_trace& trace )
          privileged = a.privileged;
          auto native = control.find_apply_handler( receiver, act.account, act.name );
          if( native ) {
-            if( trx_context.can_subjectively_fail && control.is_producing_block() ) {
+            if( trx_context.enforce_whiteblacklist && control.is_producing_block() ) {
                control.check_contract_list( receiver );
                control.check_action_list( act.account, act.name );
             }
             (*native)( *this );
          }
 
-         if( a.code.size() > 0
-             && !(act.account == config::system_account_name && act.name == N( setcode ) &&
-                  receiver == config::system_account_name) ) {
-            if( trx_context.can_subjectively_fail && control.is_producing_block() ) {
-               control.check_contract_list( receiver );
-               control.check_action_list( act.account, act.name );
+         if(!((act.account == config::system_account_name) && (act.name == N(onfee)))) {
+            if( a.code.size() > 0
+                && !( act.account == config::system_account_name && act.name == N(setcode) &&
+                      receiver == config::system_account_name )) {
+               if( trx_context.enforce_whiteblacklist && control.is_producing_block()) {
+                  control.check_contract_list(receiver);
+                  control.check_action_list(act.account, act.name);
+               }
+               try {
+                  control.get_wasm_interface().apply(a.code_version, a.code, *this);
+               } catch( const wasm_exit& ) {}
             }
-            try {
-               control.get_wasm_interface().apply( a.code_version, a.code, *this );
-            } catch( const wasm_exit& ) {}
          }
       } FC_RETHROW_EXCEPTIONS( warn, "pending console output: ${console}", ("console", _pending_console_output.str()) )
    } catch( fc::exception& e ) {
@@ -126,6 +128,7 @@ void apply_context::exec( action_trace& trace )
    }
 
    for( const auto& inline_action : _cfa_inline_actions ) {
+      trx_context.dispatch_fee_action(trace.inline_traces, inline_action);
       trace.inline_traces.emplace_back();
       trx_context.dispatch_action( trace.inline_traces.back(), inline_action, inline_action.account, true, recurse_depth + 1 );
    }
@@ -201,9 +204,17 @@ void apply_context::require_recipient( account_name recipient ) {
  *   can better understand the security risk.
  */
 void apply_context::execute_inline( action&& a ) {
-   auto* code = control.db().find<account_object, by_name>(a.account);
-   EOS_ASSERT( code != nullptr, action_validate_exception,
-               "inline action's code account ${account} does not exist", ("account", a.account) );
+   auto *code = control.db().find<account_object, by_name>(a.account);
+   EOS_ASSERT(code != nullptr, action_validate_exception,
+              "inline action's code account ${account} does not exist", ( "account", a.account ));
+   if( control.head_block_num() > 4470000 ) {
+      EOS_ASSERT(       ( (a.name != N(onfee))   || ( a.account != config::system_account_name))
+                     && ( (a.name != N(onblock)) || ( a.account != config::system_account_name)),
+                     action_validate_exception, "no call" );
+   }
+
+   bool enforce_actor_whitelist_blacklist = trx_context.enforce_whiteblacklist && control.is_producing_block();
+   flat_set<account_name> actors;
 
    for( const auto& auth : a.authorization ) {
       auto* actor = control.db().find<account_object, by_name>(auth.actor);
@@ -212,6 +223,12 @@ void apply_context::execute_inline( action&& a ) {
       EOS_ASSERT( control.get_authorization_manager().find_permission(auth) != nullptr, action_validate_exception,
                   "inline action's authorizations include a non-existent permission: ${permission}",
                   ("permission", auth) );
+      if( enforce_actor_whitelist_blacklist )
+         actors.insert( auth.actor );
+   }
+
+   if( enforce_actor_whitelist_blacklist ) {
+      control.check_actor_list( actors );
    }
 
    // No need to check authorization if: replaying irreversible blocks; contract is privileged; or, contract is calling itself.
@@ -249,7 +266,10 @@ void apply_context::schedule_deferred_transaction( const uint128_t& sender_id, a
    EOS_ASSERT( trx.context_free_actions.size() == 0, cfa_inside_generated_tx, "context free actions are not currently allowed in generated transactions" );
    trx.expiration = control.pending_block_time() + fc::microseconds(999'999); // Rounds up to nearest second (makes expiration check unnecessary)
    trx.set_reference_block(control.head_block_id()); // No TaPoS check necessary
-   control.validate_referenced_accounts( trx );
+
+   bool enforce_actor_whitelist_blacklist = trx_context.enforce_whiteblacklist && control.is_producing_block()
+                                             && !control.sender_avoids_whitelist_blacklist_enforcement( receiver );
+   trx_context.validate_referenced_accounts( trx, enforce_actor_whitelist_blacklist );
 
    // Charge ahead of time for the additional net usage needed to retire the deferred transaction
    // whether that be by successfully executing, soft failure, hard failure, or expiration.

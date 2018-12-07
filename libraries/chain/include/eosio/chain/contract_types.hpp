@@ -24,6 +24,21 @@ struct newaccount {
    }
 };
 
+struct setconfig {
+   account_name  typ;
+   int64_t       num = 0;
+   account_name  key; // TBD By FanYang will use for cfg future
+   asset         fee; // TBD By FanYang will use for cfg future
+
+   static account_name get_account() {
+      return config::system_account_name;
+   }
+
+   static action_name get_name() {
+      return N(setconfig);
+   }
+};
+
 struct setcode {
    account_name                     account;
    uint8_t                          vmtype = 0;
@@ -156,6 +171,20 @@ struct canceldelay {
    }
 };
 
+struct onfee {
+   account_name actor;
+   asset        fee;
+   account_name bpname;
+
+   static account_name get_account() {
+      return config::system_account_name;
+   }
+
+   static action_name get_name() {
+      return N(onfee);
+   }
+};
+
 struct onerror {
    uint128_t      sender_id;
    bytes          sent_trx;
@@ -175,6 +204,7 @@ struct onerror {
 } } /// namespace eosio::chain
 
 FC_REFLECT( eosio::chain::newaccount                       , (creator)(name)(owner)(active) )
+FC_REFLECT( eosio::chain::setconfig                        , (typ)(num)(key)(fee) )
 FC_REFLECT( eosio::chain::setcode                          , (account)(vmtype)(vmversion)(code) )
 FC_REFLECT( eosio::chain::setfee                           , (account)(action)(fee)(cpu_limit)(net_limit)(ram_limit) )
 FC_REFLECT( eosio::chain::setabi                           , (account)(abi) )
@@ -183,4 +213,5 @@ FC_REFLECT( eosio::chain::deleteauth                       , (account)(permissio
 FC_REFLECT( eosio::chain::linkauth                         , (account)(code)(type)(requirement) )
 FC_REFLECT( eosio::chain::unlinkauth                       , (account)(code)(type) )
 FC_REFLECT( eosio::chain::canceldelay                      , (canceling_auth)(trx_id) )
+FC_REFLECT( eosio::chain::onfee                            , (actor)(fee)(bpname) )
 FC_REFLECT( eosio::chain::onerror                          , (sender_id)(sent_trx) )

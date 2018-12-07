@@ -1008,6 +1008,10 @@ struct controller_impl {
          return trace;
       }
 
+      // is_onfee_act on early version eosforce we use a trx contain onfee act before do trx
+      // new version use a onfee act in the trx, when exec trx, a onfee action will do first
+      const auto is_onfee_act = is_func_has_open(self, config::func_typ::onfee_action);
+
       auto reset_in_trx_requiring_checks = fc::make_scoped_exit([old_value=in_trx_requiring_checks,this](){
          in_trx_requiring_checks = old_value;
       });
@@ -1027,7 +1031,9 @@ struct controller_impl {
           asset fee_ext = dtrx.fee;
 
          trx_context.init_for_deferred_trx( gtrx.published );
-         trx_context.make_limit_by_contract( fee_ext );
+         if(is_onfee_act) {
+            trx_context.make_limit_by_contract(fee_ext);
+         }
          trx_context.exec();
          trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
 

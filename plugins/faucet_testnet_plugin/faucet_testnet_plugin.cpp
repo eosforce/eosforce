@@ -4,7 +4,6 @@
  */
 #include <eosio/faucet_testnet_plugin/faucet_testnet_plugin.hpp>
 #include <eosio/chain_plugin/chain_plugin.hpp>
-#include <eosio/utilities/key_conversion.hpp>
 #include <eosio/chain/plugin_interface.hpp>
 #include <eosio/chain/txfee_manager.hpp>
 

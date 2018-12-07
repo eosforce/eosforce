@@ -387,7 +387,6 @@ namespace bacc = boost::accumulators;
       use_limit_by_contract = false;
       cpu_limit_by_contract = 0;
       net_limit_by_contract = 0;
-      ram_limit_by_contract = 0;
       auto calc_res_fee = fee_ext;
 
       // all setfee action calc sum res limit
@@ -412,7 +411,6 @@ namespace bacc = boost::accumulators;
             //      ("con", act.name)("cpu", info->cpu_limit)("net", info->net_limit)("ram", info->ram_limit));
             cpu_limit_by_contract += info->cpu_limit;
             net_limit_by_contract += info->net_limit;
-            ram_limit_by_contract += info->ram_limit;
          } else {
             // setfee with zero res limit
             // calc res limit like fee_ext
@@ -427,7 +425,6 @@ namespace bacc = boost::accumulators;
          //
          cpu_limit_by_contract += m * get_num_config_on_chain(db, config::res_typ::cpu_per_fee, 100);
          net_limit_by_contract += m * get_num_config_on_chain(db, config::res_typ::net_per_fee, 10000);
-         ram_limit_by_contract += m * get_num_config_on_chain(db, config::res_typ::ram_per_fee, 10);
       }
    }
 
@@ -441,7 +438,6 @@ namespace bacc = boost::accumulators;
          use_limit_by_contract = false;
          cpu_limit_by_contract = 0;
          net_limit_by_contract = 0;
-         ram_limit_by_contract = 0;
          return;
       }
 
@@ -456,7 +452,6 @@ namespace bacc = boost::accumulators;
          //      ("con", act.name)("cpu", info->cpu_limit)("net", info->net_limit)("ram", info->ram_limit));
          cpu_limit_by_contract = info->cpu_limit;
          net_limit_by_contract = info->net_limit;
-         ram_limit_by_contract = info->ram_limit;
       } else {
          // setfee with zero res limit
          // calc res limit like fee_ext
@@ -467,12 +462,11 @@ namespace bacc = boost::accumulators;
          //
          cpu_limit_by_contract = m * get_num_config_on_chain(db, config::res_typ::cpu_per_fee, 100);
          net_limit_by_contract = m * get_num_config_on_chain(db, config::res_typ::net_per_fee, 10000);
-         ram_limit_by_contract = m * get_num_config_on_chain(db, config::res_typ::ram_per_fee, 10);
       }
 
       dlog("limit res ${acc}:${act} ${fee} ${cpu},${net},${ram}",
             ("acc", act.account)("act", act.name)
-            ("fee", info->fee)("cpu", cpu_limit_by_contract)("net", net_limit_by_contract)("ram", ram_limit_by_contract));
+            ("fee", info->fee)("cpu", cpu_limit_by_contract)("net", net_limit_by_contract));
    }
 
    const action transaction_context::mk_fee_action( const action& act ) {
@@ -709,15 +703,6 @@ namespace bacc = boost::accumulators;
       rl.add_pending_ram_usage( account, ram_delta );
       if( ram_delta > 0 ) {
          validate_ram_usage.insert( account );
-      }
-
-      // for ram test one trx
-      ram_used_by_trx += ram_delta;
-
-      if(use_limit_by_contract){
-         EOS_ASSERT(((ram_used_by_trx < 0) || (static_cast<uint64_t >(ram_used_by_trx) <= ram_limit_by_contract)), ram_usage_exceeded,
-               "account ${acc} limit contract use too much ram ${r} ${m}",
-               ("acc", account)("r", ram_used_by_trx)("m", ram_limit_by_contract));
       }
    }
 

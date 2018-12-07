@@ -139,8 +139,6 @@ namespace eosio { namespace chain {
          // limit by contract tmp imp, will del when new res manager complate
          uint64_t cpu_limit_by_contract = 0;
          uint64_t net_limit_by_contract = 0;
-         uint64_t ram_limit_by_contract = 0;
-         int64_t ram_used_by_trx = 0;
          bool use_limit_by_contract = false;
 
          deadline_timer                _deadline_timer;

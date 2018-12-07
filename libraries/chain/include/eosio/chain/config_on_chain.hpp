@@ -20,8 +20,6 @@ namespace config{
    namespace res_typ{
       static const auto cpu_per_fee = N(res.cpufee);
       static const auto net_per_fee = N(res.netfee);
-      static const auto ram_per_fee = N(res.ramfee);
-
       static const auto free_ram_per_account = N(res.freeram);
       static const auto ram_rent_b_per_eos   = N(res.ramrent);
    };
@@ -29,9 +27,7 @@ namespace config{
    namespace func_typ{
       static const auto vote_for_ram = N(f.ram4vote);
       static const auto onfee_action = N(f.onfeeact);
-
       static const auto use_system01 = N(f.system1);
-      static const auto use_system02 = N(f.system2);
       static const auto use_msig     = N(f.msig);
       static const auto use_eosio_prods     = N(f.prods);
    }

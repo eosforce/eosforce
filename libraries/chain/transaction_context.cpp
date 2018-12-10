@@ -458,8 +458,8 @@ namespace bacc = boost::accumulators;
          //
          // For First version we just use const value for main net stable
          //
-         cpu_limit_by_act = m * get_num_config_on_chain(db, config::res_typ::cpu_per_fee, 100);
-         net_limit_by_act = m * get_num_config_on_chain(db, config::res_typ::net_per_fee, 10000);
+         cpu_limit_by_act = m * get_num_config_on_chain(db, config::res_typ::cpu_per_fee, 200);
+         net_limit_by_act = m * get_num_config_on_chain(db, config::res_typ::net_per_fee, 512);
       }
 
       cpu_limit_by_contract += cpu_limit_by_act;

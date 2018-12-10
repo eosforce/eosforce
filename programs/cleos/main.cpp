@@ -3477,6 +3477,26 @@ int main( int argc, char** argv ) {
    auto unfreeze = vote_producer_unfreeze_subcommand(voteProducer);
    //auto listProducers = list_producers_subcommand(system);
 
+     string bp_name;
+   auto set_or_cancle_emergency = [&](const bool bSet) {
+      auto args = fc::mutable_variant_object()
+         ("bpname", bp_name)
+         ("emergency", bSet);
+
+      auto accountPermissions = vector<permission_level>{{bp_name, config::active_name}};
+      send_actions({chain::action{accountPermissions, "eosio", "setemergency", variant_to_bin( N(eosio), N(setemergency), args ) }});
+   };
+
+   auto setemergency = system->add_subcommand("setemergency", localized("Setting the status of the chain is an emergency"));
+   add_standard_transaction_options(setemergency);
+   setemergency->add_option("bp_name", bp_name, localized("bp name (string)"))->required();
+   setemergency->set_callback([&] { set_or_cancle_emergency(true); });
+
+   auto cancleemergency = system->add_subcommand("cancleemergency", localized("Setting the status of the chain is an emergency"));
+   add_standard_transaction_options(cancleemergency);
+   cancleemergency->add_option("bp_name", bp_name, localized("bp name (string)"))->required();
+   cancleemergency->set_callback([&] { set_or_cancle_emergency(false); });
+
    auto listbps = list_bp_subcommand(system);
 
    //auto regProxy = regproxy_subcommand(system);

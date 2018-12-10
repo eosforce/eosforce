@@ -570,14 +570,9 @@ namespace bacc = boost::accumulators;
       if(use_limit_by_contract) {
          EOS_ASSERT(billed_cpu_time_us <= cpu_limit_by_contract, transaction_exception,
                "cpu limit by contract ${c} ${m}", ("c", billed_cpu_time_us)("m", cpu_limit_by_contract));
-         if(is_fee_action) {
-            EOS_ASSERT(net_usage <= net_limit_by_contract, transaction_exception, "net limit by contract ${c} ${m}",
-                       ("c", net_usage)("m", net_limit_by_contract));
-         }else{
-            // keep
-            EOS_ASSERT(net_limit <= net_limit_by_contract, transaction_exception, "net limit by contract ${c} ${m}",
-                       ("c", net_limit)("m", net_limit_by_contract));
-         }
+         EOS_ASSERT(net_usage <= net_limit_by_contract, transaction_exception, "net limit by contract ${c} ${m}",
+               ("c", net_usage)("m", net_limit_by_contract));
+
       }
 
       rl.add_transaction_usage( bill_to_accounts, static_cast<uint64_t>(billed_cpu_time_us), net_usage,

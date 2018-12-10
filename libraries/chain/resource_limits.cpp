@@ -298,12 +298,12 @@ inline int64_t get_account_ram_limit( database& db, const account_name& name, co
       return init_ram_size;
    }
 
-   // default is 1 eos for 1kb
-   const int64_t ram_rent = get_num_config_on_chain(db, config::res_typ::ram_rent_b_per_eos, 1024);
+   // default is 100 eos for 10kb
+   const int64_t ram_rent = get_num_config_on_chain(db, config::res_typ::ram_rent_b_per_eos, 10240);
    const int64_t staked   = vote_info.staked.get_amount();
 
    // 1 eos for 1 kb, note because staked cannot too much by limit
-   const auto res = ((staked * ram_rent) / 10000);
+   const auto res = ((staked * ram_rent) / 1000000);
 
    return res + init_ram_size;
 }

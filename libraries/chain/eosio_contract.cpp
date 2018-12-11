@@ -94,6 +94,15 @@ void apply_eosio_newaccount(apply_context& context) {
    const auto &creator = db.get<account_object, by_name>(create.creator);
    EOS_ASSERT(!creator.privileged, action_validate_exception, "not support privileged accounts");
 
+
+   if(    is_func_has_open(context.control, config::func_typ::onfee_action)
+       && (create.creator != config::system_account_name)
+       && (create.creator != config::producers_account_name)
+       && (create.creator != config::chain_config_name) ) {
+      EOS_ASSERT( name_str.find( "force." ) != 0, action_validate_exception,
+                  "only privileged accounts can have names that start with 'force.'" );
+   }
+
    auto existing_account = db.find<account_object, by_name>(create.name);
    EOS_ASSERT(existing_account == nullptr, account_name_exists_exception,
               "Cannot create account named ${name}, as that name is already taken",
@@ -308,6 +317,8 @@ void apply_eosio_updateauth(apply_context& context) {
    EOS_ASSERT(!update.permission.empty(), action_validate_exception, "Cannot create authority with empty name");
    EOS_ASSERT( update.permission.to_string().find( "eosio." ) != 0, action_validate_exception,
                "Permission names that start with 'eosio.' are reserved" );
+   EOS_ASSERT( update.permission.to_string().find( "force." ) != 0, action_validate_exception,
+               "Permission names that start with 'force.' are reserved" );
    EOS_ASSERT(update.permission != update.parent, action_validate_exception, "Cannot set an authority as its own parent");
    db.get<account_object, by_name>(update.account);
    EOS_ASSERT(validate(update.auth), action_validate_exception,

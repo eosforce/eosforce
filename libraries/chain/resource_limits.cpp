@@ -271,7 +271,7 @@ bool resource_limits_manager::set_account_limits( const account_name& account, i
    return decreased_limit;
 }
 
-inline int64_t get_account_ram_limit( database& db, const account_name& name, const int64_t ram_bytes ) {
+inline int64_t get_account_ram_limit( database& db, const account_name& name ) {
    // every account can use 8k ram free default
    const int64_t init_ram_size = get_num_config_on_chain(db, config::res_typ::free_ram_per_account, 8*1024);
    // if is account by system use ram unlimit,
@@ -298,12 +298,12 @@ inline int64_t get_account_ram_limit( database& db, const account_name& name, co
       return init_ram_size;
    }
 
-   // default is 1 eos for 1kb
-   const int64_t ram_rent = get_num_config_on_chain(db, config::res_typ::ram_rent_b_per_eos, 1024);
+   // default is 100 eos for 10kb
+   const int64_t ram_rent = get_num_config_on_chain(db, config::res_typ::ram_rent_b_per_eos, 10240);
    const int64_t staked   = vote_info.staked.get_amount();
 
    // 1 eos for 1 kb, note because staked cannot too much by limit
-   const auto res = ((staked * ram_rent) / 10000);
+   const auto res = ((staked * ram_rent) / 1000000);
 
    return res + init_ram_size;
 }
@@ -311,12 +311,12 @@ inline int64_t get_account_ram_limit( database& db, const account_name& name, co
 void resource_limits_manager::get_account_limits( const account_name& account, int64_t& ram_bytes, int64_t& net_weight, int64_t& cpu_weight ) const {
    const auto* pending_buo = _db.find<resource_limits_object,by_owner>( boost::make_tuple(true, account) );
    if (pending_buo) {
-      ram_bytes = get_account_ram_limit( _db, account, pending_buo->ram_bytes );
+      ram_bytes = get_account_ram_limit( _db, account );
       net_weight = pending_buo->net_weight;
       cpu_weight = pending_buo->cpu_weight;
    } else {
       const auto& buo = _db.get<resource_limits_object,by_owner>( boost::make_tuple( false, account ) );
-      ram_bytes = get_account_ram_limit( _db, account, buo.ram_bytes );
+      ram_bytes = get_account_ram_limit( _db, account );
       net_weight = buo.net_weight;
       cpu_weight = buo.cpu_weight;
    }

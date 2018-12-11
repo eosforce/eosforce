@@ -1372,13 +1372,11 @@ struct controller_impl {
    void check_func_open() {
       // when on the specific block : load new System contract
       if( is_func_open_in_curr_block( self, config::func_typ::use_system01, 3385100 ) ) {
-         ilog("update System contract");
          initialize_contract(config::system_account_name, conf.System01_code, conf.System01_abi, true);
       }
 
       // when on the specific block : load eosio.msig contract
       if( is_func_open_in_curr_block( self, config::func_typ::use_msig, 4356456 ) ) {
-         ilog("update eosio.msig contract");
          initialize_contract(config::msig_account_name, conf.msig_code, conf.msig_abi, true);
       }
 

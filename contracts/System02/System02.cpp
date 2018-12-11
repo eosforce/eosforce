@@ -185,6 +185,7 @@ namespace eosiosystem {
          });
       }
 
+      set_need_check_ram_limit( voter );
    }
 
    void system_contract::unfreezeram( const account_name voter, const account_name bpname ) {

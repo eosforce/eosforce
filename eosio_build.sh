@@ -285,23 +285,21 @@
 
    TIME_END=$(( $(date -u +%s) - ${TIME_BEGIN} ))
 
-   printf "\n\n${bldred}\t _______  _______  _______ _________ _______\n"
-   printf '\t(  ____ \(  ___  )(  ____ \\\\__   __/(  ___  )\n'
-   printf "\t| (    \/| (   ) || (    \/   ) (   | (   ) |\n"
-   printf "\t| (__    | |   | || (_____    | |   | |   | |\n"
-   printf "\t|  __)   | |   | |(_____  )   | |   | |   | |\n"
-   printf "\t| (      | |   | |      ) |   | |   | |   | |\n"
-   printf "\t| (____/\| (___) |/\____) |___) (___| (___) |\n"
-   printf "\t(_______/(_______)\_______)\_______/(_______)\n${txtrst}"
+   printf "\n\n${bldred}\t _______  _______  _______  _______  _______  _______  _______  _______ \n"
+   printf '\t(  ____ \(  ___  )(  ____ \(  ____ \(  ___  )(  ____ )(  ____ \(  ____ \ \n'
+   printf "\t| (    \/| (   ) || (    \/| (    \/| (   ) || (    )|| (    \/| (    \/ \n"
+   printf "\t| (__    | |   | || (_____ | (__    | |   | || (____)|| |      | (__     \n"
+   printf "\t|  __)   | |   | |(_____  )|  __)   | |   | ||     __)| |      |  __)    \n"
+   printf "\t| (      | |   | |      ) || (      | |   | || (\ (   | |      | (       \n"
+   printf "\t| (____/\| (___) |/\____) || )      | (___) || ) \ \__| (____/\| (____/\ \n"
+   printf "\t(_______/(_______)\_______)|/       (_______)|/   \__/(_______/(_______/ \n${txtrst}"
 
-   printf "\\n\\tEOSIO has been successfully built. %02d:%02d:%02d\\n\\n" $(($TIME_END/3600)) $(($TIME_END%3600/60)) $(($TIME_END%60))
+   printf "\\n\\tEOSForce has been successfully built. %02d:%02d:%02d\\n\\n" $(($TIME_END/3600)) $(($TIME_END%3600/60)) $(($TIME_END%60))
    printf "\\tTo verify your installation run the following commands:\\n"
 
    print_instructions
 
    printf "\\tFor more information:\\n"
-   printf "\\tEOSIO website: https://eos.io\\n"
-   printf "\\tEOSIO Telegram channel @ https://t.me/EOSProject\\n"
-   printf "\\tEOSIO resources: https://eos.io/resources/\\n"
-   printf "\\tEOSIO Stack Exchange: https://eosio.stackexchange.com\\n"
-   printf "\\tEOSIO wiki: https://github.com/EOSIO/eos/wiki\\n\\n\\n"
+   printf "\\tEOSForce website: https://www.eosforce.io\\n"
+   printf "\\tEOSForce Telegram channel @ https://t.me/eosforce_en\\n"
+   printf "\\tEOSForce wiki: https://eosforce.github.io/Documentation/\\n\\n\\n"

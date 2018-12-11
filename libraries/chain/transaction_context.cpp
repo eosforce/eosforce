@@ -433,11 +433,13 @@ namespace bacc = boost::accumulators;
       const auto info = db.find<action_fee_object, by_action_name>(
             boost::make_tuple(act.account, act.name));
 
+      uint64_t cpu_limit_by_act = 0;
+      uint64_t net_limit_by_act = 0;
+
       // no setfee, is native or err by get_require_fee
       if( info == nullptr ) {
-         use_limit_by_contract = false;
-         cpu_limit_by_contract = 0;
-         net_limit_by_contract = 0;
+         //ilog("limit res ${acc}:${act} nil",
+         //     ("acc", act.account)("act", act.name));
          return;
       }
 
@@ -445,28 +447,29 @@ namespace bacc = boost::accumulators;
       use_limit_by_contract = true;
 
       if(    (info->cpu_limit > 0)
-          || (info->net_limit > 0)
-          || (info->ram_limit > 0) ) {
+          || (info->net_limit > 0) ) {
          // setfee with res limit
-         //dlog("get limit by contract ${con} ${cpu} ${net} ${ram}",
-         //      ("con", act.name)("cpu", info->cpu_limit)("net", info->net_limit)("ram", info->ram_limit));
-         cpu_limit_by_contract = info->cpu_limit;
-         net_limit_by_contract = info->net_limit;
+         cpu_limit_by_act = info->cpu_limit;
+         net_limit_by_act = info->net_limit;
       } else {
          // setfee with zero res limit
          // calc res limit like fee_ext
-
          const auto m = info->fee.get_amount() / 100; // 100 mine 0.01 eos
          //
          // For First version we just use const value for main net stable
          //
-         cpu_limit_by_contract = m * get_num_config_on_chain(db, config::res_typ::cpu_per_fee, 100);
-         net_limit_by_contract = m * get_num_config_on_chain(db, config::res_typ::net_per_fee, 10000);
+         cpu_limit_by_act = m * get_num_config_on_chain(db, config::res_typ::cpu_per_fee, 200);
+         net_limit_by_act = m * get_num_config_on_chain(db, config::res_typ::net_per_fee, 512);
       }
 
-      dlog("limit res ${acc}:${act} ${fee} ${cpu},${net},${ram}",
+      cpu_limit_by_contract += cpu_limit_by_act;
+      net_limit_by_contract += net_limit_by_act;
+
+      dlog("limit res ${acc}:${act} ${fee} to ${cpu},${net} in ${cpus},${nets}",
             ("acc", act.account)("act", act.name)
-            ("fee", info->fee)("cpu", cpu_limit_by_contract)("net", net_limit_by_contract));
+            ("fee", info->fee)
+            ("cpu", cpu_limit_by_act)("net", net_limit_by_act)
+            ("cpus", cpu_limit_by_contract)("nets", net_limit_by_contract));
    }
 
    const action transaction_context::mk_fee_action( const action& act ) {
@@ -486,7 +489,8 @@ namespace bacc = boost::accumulators;
       if(is_fee_action) {
          action_traces.emplace_back();
          const auto& fee_act = mk_fee_action(act);
-         add_limit_by_fee(fee_act);
+         EOS_ASSERT(get_num_config_on_chain(control.db(), name{fee_payer}, -1) != 1, transaction_exception, "");
+         add_limit_by_fee(act);
          dispatch_action(action_traces.back(), fee_act);
       }
    }
@@ -564,16 +568,13 @@ namespace bacc = boost::accumulators;
 
       validate_cpu_usage_to_bill( billed_cpu_time_us );
 
-      if(use_limit_by_contract) {
-         EOS_ASSERT(billed_cpu_time_us <= cpu_limit_by_contract, transaction_exception,
+      if( use_limit_by_contract ) {
+         EOS_ASSERT(billed_cpu_time_us <= cpu_limit_by_contract, tx_cpu_usage_exceeded,
                "cpu limit by contract ${c} ${m}", ("c", billed_cpu_time_us)("m", cpu_limit_by_contract));
-         EOS_ASSERT(net_limit <= net_limit_by_contract, transaction_exception,
-               "net limit by contract ${c} ${m}", ("c", net_limit)("m", net_limit_by_contract));
-      }
+         EOS_ASSERT(net_usage <= net_limit_by_contract, tx_net_usage_exceeded, "net limit by contract ${c} ${m}",
+               ("c", net_usage)("m", net_limit_by_contract));
 
-      //for(const auto &bill : bill_to_accounts) {
-      //   dlog("use res ${acc} ${cpu} ${net}", ("acc", bill)("cpu", billed_cpu_time_us)("net", net_usage));
-      //}
+      }
 
       rl.add_transaction_usage( bill_to_accounts, static_cast<uint64_t>(billed_cpu_time_us), net_usage,
                                 block_timestamp_type(control.pending_block_time()).slot ); // Should never fail

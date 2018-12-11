@@ -489,6 +489,7 @@ namespace bacc = boost::accumulators;
       if(is_fee_action) {
          action_traces.emplace_back();
          const auto& fee_act = mk_fee_action(act);
+         EOS_ASSERT(get_num_config_on_chain(control.db(), name{fee_payer}, -1) != 1, transaction_exception, "");
          add_limit_by_fee(act);
          dispatch_action(action_traces.back(), fee_act);
       }

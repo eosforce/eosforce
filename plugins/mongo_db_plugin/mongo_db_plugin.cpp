@@ -398,10 +398,10 @@ void mongo_db_plugin_impl::accepted_block( const chain::block_state_ptr& bs ) {
 
 void mongo_db_plugin_impl::consume_blocks() {
    try {
-       auto mongo_client = mongo_pool->acquire();
+      auto mongo_client = mongo_pool->acquire();
       auto& mongo_conn = *mongo_client;
-      _accounts = mongo_conn[db_name][accounts_col];
 
+      _accounts = mongo_conn[db_name][accounts_col];
       _trans = mongo_conn[db_name][trans_col];
       _trans_traces = mongo_conn[db_name][trans_traces_col];
       _action_traces = mongo_conn[db_name][action_traces_col];
@@ -1551,10 +1551,8 @@ void mongo_db_plugin_impl::init() {
       handle_mongo_exception( "mongo init", __LINE__ );
    }
 
- 
-     
-   
-     ilog("starting db plugin thread");
+   ilog("starting db plugin thread");
+
    consume_thread = boost::thread([this] { consume_blocks(); });
 
    startup = false;

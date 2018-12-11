@@ -567,10 +567,10 @@ namespace bacc = boost::accumulators;
 
       validate_cpu_usage_to_bill( billed_cpu_time_us );
 
-      if(use_limit_by_contract) {
-         EOS_ASSERT(billed_cpu_time_us <= cpu_limit_by_contract, transaction_exception,
+      if( use_limit_by_contract ) {
+         EOS_ASSERT(billed_cpu_time_us <= cpu_limit_by_contract, tx_cpu_usage_exceeded,
                "cpu limit by contract ${c} ${m}", ("c", billed_cpu_time_us)("m", cpu_limit_by_contract));
-         EOS_ASSERT(net_usage <= net_limit_by_contract, transaction_exception, "net limit by contract ${c} ${m}",
+         EOS_ASSERT(net_usage <= net_limit_by_contract, tx_net_usage_exceeded, "net limit by contract ${c} ${m}",
                ("c", net_usage)("m", net_limit_by_contract));
 
       }

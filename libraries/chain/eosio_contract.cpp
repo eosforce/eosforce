@@ -250,10 +250,6 @@ void apply_eosio_setfee(apply_context& context) {
    EOS_ASSERT(act.fee.get_amount() <= (200 * 10000),
          invalid_action_args_exception, "fee can not too mush, more then 200.0000 EOS");
 
-   ilog("apply_eosio_setfee ${acc} ${fee} ${act} limit ${cpu},${net},${ram}",
-         ("acc", act.account)("fee", act.fee)("act", act.action)
-         ("cpu", act.cpu_limit)("net", act.net_limit)("ram", act.ram_limit));
-
    // warning
    const auto key = boost::make_tuple(act.account, act.action);
    auto fee_old = db.find<chain::action_fee_object, chain::by_action_name>(key);

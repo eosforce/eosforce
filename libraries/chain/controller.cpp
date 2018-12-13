@@ -824,8 +824,8 @@ struct controller_impl {
       create_native_account( config::token_account_name, system_auth, system_auth, false );
       create_native_account( config::eoslock_account_name, system_auth, system_auth, false );
 
-      initialize_contract( config::system_account_name, conf.genesis.code, conf.genesis.abi, true );
-      initialize_contract( config::token_account_name, conf.genesis.token_code, conf.genesis.token_abi );
+      initialize_contract( config::system_account_name, conf.System_code, conf.System_abi, true );
+      initialize_contract( config::token_account_name, conf.token_code, conf.token_abi );
       initialize_eos_stats();
       initialize_contract(config::eoslock_account_name, conf.lock_code, conf.lock_abi);
 

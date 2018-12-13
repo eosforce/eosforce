@@ -576,8 +576,8 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       const auto active_account_file = app().config_dir() / "activeacc.json";
       my->chain_config->active_initial_account_list = fc::json::from_file(active_account_file).as<std::vector<account_tuple>>();
 
-      load_contract_code_abi("System", my->chain_config->genesis.code, my->chain_config->genesis.abi);
-      load_contract_code_abi("eosio.token", my->chain_config->genesis.token_code, my->chain_config->genesis.token_abi);
+      load_contract_code_abi("System", my->chain_config->System_code, my->chain_config->System_abi);
+      load_contract_code_abi("eosio.token", my->chain_config->token_code, my->chain_config->token_abi);
       load_contract_code_abi("eosio.msig", my->chain_config->msig_code, my->chain_config->msig_abi);
 
       // load new System contract

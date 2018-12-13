@@ -56,7 +56,7 @@ struct permission {
 template<typename>
 struct resolver_factory;
 
-// see specialization for uint64_t in source file
+// see specializations for uint64_t and double in source file
 template<typename Type>
 Type convert_to_type(const string& str, const string& desc) {
    try {
@@ -66,6 +66,9 @@ Type convert_to_type(const string& str, const string& desc) {
 
 template<>
 uint64_t convert_to_type(const string& str, const string& desc);
+
+template<>
+double convert_to_type(const string& str, const string& desc);
 
 class read_only {
    const controller& db;
@@ -280,6 +283,8 @@ public:
       string      key_type;  // type of key specified by index_position
       string      index_position; // 1 - primary (first), 2 - secondary index (in order defined by multi_index), 3 - third index, etc
       string      encode_type{"dec"}; //dec, hex , default=dec
+      optional<bool>  reverse;
+      optional<bool>  show_payer; // show RAM pyer
     };
 
    struct get_table_rows_result {
@@ -295,6 +300,7 @@ public:
       string      lower_bound; // lower bound of scope, optional
       string      upper_bound; // upper bound of scope, optional
       uint32_t    limit = 10;
+      optional<bool>  reverse;
    };
    struct get_table_by_scope_result_row {
       name        code;
@@ -502,7 +508,7 @@ public:
       abi_serializer abis;
       abis.set_abi(abi, abi_serializer_max_time);
       const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(p.code, scope, p.table));
-      if (t_id != nullptr) {
+      if( t_id != nullptr ) {
          const auto& idx = d.get_index<IndexType, chain::by_scope_primary>();
          decltype(t_id->id) next_tid(t_id->id._id + 1);
          auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
@@ -671,7 +677,7 @@ public:
    void plugin_shutdown();
 
    chain_apis::read_only get_read_only_api() const { return chain_apis::read_only(chain(), get_abi_serializer_max_time()); }
-   chain_apis::read_write get_read_write_api();
+   chain_apis::read_write get_read_write_api() { return chain_apis::read_write(chain(), get_abi_serializer_max_time()); }
 
    void accept_block( const chain::signed_block_ptr& block );
    void accept_transaction(const chain::packed_transaction& trx, chain::plugin_interface::next_function<chain::transaction_trace_ptr> next);
@@ -721,10 +727,10 @@ FC_REFLECT(eosio::chain_apis::read_only::get_block_header_state_params, (block_n
 
 FC_REFLECT( eosio::chain_apis::read_write::push_transaction_results, (transaction_id)(processed) )
 
-FC_REFLECT( eosio::chain_apis::read_only::get_table_rows_params, (json)(code)(scope)(table)(table_key)(lower_bound)(upper_bound)(limit)(key_type)(index_position)(encode_type) )
+FC_REFLECT( eosio::chain_apis::read_only::get_table_rows_params, (json)(code)(scope)(table)(table_key)(lower_bound)(upper_bound)(limit)(key_type)(index_position)(encode_type)(reverse)(show_payer) )
 FC_REFLECT( eosio::chain_apis::read_only::get_table_rows_result, (rows)(more) );
 
-FC_REFLECT( eosio::chain_apis::read_only::get_table_by_scope_params, (code)(table)(lower_bound)(upper_bound)(limit) )
+FC_REFLECT( eosio::chain_apis::read_only::get_table_by_scope_params, (code)(table)(lower_bound)(upper_bound)(limit)(reverse) )
 FC_REFLECT( eosio::chain_apis::read_only::get_table_by_scope_result_row, (code)(scope)(table)(payer)(count));
 FC_REFLECT( eosio::chain_apis::read_only::get_table_by_scope_result, (rows)(more) );
 

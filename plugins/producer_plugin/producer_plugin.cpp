@@ -285,18 +285,22 @@ class producer_plugin_impl : public std::enable_shared_from_this<producer_plugin
       };
 
       void on_incoming_block(const signed_block_ptr& block) {
-         fc_dlog(_log, "received incoming block ${id}", ("id", block->id()));
+         auto id = block->id();
 
-         EOS_ASSERT( block->timestamp < (fc::time_point::now() + fc::seconds(7)), block_from_the_future, "received a block from the future, ignoring it" );
+         fc_dlog(_log, "received incoming block ${id}", ("id", id));
 
          EOS_ASSERT( block->transactions.size() <= config::block_max_tx_num, tx_too_much, "block txs must less than config::block_max_tx_num");
+         EOS_ASSERT( block->timestamp < (fc::time_point::now() + fc::seconds( 7 )), block_from_the_future,
+                     "received a block from the future, ignoring it: ${id}", ("id", id) );
 
          chain::controller& chain = app().get_plugin<chain_plugin>().chain();
 
          /* de-dupe here... no point in aborting block if we already know the block */
-         auto id = block->id();
          auto existing = chain.fetch_block_by_id( id );
          if( existing ) { return; }
+
+         // start processing of block
+         auto bsf = chain.create_block_state_future( block );
 
          // abort the pending block
          chain.abort_block();
@@ -309,7 +313,7 @@ class producer_plugin_impl : public std::enable_shared_from_this<producer_plugin
          // push the new block
          bool except = false;
          try {
-            chain.push_block(block);
+            chain.push_block( bsf );
          } catch ( const guard_exception& e ) {
             app().get_plugin<chain_plugin>().handle_guard_exception(e);
             return;
@@ -863,7 +867,6 @@ producer_plugin::whitelist_blacklist producer_plugin::get_whitelist_blacklist() 
 }
 
 void producer_plugin::set_whitelist_blacklist(const producer_plugin::whitelist_blacklist& params) {
-   EOS_THROW( whitelist_blacklist_exception, "not support whitelist and blacklist" );
    chain::controller& chain = app().get_plugin<chain_plugin>().chain();
    if(params.actor_whitelist.valid()) chain.set_actor_whitelist(*params.actor_whitelist);
    if(params.actor_blacklist.valid()) chain.set_actor_blacklist(*params.actor_blacklist);

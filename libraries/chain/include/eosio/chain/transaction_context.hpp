@@ -38,6 +38,9 @@ namespace eosio { namespace chain {
 
          void init_for_deferred_trx( fc::time_point published );
 
+         // make_fee_act insert onfee act in trx
+         void make_fee_act( const asset& require_fee, const account_name& producer );
+
          void exec();
          void finalize();
          void squash();
@@ -56,10 +59,17 @@ namespace eosio { namespace chain {
 
          std::tuple<int64_t, int64_t, bool, bool> max_bandwidth_billed_accounts_can_pay( bool force_elastic_limits = false )const;
 
+         void validate_referenced_accounts( const transaction& trx, bool enforce_actor_whitelist_blacklist )const;
+
       private:
 
          friend struct controller_impl;
          friend class apply_context;
+
+         const action mk_fee_action( const action& act );
+         void dispatch_fee_action( vector<action_trace>& trace, const action& act );
+         void make_limit_by_contract( const asset &fee_ext );
+         void add_limit_by_fee( const action &act );
 
          void add_ram_usage( account_name account, int64_t ram_delta );
 
@@ -95,12 +105,16 @@ namespace eosio { namespace chain {
          fc::microseconds              delay;
          bool                          is_input           = false;
          bool                          apply_context_free = true;
-         bool                          can_subjectively_fail = true;
+         bool                          enforce_whiteblacklist = true;
 
          fc::time_point                deadline = fc::time_point::maximum();
          fc::microseconds              leeway = fc::microseconds(3000);
          int64_t                       billed_cpu_time_us = 0;
          bool                          explicit_billed_cpu_time = false;
+
+         bool                          is_fee_action = false;
+         account_name                  fee_payer;
+         account_name                  bp_name;
 
       private:
          bool                          is_initialized = false;
@@ -127,11 +141,8 @@ namespace eosio { namespace chain {
          // limit by contract tmp imp, will del when new res manager complate
          uint64_t cpu_limit_by_contract = 0;
          uint64_t net_limit_by_contract = 0;
-         uint64_t ram_limit_by_contract = 0;
-         int64_t ram_used_by_trx = 0;
          bool use_limit_by_contract = false;
 
-         void make_limit_by_contract(const asset &fee_ext);
          deadline_timer                _deadline_timer;
    };
 

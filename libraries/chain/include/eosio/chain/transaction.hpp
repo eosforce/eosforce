@@ -10,6 +10,7 @@
 #include <numeric>
 
 namespace eosio { namespace chain {
+
    /**
     *  The transaction header contains the fixed-sized data
     *  associated with each transaction. It is separated from

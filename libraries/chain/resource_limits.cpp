@@ -5,6 +5,8 @@
 #include <eosio/chain/transaction.hpp>
 #include <boost/tuple/tuple_io.hpp>
 #include <eosio/chain/database_utils.hpp>
+#include <eosio/chain/memory_db.hpp>
+#include <eosio/chain/config_on_chain.hpp>
 #include <algorithm>
 
 namespace eosio { namespace chain { namespace resource_limits {
@@ -269,15 +271,52 @@ bool resource_limits_manager::set_account_limits( const account_name& account, i
    return decreased_limit;
 }
 
+inline int64_t get_account_ram_limit( database& db, const account_name& name ) {
+   // every account can use 8k ram free default
+   const int64_t init_ram_size = get_num_config_on_chain(db, config::res_typ::free_ram_per_account, 8*1024);
+   // if is account by system use ram unlimit,
+   // if is a common account with -1 ram limit use init limit
+   if(    name == config::system_account_name
+       || name == N(force.ram) // keep for some func
+       || name == N(force.cpu) // keep for some func
+       || name == N(force.net) // keep for some func
+       || name == N(force.test) // keep for some func
+       || name == config::token_account_name
+       || name == config::msig_account_name
+       || name == config::bios_account_name ) {
+      return -1;
+   }
+
+   memory_db::vote4ram_info vote_info;
+   const auto ok = memory_db{db}.get(
+         config::system_account_name,
+         config::system_account_name,
+         N(vote4ramsum),
+         name, vote_info);
+
+   if(!ok) {
+      return init_ram_size;
+   }
+
+   // default is 100 eos for 10kb
+   const int64_t ram_rent = get_num_config_on_chain(db, config::res_typ::ram_rent_b_per_eos, 10240);
+   const int64_t staked   = vote_info.staked.get_amount();
+
+   // 1 eos for 1 kb, note because staked cannot too much by limit
+   const auto res = ((staked * ram_rent) / 1000000);
+
+   return res + init_ram_size;
+}
+
 void resource_limits_manager::get_account_limits( const account_name& account, int64_t& ram_bytes, int64_t& net_weight, int64_t& cpu_weight ) const {
    const auto* pending_buo = _db.find<resource_limits_object,by_owner>( boost::make_tuple(true, account) );
    if (pending_buo) {
-      ram_bytes  = pending_buo->ram_bytes;
+      ram_bytes = get_account_ram_limit( _db, account );
       net_weight = pending_buo->net_weight;
       cpu_weight = pending_buo->cpu_weight;
    } else {
       const auto& buo = _db.get<resource_limits_object,by_owner>( boost::make_tuple( false, account ) );
-      ram_bytes  = buo.ram_bytes;
+      ram_bytes = get_account_ram_limit( _db, account );
       net_weight = buo.net_weight;
       cpu_weight = buo.cpu_weight;
    }

@@ -216,6 +216,23 @@
          {"name":"canceling_auth", "type":"permission_level"},
          {"name":"trx_id",         "type":"transaction_id_type"}
        ]
+     },{
+       "name": "setconfig",
+       "base": "",
+       "fields": [
+         {"name":"typ",  "type":"account_name"},
+         {"name":"num",  "type":"int64"},
+         {"name":"key",  "type":"account_name"},
+         {"name":"fee",  "type":"asset"}
+       ]
+     },{
+       "name": "onfee",
+       "base": "",
+       "fields": [
+         {"name":"actor",  "type":"account_name"},
+         {"name":"fee",    "type":"asset"},
+         {"name":"bpname", "type":"account_name"},
+       ]
      }
   ],
   "actions": [{
@@ -273,6 +290,14 @@
      },{
        "name": "canceldelay",
        "type": "canceldelay",
+       "ricardian_contract": ""
+     },{
+       "name": "setconfig",
+       "type": "setconfig",
+       "ricardian_contract": ""
+     },{
+       "name": "onfee",
+       "type": "onfee",
        "ricardian_contract": ""
      }
   ],

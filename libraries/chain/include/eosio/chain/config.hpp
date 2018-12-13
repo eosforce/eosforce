@@ -12,7 +12,7 @@ namespace eosio { namespace chain { namespace config {
 
 typedef __uint128_t uint128_t;
 
-const static auto block_max_tx_num        = 300;
+const static auto block_max_tx_num        = 1500;
 const static auto default_blocks_dir_name    = "blocks";
 const static auto reversible_blocks_dir_name = "reversible";
 const static auto default_reversible_cache_size = 340*1024*1024ll;/// 1MB * 340 blocks based on 21 producer BFT delay
@@ -28,6 +28,11 @@ const static auto default_state_guard_size      =    128*1024*1024ll;
 const static uint64_t system_account_name    = N(eosio);
 const static uint64_t null_account_name      = N(eosio.null);
 const static uint64_t producers_account_name = N(eosio.prods);
+const static uint64_t chain_config_name      = N(force.config);
+const static uint64_t token_account_name     = N(eosio.token);
+const static uint64_t msig_account_name      = N(eosio.msig);
+const static uint64_t bios_account_name      = N(eosio.bios);
+const static uint64_t eoslock_account_name   = N(eosio.lock);
 
 // Active permission of producers account requires greater than 2/3 of the producers to authorize
 const static uint64_t majority_producers_permission_name = N(prod.major); // greater than 1/2 of producers needed to authorize
@@ -81,6 +86,7 @@ const static uint32_t   default_max_trx_delay                  = 45*24*3600; // 
 const static uint32_t   default_max_inline_action_size         = 4 * 1024;   // 4 KB
 const static uint16_t   default_max_inline_action_depth        = 4;
 const static uint16_t   default_max_auth_depth                 = 6;
+const static uint16_t   default_controller_thread_pool_size    = 2;
 
 const static uint32_t   min_net_usage_delta_between_base_and_max_for_trx  = 10*1024;
 // Should be large enough to allow recovery from badly set blockchain parameters without a hard fork

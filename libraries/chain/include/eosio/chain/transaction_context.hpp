@@ -39,7 +39,7 @@ namespace eosio { namespace chain {
          void init_for_deferred_trx( fc::time_point published );
 
          // make_fee_act insert onfee act in trx
-         void make_fee_act( const asset& require_fee, const account_name& producer );
+         void make_fee_act( const asset& require_fee );
 
          void exec();
          void finalize();
@@ -112,9 +112,8 @@ namespace eosio { namespace chain {
          int64_t                       billed_cpu_time_us = 0;
          bool                          explicit_billed_cpu_time = false;
 
-         bool                          is_fee_action = false;
-         account_name                  fee_payer;
-         account_name                  bp_name;
+         account_name                  fee_payer      = name{};
+         asset                         max_fee_to_pay = asset{0};
 
       private:
          bool                          is_initialized = false;

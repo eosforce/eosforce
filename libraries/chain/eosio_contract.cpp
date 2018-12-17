@@ -514,10 +514,11 @@ void apply_eosio_onfee( apply_context& context ) {
                        a.available -= fee;
                     });
 
-   bps_tbl.modify(bps_tbl.find_itr(data.bpname), bp_info_data, 0,
-                  [fee]( memory_db::bp_info& a ) {
-                     a.rewards_pool += fee;
-                  });
+   if( data.bpname != name{} ) {
+      bps_tbl.modify(bps_tbl.find_itr(data.bpname), bp_info_data, 0, [fee](memory_db::bp_info& a) {
+         a.rewards_pool += fee;
+      });
+   }
 }
 
 } } // namespace eosio::chain

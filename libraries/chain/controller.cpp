@@ -1064,8 +1064,10 @@ struct controller_impl {
           asset fee_ext = dtrx.fee;
 
          trx_context.init_for_deferred_trx( gtrx.published );
-         if(is_onfee_act) {
+         if( !is_onfee_act ) {
             trx_context.make_limit_by_contract(fee_ext);
+         }else{
+            trx_context.make_fee_act(fee_ext);
          }
 
          if( trx_context.enforce_whiteblacklist && pending->_block_status == controller::block_status::incomplete ) {
@@ -1287,7 +1289,7 @@ struct controller_impl {
                                 "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
                   }
                } else {
-                  trx_context.make_fee_act(trx->trx.fee, self.head_block_header().producer);
+                  trx_context.make_fee_act( trx->trx.fee );
                }
             }
 

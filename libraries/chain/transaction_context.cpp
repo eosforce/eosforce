@@ -332,56 +332,19 @@ namespace bacc = boost::accumulators;
    }
 
    // make_fee_act insert onfee act in trx
-   void transaction_context::make_fee_act( const asset& require_fee, const account_name& producer ) {
+   void transaction_context::make_fee_act( const asset& require_fee ) {
+      EOS_ASSERT(!trx.actions[0].authorization.empty(), transaction_exception, "authorization empty");
       fee_payer = trx.actions[0].authorization[0].actor;
-      bp_name = producer;
-      is_fee_action = true;
+      max_fee_to_pay = require_fee; // it will work in next version
+      EOS_ASSERT(fee_payer != name{}, transaction_exception, "fee_payer nil");
    }
 
    // limit by contract from actions
    // fee_ext ext fee for ext res
    void transaction_context::make_limit_by_contract(const asset &fee_ext){
       // now one trx just has one action in eosforce, so it can no include system contract
-      /*
-       * About Fee
-       *
-       * fee come from three mode:
-       *  - native, set in cpp
-       *  - set by eosio
-       *  - set by user
-       *
-       * and res limit can set a value or zero,
-       * all of this will make diff mode to calc res limit,
-       * support 1.0 EOS is for `C` cpu, `N` net and `R` ram,
-       * and cost fee by `f` EOS and extfee by `F` EOS
-       *
-       * then can give:
-       *  - native and no setfee : use native fee and unlimit res use
-       *  - eosio set fee {f, (c,n,r)}
-       *      (cpu_limit, net_limit, ram_limit) == (c + F*C, n + F*N, r + F*R)
-       *  - eosio set fee {f, (0,0,0)}
-       *      (cpu_limit, net_limit, ram_limit) == ((f+F)*C, (f+F)*N, (f+F)*R)
-       *  - user set fee {f, (0,0,0)}, user cannot set fee by c>0||n>0||r>0
-       *      (cpu_limit, net_limit, ram_limit) == ((f+F)*C, (f+F)*N, (f+F)*R)
-       *
-       *  so it can be check by:
-       *  if no setfee
-       *       if no native -> err
-       *       if native -> use native and unlimit res use
-       *  else
-       *       if res limit is (0,0,0) -> limit res by ((f+F)*C, (f+F)*N, (f+F)*R)
-       *       if res limit is (c,n,r) -> (c + F*C, n + F*N, r + F*R)
-       *
-       *  at the same time, eosio can set res limit > (0,0,0) and user cannot
-       *
-       */
 
       auto &db = control.db();
-
-      if ( fee_ext > asset(0) ) {
-         dlog( "use fee ext ${f} to x ${c}",
-               ("f", fee_ext)("c", fee_ext.get_amount() / 100) );
-      }
 
       // use_limit_by_contract is if setfee
       use_limit_by_contract = false;
@@ -465,17 +428,19 @@ namespace bacc = boost::accumulators;
       cpu_limit_by_contract += cpu_limit_by_act;
       net_limit_by_contract += net_limit_by_act;
 
+      /*
       dlog("limit res ${acc}:${act} ${fee} to ${cpu},${net} in ${cpus},${nets}",
             ("acc", act.account)("act", act.name)
             ("fee", info->fee)
             ("cpu", cpu_limit_by_act)("net", net_limit_by_act)
             ("cpus", cpu_limit_by_contract)("nets", net_limit_by_contract));
+      */
    }
 
    const action transaction_context::mk_fee_action( const action& act ) {
       const auto fee = control.get_txfee_manager().get_required_fee(control, act);
       const bytes param_data = fc::raw::pack(fee_paramter{
-            fee_payer, fee, bp_name
+            fee_payer, fee, name{}
       });
       return action{
             vector<permission_level>{{fee_payer, config::active_name}},
@@ -486,10 +451,12 @@ namespace bacc = boost::accumulators;
    }
 
    void transaction_context::dispatch_fee_action( vector<action_trace>& action_traces, const action& act ){
-      if(is_fee_action) {
+      // if fee_payer is nil, it is mean now is not pay fee by action
+      if(fee_payer != name{}) {
          action_traces.emplace_back();
          const auto& fee_act = mk_fee_action(act);
-         EOS_ASSERT(get_num_config_on_chain(control.db(), name{fee_payer}, -1) != 1, transaction_exception, "");
+         // for lock developer 's EOSC before lock genesis user 's EOSC
+         EOS_ASSERT(get_num_config_on_chain(control.db(), name{fee_payer}, -1) != 1, transaction_exception, "locked developer EOSC account");
          add_limit_by_fee(act);
          dispatch_action(action_traces.back(), fee_act);
       }
@@ -500,6 +467,7 @@ namespace bacc = boost::accumulators;
 
       if( apply_context_free ) {
          for( const auto& act : trx.context_free_actions ) {
+            // to cost fee for action
             dispatch_fee_action( trace->action_traces, act );
             trace->action_traces.emplace_back();
             dispatch_action( trace->action_traces.back(), act, true );
@@ -508,6 +476,7 @@ namespace bacc = boost::accumulators;
 
       if( delay == fc::microseconds() ) {
          for( const auto& act : trx.actions ) {
+            // to cost fee for action
             dispatch_fee_action( trace->action_traces, act );
             trace->action_traces.emplace_back();
             dispatch_action( trace->action_traces.back(), act );
@@ -568,9 +537,11 @@ namespace bacc = boost::accumulators;
 
       validate_cpu_usage_to_bill( billed_cpu_time_us );
 
+      // to check cpu and net limit gen by fee
       if( use_limit_by_contract ) {
          EOS_ASSERT(billed_cpu_time_us <= cpu_limit_by_contract, tx_cpu_usage_exceeded,
-               "cpu limit by contract ${c} ${m}", ("c", billed_cpu_time_us)("m", cpu_limit_by_contract));
+               "cpu limit by contract ${c} ${m}",
+               ("c", billed_cpu_time_us)("m", cpu_limit_by_contract));
          EOS_ASSERT(net_usage <= net_limit_by_contract, tx_net_usage_exceeded, "net limit by contract ${c} ${m}",
                ("c", net_usage)("m", net_limit_by_contract));
 

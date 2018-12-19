@@ -151,7 +151,7 @@
           {"name":"accounts",  "type":"permission_level_weight[]"},
           {"name":"waits",     "type":"wait_weight[]"}
         ]
-      }{
+      },{
        "name": "newaccount",
        "base": "",
        "fields": [
@@ -231,7 +231,7 @@
        "fields": [
          {"name":"actor",  "type":"account_name"},
          {"name":"fee",    "type":"asset"},
-         {"name":"bpname", "type":"account_name"},
+         {"name":"bpname", "type":"account_name"}
        ]
      }
   ],

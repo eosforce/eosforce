@@ -74,6 +74,7 @@ account name of sign in must is the same with  bpname
 options:
 
 block_signing_key:  the same with public_block_key of config.ini
+
 commission_rate: it is range(0, 10000), commission_rate is 1000 means give bp 10% of dividents
 
 

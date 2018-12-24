@@ -49,7 +49,7 @@ then  you must set eosforce's config path
 	
 #if you join node of eosforce
 
-###modify config.ini
+### modify config.ini
 you must modify config.ini
 	
 	producer-name = bpname 
@@ -57,7 +57,7 @@ you must modify config.ini
 
 then restart nodeos
 
-###you must have a account name of eosforce
+### you must have a account name of eosforce
 
 for example account name has a public key and a private key below:
 

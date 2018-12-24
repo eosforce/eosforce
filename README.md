@@ -42,7 +42,7 @@ then  you must set eosforce's config path
 	wget https://updatewallet.oss-cn-hangzhou.aliyuncs.com/eosforce/activeacc.json 
 	
 	wget https://updatewallet.oss-cn-hangzhou.aliyuncs.com/config.ini 
-	wget https://updatewallet.oss-cn-hangzhou.aliyuncs.com/genesis.json
+	wget https://raw.githubusercontent.com/eosforce/genesis/master/genesis.json 
 	mv activeacc.json config.ini genesis.json $configpath 
 	./build/bin/nodeos --config-dir $configpath --data-dir $datapath
 	

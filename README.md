@@ -12,7 +12,7 @@ The computing layers adopt different development techniques, analyze advantages 
 
 eosforce p2p  [peers](t.eosforce.io/p2p_list)
 
-###1. install eosforce with docker
+### 1. install eosforce with docker
 
 	docker pull eosforce/eos:v1.3.2
 	mkdir -p /data/eosforce

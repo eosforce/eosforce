@@ -121,7 +121,7 @@ namespace eosio { namespace testing {
   },
   "initial_account_list": [{
       "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
-      "asset": "1000000.0000 EOS",
+      "asset": "1000000000.0000 EOS",
       "name": "eosforce"
     },{
       "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
@@ -436,7 +436,9 @@ namespace eosio { namespace testing {
       
       trx.sign( get_private_key( creator, "active" ), control->get_chain_id()  );
       auto trace = push_transaction( trx );
-      transfer( N(eosforce), a, "10000.0000 EOS", "create_account", config::system_account_name );
+      
+      transfer( N(eosforce), a, "100000.0000 EOS", "create_account", config::system_account_name );
+      
       return trace;
    }
 

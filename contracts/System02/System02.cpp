@@ -427,7 +427,7 @@ namespace eosiosystem {
       }
 
       //reward eosfund
-      const auto& eosfund = acnts_tbl.get(N(devfund), "eosfund1 is not found in accounts table");
+      const auto& eosfund = acnts_tbl.get(N(devfund), "devfund is not found in accounts table");
       auto total_eosfund_reward = BLOCK_REWARDS_BP - sum_bps_reward;
       acnts_tbl.modify(eosfund, 0, [&]( account_info& a ) {
          a.available += asset(total_eosfund_reward, SYMBOL);

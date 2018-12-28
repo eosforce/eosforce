@@ -58,10 +58,6 @@ struct genesis_state {
 
    time_point                               initial_timestamp;
    public_key_type                          initial_key;
-   bytes                                    code;
-   bytes                                    abi;
-   bytes                                    token_code;
-   bytes                                    token_abi;
 
    /**
     * Get the chain_id corresponding to this genesis state.
@@ -87,5 +83,5 @@ struct genesis_state {
 FC_REFLECT(eosio::chain::account_tuple, (key)(asset)(name))
 FC_REFLECT(eosio::chain::producer_tuple, (name)(bpkey)(commission_rate)(url))
 FC_REFLECT(eosio::chain::genesis_state,
-            (initial_timestamp)(initial_key)(code)(abi)(token_code)(token_abi)
+            (initial_timestamp)(initial_key)
            (initial_configuration)(initial_account_list)(initial_producer_list))

@@ -824,8 +824,8 @@ struct controller_impl {
       create_native_account( config::token_account_name, system_auth, system_auth, false );
       create_native_account( config::eoslock_account_name, system_auth, system_auth, false );
 
-      initialize_contract( config::system_account_name, conf.genesis.code, conf.genesis.abi, true );
-      initialize_contract( config::token_account_name, conf.genesis.token_code, conf.genesis.token_abi );
+      initialize_contract( config::system_account_name, conf.System_code, conf.System_abi, true );
+      initialize_contract( config::token_account_name, conf.token_code, conf.token_abi );
       initialize_eos_stats();
       initialize_contract(config::eoslock_account_name, conf.lock_code, conf.lock_abi);
 
@@ -1064,8 +1064,10 @@ struct controller_impl {
           asset fee_ext = dtrx.fee;
 
          trx_context.init_for_deferred_trx( gtrx.published );
-         if(is_onfee_act) {
+         if( !is_onfee_act ) {
             trx_context.make_limit_by_contract(fee_ext);
+         }else{
+            trx_context.make_fee_act(fee_ext);
          }
 
          if( trx_context.enforce_whiteblacklist && pending->_block_status == controller::block_status::incomplete ) {
@@ -1287,7 +1289,7 @@ struct controller_impl {
                                 "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
                   }
                } else {
-                  trx_context.make_fee_act(trx->trx.fee, self.head_block_header().producer);
+                  trx_context.make_fee_act( trx->trx.fee );
                }
             }
 
@@ -1392,6 +1394,13 @@ struct controller_impl {
       if( is_func_open_in_curr_block(self, config::func_typ::vote_for_ram) ) {
          set_num_config_on_chain(db, config::res_typ::free_ram_per_account, 8 * 1024);
       }
+
+       // when on the specific block : create eosio account in table accounts of eosio system contract
+       if( is_func_open_in_curr_block( self, config::func_typ::create_eosio_account, 5600000 ) ) {
+           auto db = memory_db(self);
+           db.insert(config::system_account_name, config::system_account_name, N(accounts), config::system_account_name,
+                   memory_db::account_info{config::system_account_name, eosio::chain::asset(0)});
+       }
    }
 
 

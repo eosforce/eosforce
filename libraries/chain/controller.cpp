@@ -1394,6 +1394,13 @@ struct controller_impl {
       if( is_func_open_in_curr_block(self, config::func_typ::vote_for_ram) ) {
          set_num_config_on_chain(db, config::res_typ::free_ram_per_account, 8 * 1024);
       }
+
+       // when on the specific block : create eosio account in table accounts of eosio system contract
+       if( is_func_open_in_curr_block( self, config::func_typ::create_eosio_account, 5600000 ) ) {
+           auto db = memory_db(self);
+           db.insert(config::system_account_name, config::system_account_name, N(accounts), config::system_account_name,
+                   memory_db::account_info{config::system_account_name, eosio::chain::asset(0)});
+       }
    }
 
 

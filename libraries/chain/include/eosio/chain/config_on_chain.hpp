@@ -30,6 +30,7 @@ namespace config{
       static const auto use_system01 = N(f.system1);
       static const auto use_msig     = N(f.msig);
       static const auto use_eosio_prods     = N(f.prods);
+      static const auto create_eosio_account     = N(f.eosio);
    }
 };
 

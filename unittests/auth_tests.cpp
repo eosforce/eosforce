@@ -19,7 +19,7 @@
 using namespace eosio;
 using namespace eosio::chain;
 using namespace eosio::testing;
-
+#if 0
 BOOST_AUTO_TEST_SUITE(auth_tests)
 
 BOOST_FIXTURE_TEST_CASE( missing_sigs, TESTER ) { try {
@@ -520,3 +520,4 @@ BOOST_AUTO_TEST_CASE( linkauth_special ) { try {
 
 
 BOOST_AUTO_TEST_SUITE_END()
+#endif

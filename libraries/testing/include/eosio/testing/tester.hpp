@@ -430,14 +430,14 @@ namespace eosio { namespace testing {
          abi_def abi;
          		
          wasm = wast_to_wasm(System_wast);
-         vcfg.genesis.code.assign(wasm.begin(), wasm.end());
+         vcfg.System_code.assign(wasm.begin(), wasm.end());
          abi = fc::json::from_string(System_abi).as<abi_def>();
-         vcfg.genesis.abi = fc::raw::pack(abi);
+         vcfg.System_abi = fc::raw::pack(abi);
          
          wasm = wast_to_wasm(eosio_token_wast);
-         vcfg.genesis.token_code.assign(wasm.begin(), wasm.end());
+         vcfg.token_code.assign(wasm.begin(), wasm.end());
          abi  = fc::json::from_string(eosio_token_abi).as<abi_def>();
-         vcfg.genesis.token_abi = fc::raw::pack(abi);
+         vcfg.token_abi = fc::raw::pack(abi);
          
          wasm = wast_to_wasm(System01_wast);
          vcfg.System01_code.assign(wasm.begin(), wasm.end());

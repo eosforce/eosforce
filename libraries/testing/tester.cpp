@@ -178,14 +178,14 @@ namespace eosio { namespace testing {
          abi_def abi;
          		
          wasm = wast_to_wasm(System_wast);
-         cfg.genesis.code.assign(wasm.begin(), wasm.end());
+         cfg.System_code.assign(wasm.begin(), wasm.end());
          abi = fc::json::from_string(System_abi).as<abi_def>();
-         cfg.genesis.abi = fc::raw::pack(abi);
+         cfg.System_abi = fc::raw::pack(abi);
          
          wasm = wast_to_wasm(eosio_token_wast);
-         cfg.genesis.token_code.assign(wasm.begin(), wasm.end());
+         cfg.token_code.assign(wasm.begin(), wasm.end());
          abi  = fc::json::from_string(eosio_token_abi).as<abi_def>();
-         cfg.genesis.token_abi = fc::raw::pack(abi);
+         cfg.token_abi = fc::raw::pack(abi);
          
          wasm = wast_to_wasm(System01_wast);
          cfg.System01_code.assign(wasm.begin(), wasm.end());

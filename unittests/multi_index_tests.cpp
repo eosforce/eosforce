@@ -43,6 +43,7 @@ BOOST_FIXTURE_TEST_CASE( multi_index_load, TESTER ) try {
                                                    ("what", 0),
                                                    abi_serializer_max_time
       );
+      set_fee(trigger_act.authorization[0].actor, trigger_act.name, asset(100), 0, 0, 0);
       trx.actions.emplace_back(std::move(trigger_act));
       set_transaction_headers(trx);
       trx.sign(get_private_key(N(multitest), "active"), control->get_chain_id());

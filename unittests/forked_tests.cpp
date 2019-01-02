@@ -27,7 +27,7 @@ void push_blocks( tester& from, tester& to ) {
       to.push_block( fb );
    }
 }
-
+#if 0
 BOOST_AUTO_TEST_SUITE(forked_tests)
 
 BOOST_AUTO_TEST_CASE( irrblock ) try {
@@ -375,3 +375,4 @@ BOOST_AUTO_TEST_CASE( read_modes ) try {
 } FC_LOG_AND_RETHROW()
 
 BOOST_AUTO_TEST_SUITE_END()
+#endif 

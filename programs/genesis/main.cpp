@@ -4,6 +4,7 @@
 
 #include <eosio/chain/genesis_state.hpp>
 #include <eosio/chain/name.hpp>
+#include <eosio/chain/config.hpp>
 
 #include <fstream>
 
@@ -33,11 +34,12 @@ FC_REFLECT(key_map, ( keymap ))
 int main( int argc, const char **argv ) {
    eosio::chain::genesis_state gs;
    const std::string path = "./genesis.json";
+   const std::string activeacc = "./activeacc.json";
    key_map my_keymap;
    key_map my_sign_keymap;
    std::ofstream out("./config.ini");
 
-   for( int i = 0; i < 23; i++ ) {
+   for( int i = 0; i < config::max_producers; i++ ) {
       auto key = fc::crypto::private_key::generate<fc::ecc::private_key_shim>();
       auto pub_key = key.get_public_key();
       eosio::chain::account_tuple tu;
@@ -102,6 +104,7 @@ int main( int argc, const char **argv ) {
    const std::string configini = "./config.ini";
 
    fc::json::save_to_file<eosio::chain::genesis_state>(gs, path, true);
+   fc::json::save_to_file<std::vector<account_tuple>>(gs.initial_account_list, activeacc, true);
    fc::json::save_to_file<key_map>(my_keymap, keypath, true);
    fc::json::save_to_file<key_map>(my_sign_keymap, sigkeypath, true);
 

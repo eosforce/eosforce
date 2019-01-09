@@ -36,6 +36,7 @@ namespace eosio { namespace chain {
       init_native_fee(config::system_account_name, N(canceldelay), asset(5000));
       init_native_fee(config::system_account_name, N(linkauth),    asset(5000));
       init_native_fee(config::system_account_name, N(unlinkauth),  asset(5000));
+      init_native_fee(config::system_account_name, N(heartbeat),  asset(100));
 
       init_native_fee(config::msig_account_name, N(propose),   asset(15000));
       init_native_fee(config::msig_account_name, N(approve),   asset(10000));

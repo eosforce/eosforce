@@ -233,6 +233,13 @@
          {"name":"fee",    "type":"asset"},
          {"name":"bpname", "type":"account_name"}
        ]
+     },{
+       "name": "heartbeat_info",
+       "base": "",
+       "fields": [
+         {"name":"bpname",  "type":"account_name"},
+         {"name":"timestamp",    "type":"time_point_sec"}
+       ]
      }
   ],
   "actions": [{
@@ -307,6 +314,10 @@
        "name": "onfee",
        "type": "onfee",
        "ricardian_contract": ""
+     },{
+       "name": "heartbeat",
+       "type": "heartbeat_info",
+       "ricardian_contract": ""
      }
   ],
   "tables": [
@@ -346,6 +357,12 @@
           "index_type":"i64",
           "key_names": ["version"],
           "key_types": ["uint64"]
+       },{
+          "name":"heartbeat",
+          "type":"heartbeat_info",
+          "index_type":"i64",
+          "key_names": ["bpname"],
+          "key_types": ["account_name"]
        }
   ],
   "ricardian_clauses": []

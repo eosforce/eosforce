@@ -301,7 +301,7 @@ signed_transaction heartbeat_plugin_impl::get_heartbeat_transaction()
                   ("timestamp", fc::time_point::now()) ) );
    trx.set_reference_block(chain.head_block_id());
    trx.expiration = chain.head_block_time() + fc::microseconds(10'999'999); // Round up to nearest second to avoid appearing expired
-   trx.fee = asset(1);
+   trx.fee = asset(100);
    
    flat_set<public_key_type> pub_keys;
    pub_keys.reserve(_keys.size());

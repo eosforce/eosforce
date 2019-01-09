@@ -117,7 +117,8 @@ void heartbeat_plugin::set_program_options(
    boost::program_options::options_description heartbeat_options;
 
    heartbeat_options.add_options()
-         ("bp-mapping", boost::program_options::value<vector<string>>()->composing()->multitoken()->default_value({std::string("") + "=KEY:" + ""}, std::string("") + "=KEY:" + std::string("")),
+         //("bp-mapping", boost::program_options::value<vector<string>>()->composing()->multitoken()->default_value({std::string("") + "=KEY:" + ""}, std::string("") + "=KEY:" + std::string("")),
+         ("bp-mapping", boost::program_options::value<vector<string>>(),
           "Key=Value pairs in the form <producer_name>=<account_name>\n"
           "Where:\n"
           "   <producer_name> \tis a string form of producer_name\n\n"

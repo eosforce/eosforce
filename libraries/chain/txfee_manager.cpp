@@ -9,6 +9,7 @@
 
 namespace eosio { namespace chain {
 
+
    txfee_manager::txfee_manager(){
       init_native_fee(config::system_account_name, N(newaccount), asset(1000));
       init_native_fee(config::system_account_name, N(updateauth), asset(1000));

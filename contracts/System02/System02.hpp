@@ -21,8 +21,8 @@ namespace eosiosystem {
    static constexpr uint64_t SYMBOL = S(4, EOS);
    static constexpr uint32_t FROZEN_DELAY = 3 * 24 * 60 * 20; //3*24*60*20*3s;
    static constexpr int NUM_OF_TOP_BPS = 23;
-   static constexpr int BLOCK_REWARDS_BP = 9 * 1000; //0.9000 EOS
-   static constexpr int BLOCK_REWARDS_B1 = 1 * 1000; //0.1000 EOS
+   static constexpr int BLOCK_REWARDS_BP = 27000 ; //2.7000 EOS
+   static constexpr int BLOCK_REWARDS_B1 = 3000; //0.3000 EOS
    static constexpr uint32_t UPDATE_CYCLE = 100; //every 100 blocks update
 
    class system_contract : private eosio::contract {

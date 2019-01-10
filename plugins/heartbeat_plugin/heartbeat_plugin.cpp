@@ -2,6 +2,7 @@
  *  @file
  *  @copyright defined in eos/LICENSE.txt
  */
+#include <eosio/chain/config_on_chain.hpp>
 #include <eosio/heartbeat_plugin/heartbeat_plugin.hpp>
 #include <eosio/chain/producer_object.hpp>
 #include <eosio/chain/plugin_interface.hpp>
@@ -251,7 +252,8 @@ void heartbeat_plugin_impl::schedule_heartbeat_loop() {
    heartbeat();
 
    // ship this block off no later than its deadline
-   auto deadline = 3;
+   //auto deadline = 3;
+   auto deadline = get_num_config_on_chain( chain.db(), config::heartbeat_typ::hb_intval, 600 );
    _timer.expires_from_now( boost::posix_time::seconds( deadline ));
 
    _timer.async_wait([&chain,weak_this,cid=++_timer_corelation_id](const boost::system::error_code& ec) {

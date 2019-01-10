@@ -32,6 +32,11 @@ namespace config{
       static const auto use_eosio_prods     = N(f.prods);
       static const auto create_eosio_account     = N(f.eosio);
    }
+   
+   namespace heartbeat_typ{
+      static const auto hb_intval = N(hb.intval);
+      static const auto hb_max = N(hb.max);
+   }
 };
 
 // some spec type for fast

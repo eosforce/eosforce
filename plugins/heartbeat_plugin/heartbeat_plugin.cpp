@@ -308,10 +308,10 @@ signed_transaction heartbeat_plugin_impl::get_heartbeat_transaction()
    for( const auto& key: _keys) {
       pub_keys.insert(key.first);
    }
-   pub_keys = chain.get_authorization_manager().get_required_keys( trx, pub_keys, fc::seconds( trx.delay_sec ));
-   FC_ASSERT( !pub_keys.empty(), "no matching signing keys!" );
-   for( const auto& key: pub_keys) {
-      trx.sign( _keys[key], chain.get_chain_id() );
+   auto pub_keys2 = chain.get_authorization_manager().get_required_keys( trx, pub_keys, fc::seconds( trx.delay_sec ));
+   FC_ASSERT( !pub_keys2.empty(), "no matching signing keys!" );
+   for( const auto& key2: pub_keys2) {
+      trx.sign( _keys[key2], chain.get_chain_id() );
    }
 
    return trx;

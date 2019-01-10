@@ -392,6 +392,14 @@ namespace eosiosystem {
       accounts_table acnts_tbl(_self, _self);
       schedules_table schs_tbl(_self, _self);
       hb_table hb_tbl(_self, _self);
+      
+      /*{
+        char test[500];
+        int64_t hb_intval = get_num_config_on_chain(N(hb.intval));
+        int64_t hb_max = get_num_config_on_chain(N(hb.max));
+        sprintf(test, "------reward_bps: hb_intval: %lld, hb_max: %lld", hb_intval, hb_max);
+        prints((char *)test);
+      }*/
 
       //calculate total staked all of the bps
       int64_t staked_all_bps = 0;
@@ -413,8 +421,10 @@ namespace eosiosystem {
          }
          
          if( !is_super_bp(block_producers, it->name)) {
+            int64_t hb_max = get_num_config_on_chain(N(hb.max));
+            if (hb_max == -1) hb_max = 3600;
             auto hb = hb_tbl.find(it->name);
-            if( hb == hb_tbl.end() || hb->timestamp + 100 < time_point_sec( now() ) ) {
+            if( hb == hb_tbl.end() || hb->timestamp + hb_max < time_point_sec( now() ) ) {
                 continue;
             }
          }

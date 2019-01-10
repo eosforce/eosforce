@@ -90,9 +90,11 @@ def startNode(nodeIndex, bpaccount, key):
         '    --producer-name ' + bpaccount['name'] +
         '    --signature-provider=' + bpaccount['bpkey'] + '=KEY:' + key[1] +
         '    --contracts-console ' +
+		'    --bp-mapping=' + bpaccount['name'] + '=KEY:' + bpaccount['name']  + 'a' +
         '    --plugin eosio::http_plugin' +
         '    --plugin eosio::chain_api_plugin' +
         '    --plugin eosio::producer_plugin' +
+        '    --plugin eosio::heartbeat_plugin' +
         otherOpts)
     with open(dir + '../' + bpaccount['name'] + '.log', mode='w') as f:
         f.write(cmd + '\n\n')

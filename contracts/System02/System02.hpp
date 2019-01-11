@@ -16,6 +16,7 @@ namespace eosiosystem {
    using eosio::bytes;
    using eosio::block_timestamp;
    using std::string;
+   using eosio::time_point_sec;
 
 
    static constexpr uint64_t SYMBOL = S(4, EOS);
@@ -107,6 +108,15 @@ namespace eosiosystem {
 
          EOSLIB_SERIALIZE(chain_status, ( name )(emergency))
       };
+      
+      struct heartbeat_info {
+         account_name bpname;
+         time_point_sec timestamp;
+         
+         uint64_t primary_key() const { return bpname; }
+         
+         EOSLIB_SERIALIZE(heartbeat_info, ( bpname )(timestamp))
+      };
 
       typedef eosio::multi_index<N(accounts), account_info> accounts_table;
       typedef eosio::multi_index<N(votes), vote_info> votes_table;
@@ -115,6 +125,7 @@ namespace eosiosystem {
       typedef eosio::multi_index<N(bps), bp_info> bps_table;
       typedef eosio::multi_index<N(schedules), schedule_info> schedules_table;
       typedef eosio::multi_index<N(chainstatus), chain_status> cstatus_table;
+      typedef eosio::multi_index<N(heartbeat), heartbeat_info> hb_table;
 
       void update_elected_bps();
 
@@ -154,6 +165,9 @@ namespace eosiosystem {
 
       // @abi action
       void setemergency( const account_name bpname, const bool emergency );
+      
+      // @abi action
+      void heartbeat( const account_name bpname, const time_point_sec timestamp );
    };
 
    EOSIO_ABI(system_contract,
@@ -162,5 +176,6 @@ namespace eosiosystem {
                    (vote4ram)(unfreezeram)
                    (claim)
                    (onblock)(onfee)
-                   (setemergency))
+                   (setemergency)
+                   (heartbeat))
 } /// eosiosystem

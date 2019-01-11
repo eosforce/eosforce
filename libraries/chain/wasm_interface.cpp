@@ -945,6 +945,10 @@ public:
    int is_func_open( uint64_t func_typ ) {
       return is_func_has_open(context.control, eosio::chain::name{func_typ}) ? 1 : 0;
    }
+   
+   int64_t get_num_config_on_chain( uint64_t typ ) {
+      return context.get_num_config_on_chain(typ);
+   }
 
    void eosio_exit(int32_t code) {
       context.control.get_wasm_interface().exit();
@@ -1787,6 +1791,7 @@ REGISTER_INTRINSICS(context_free_system_api,
    (eosio_assert_message, void(int, int, int) )
    (eosio_assert_code,    void(int, int64_t)  )
    (is_func_open,         int(int64_t)        )
+   (get_num_config_on_chain, int64_t(int64_t) )
    (eosio_exit,           void(int)           )
 );
 

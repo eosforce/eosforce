@@ -95,6 +95,8 @@ extern "C" {
     *  @return - 0 to not open, 1 to has open
     */
    int is_func_open( uint64_t func_code );
+   
+   int64_t get_num_config_on_chain( uint64_t typ ); 
 
    ///@ } systemcapi
 

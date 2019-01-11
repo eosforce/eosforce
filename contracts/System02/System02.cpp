@@ -336,6 +336,24 @@ namespace eosiosystem {
          cs.emergency = proposal > NUM_OF_TOP_BPS * 2 / 3;
       });
    }
+   
+   void system_contract::heartbeat( const account_name bpname, const time_point_sec timestamp ) {
+      bps_table bps_tbl(_self, _self);
+      hb_table hb_tbl(_self, _self);
+      const auto& bp = bps_tbl.get(bpname, "bpname is not registered");
+
+      auto hb = hb_tbl.find(bpname);
+      if( hb == hb_tbl.end()) {
+         hb_tbl.emplace(bpname, [&]( heartbeat_info& hb ) {
+            hb.bpname = bpname;
+            hb.timestamp = timestamp;
+         });
+      } else {
+         hb_tbl.modify(hb, 0, [&]( heartbeat_info& hb ) {
+            hb.timestamp = timestamp;
+         });
+      }
+   }
 
 //******** private ********//
 
@@ -373,6 +391,15 @@ namespace eosiosystem {
       bps_table bps_tbl(_self, _self);
       accounts_table acnts_tbl(_self, _self);
       schedules_table schs_tbl(_self, _self);
+      hb_table hb_tbl(_self, _self);
+      
+      /*{
+        char test[500];
+        int64_t hb_intval = get_num_config_on_chain(N(hb.intval));
+        int64_t hb_max = get_num_config_on_chain(N(hb.max));
+        sprintf(test, "------reward_bps: hb_intval: %lld, hb_max: %lld", hb_intval, hb_max);
+        prints((char *)test);
+      }*/
 
       //calculate total staked all of the bps
       int64_t staked_all_bps = 0;
@@ -391,6 +418,15 @@ namespace eosiosystem {
          if( it->total_staked <= rewarding_bp_staked_threshold || it->commission_rate < 1 ||
              it->commission_rate > 10000 ) {
             continue;
+         }
+         
+         if( !is_super_bp(block_producers, it->name)) {
+            int64_t hb_max = get_num_config_on_chain(N(hb.max));
+            if (hb_max == -1) hb_max = 3600;
+            auto hb = hb_tbl.find(it->name);
+            if( hb == hb_tbl.end() || hb->timestamp + hb_max < time_point_sec( now() ) ) {
+                continue;
+            }
          }
 
          auto bp_reward = static_cast<int64_t>( BLOCK_REWARDS_BP * double(it->total_staked) / double(staked_all_bps));

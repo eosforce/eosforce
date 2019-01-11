@@ -46,7 +46,9 @@ using controller_index_set = index_set<
    block_summary_multi_index,
    transaction_multi_index,
    generated_transaction_multi_index,
-   table_id_multi_index
+   table_id_multi_index,
+   action_fee_object_index,
+   config_data_object_index
 >;
 
 using contract_database_index_set = index_set<
@@ -449,8 +451,8 @@ struct controller_impl {
       controller_index_set::add_indices(db);
       contract_database_index_set::add_indices(db);
 
-      db.add_index<action_fee_object_index>();
-      db.add_index<config_data_object_index>();
+      //db.add_index<action_fee_object_index>();
+      //db.add_index<config_data_object_index>();
 
       authorization.add_indices();
       resource_limits.add_indices();

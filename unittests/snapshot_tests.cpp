@@ -157,10 +157,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_exhaustive_snapshot, SNAPSHOT_SUITE, snapshot
 {
    tester chain;
 
+   chain.produce_blocks(1);
    chain.create_account(N(snapshot));
    chain.produce_blocks(1);
    chain.set_code(N(snapshot), snapshot_test_wast);
    chain.set_abi(N(snapshot), snapshot_test_abi);
+   
+   chain.set_fee(N(snapshot), N(increment), asset(100), 0, 0, 0);
+   
    chain.produce_blocks(1);
    chain.control->abort_block();
 
@@ -205,6 +209,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_replay_over_snapshot, SNAPSHOT_SUITE, snapsho
    chain.produce_blocks(1);
    chain.set_code(N(snapshot), snapshot_test_wast);
    chain.set_abi(N(snapshot), snapshot_test_abi);
+   chain.set_fee(N(snapshot), N(increment), asset(100), 0, 0, 0);
    chain.produce_blocks(1);
    chain.control->abort_block();
 

@@ -19,6 +19,7 @@
 #include <test_ram_limit/test_ram_limit.abi.hpp>
 #include <test_ram_limit/test_ram_limit.wast.hpp>
 
+#if 0
 /*
  * register test suite `ram_tests`
  */
@@ -260,3 +261,4 @@ BOOST_FIXTURE_TEST_CASE(ram_tests, eosio_system::eosio_system_tester) { try {
 } FC_LOG_AND_RETHROW() }
 
 BOOST_AUTO_TEST_SUITE_END()
+#endif

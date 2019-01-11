@@ -175,7 +175,7 @@ public:
 };
 
 BOOST_AUTO_TEST_SUITE(bootseq_tests)
-
+#if 0
 BOOST_FIXTURE_TEST_CASE( bootseq_test, bootseq_tester ) {
     try {
 
@@ -333,5 +333,5 @@ BOOST_FIXTURE_TEST_CASE( bootseq_test, bootseq_tester ) {
 // TODO: Complete this test
     } FC_LOG_AND_RETHROW()
 }
-
+#endif
 BOOST_AUTO_TEST_SUITE_END()

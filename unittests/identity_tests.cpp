@@ -223,7 +223,7 @@ public:
 };
 
 constexpr uint64_t identity_val = 0xffffffffffffffff; //64-bit value
-
+#if 0
 BOOST_AUTO_TEST_SUITE(identity_tests)
 
 BOOST_FIXTURE_TEST_CASE( identity_create, identity_tester ) try {
@@ -681,3 +681,4 @@ BOOST_FIXTURE_TEST_CASE( ownership_contradiction, identity_tester ) try {
 } FC_LOG_AND_RETHROW() //ownership_contradiction
 
 BOOST_AUTO_TEST_SUITE_END()
+#endif

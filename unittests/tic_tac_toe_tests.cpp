@@ -54,6 +54,7 @@ BOOST_AUTO_TEST_SUITE(tic_tac_toe_tests)
 
 BOOST_AUTO_TEST_CASE( tic_tac_toe_game ) try {
    TESTER chain;
+   chain.produce_blocks(1);
    abi_serializer abi_ser{json::from_string(tic_tac_toe_abi).as<abi_def>(), chain.abi_serializer_max_time};
    chain.create_account(N(tic.tac.toe));
    chain.produce_blocks(10);
@@ -66,6 +67,7 @@ BOOST_AUTO_TEST_CASE( tic_tac_toe_game ) try {
    chain.create_account(N(player2));
    chain.produce_blocks(10);
 
+   chain.set_fee(N(tic.tac.toe), N(create), asset(101), 0, 0, 0);
    chain.push_action(N(tic.tac.toe), N(create), N(player1), mutable_variant_object()
            ("challenger", "player2")
            ("host", "player1")
@@ -73,6 +75,7 @@ BOOST_AUTO_TEST_CASE( tic_tac_toe_game ) try {
 
    chain.produce_blocks();
 
+   chain.set_fee(N(tic.tac.toe), N(move), asset(102), 0, 0, 0);
    chain.push_action(N(tic.tac.toe), N(move), N(player1), mutable_variant_object()
            ("challenger", "player2")
            ("host", "player1")
@@ -141,11 +144,13 @@ BOOST_AUTO_TEST_CASE( tic_tac_toe_game ) try {
    chain.get_table_entry(current, N(tic.tac.toe), N(player1), N(games), N(player2));
    BOOST_REQUIRE_EQUAL("player1", account_name(current.winner).to_string());
 
+   chain.set_fee(N(tic.tac.toe), N(close), asset(103), 0, 0, 0);
    chain.push_action(N(tic.tac.toe), N(close), N(player1), mutable_variant_object()
            ("challenger", "player2")
            ("host", "player1")
    );
 
+   chain.produce_blocks(1);
    BOOST_CHECK_EXCEPTION(chain.push_action(N(tic.tac.toe), N(move), N(player2), mutable_variant_object()
          ("challenger", "player2")
          ("host", "player1")
@@ -154,6 +159,7 @@ BOOST_AUTO_TEST_CASE( tic_tac_toe_game ) try {
          ("column", 0)
       ), eosio_assert_message_exception, eosio_assert_message_starts_with("game doesn't exists"));
 
+   chain.set_fee(N(tic.tac.toe), N(restart), asset(104), 0, 0, 0);
    BOOST_CHECK_EXCEPTION(chain.push_action(N(tic.tac.toe), N(restart), N(player2), mutable_variant_object()
          ("challenger", "player2")
          ("host", "player1")

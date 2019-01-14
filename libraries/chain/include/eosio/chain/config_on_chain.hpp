@@ -73,7 +73,7 @@ void set_num_config_on_chain( chainbase::database& db, const name& typ, const in
 void set_config_on_chain( chainbase::database& db, const setconfig &cfg );
 
 // is_func_has_open is a func is open
-bool is_func_has_open( const controller& ctl, const name &func_typ );
+bool is_func_has_open( const controller& ctl, const name &func_typ, const int64_t default_open_block = 0);
 
 // is_func_open_in_curr_block if a func is open in curr block
 bool is_func_open_in_curr_block( const controller& ctl, const name &func_typ, const int64_t default_open_block = 0 );

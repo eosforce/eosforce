@@ -54,15 +54,14 @@ void set_config_on_chain( chainbase::database& db, const setconfig &cfg ) {
    }
 }
 
-bool is_func_has_open( const controller& ctl, const name &func_typ ) {
+bool is_func_has_open( const controller& ctl, const name &func_typ, const int64_t default_open_block) {
       const auto head_num = static_cast<int64_t>( ctl.head_block_num() );
       const auto open_num = get_num_config_on_chain( ctl.db(), func_typ );
-      if( open_num < 0 || head_num < 0 ) {
-         // no cfg
-         return false;
-      }
 
-      return head_num >= open_num;
+   return (head_num >= 0) && ((default_open_block == 0
+                               && open_num >= 0
+                               && head_num >= open_num)
+                              || (default_open_block != 0 && head_num >= default_open_block));
 }
 
 // is_func_open_in_curr_block if a func is open in curr block

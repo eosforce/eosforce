@@ -14,18 +14,18 @@ eosforce p2p  [peers](t.eosforce.io/p2p_list)
 
 ### 1. install eosforce with docker
 
-	docker pull eosforce/eos:v1.3.2
+	docker pull eosforce/eos:v1.4.1
 	mkdir -p /data/eosforce
 	wget https://updatewallet.oss-cn-hangzhou.aliyuncs.com/config.ini
 	mv 	config.ini /data/eosforce/
-	docker run -d --name eosforce-v1.3.2 -v /data/eosforce:/opt/eosio/bin/data-dir -v /data/nodeos:/root/.local/share/eosio/nodeos -p 9876:9876 -p 8888:8888 eosforce/eos:v1.3.2 nodeosd.sh
+	docker run -d --name eosforce-v1.4.1 -v /data/eosforce:/opt/eosio/bin/data-dir -v /data/nodeos:/root/.local/share/eosio/nodeos -p 9876:9876 -p 8888:8888 eosforce/eos:v1.4.1 nodeosd.sh
 	
 ### 2. install with compile
    
    	git clone https://github.com/eosforce/eosforce.git
     cd eosforce
 	git fetch
-	git checkout force-v1.3.2
+	git checkout force-v1.4.1
 	git submodule update --init --recursive
 	./eosio_build.sh
 

@@ -49,6 +49,8 @@ namespace eosiosystem {
 
    void system_contract::revote( const account_name voter, const account_name frombp, const account_name tobp, const asset restake ) {
       require_auth(voter);
+      eosio_assert(frombp != tobp, " from and to cannot same");
+
       bps_table bps_tbl(_self, _self);
       const auto& bpf = bps_tbl.get(frombp, "bpname is not registered");
       const auto& bpt = bps_tbl.get(tobp, "bpname is not registered");
@@ -60,14 +62,13 @@ namespace eosiosystem {
       votes_table votes_tbl(_self, voter);
 
       // votes_table from bp
-      auto vtsf = votes_tbl.get(frombp, "no vote on this bp");
-      eosio_assert(restake <= vtsf.staked, "need restake <= frombp stake");
-
+      auto vtsf = votes_tbl.find(frombp);
+      eosio_assert(vtsf != votes_tbl.end(), "no vote on this bp");
+      eosio_assert(restake <= vtsf->staked, "need restake <= frombp stake");
       votes_tbl.modify(vtsf, 0, [&]( vote_info& v ) {
           v.voteage += v.staked.amount / 10000 * ( current_block_num() - v.voteage_update_height );
           v.voteage_update_height = current_block_num();
           v.staked -= restake;
-          print(v.staked);
       });
 
       // votes_table to bp

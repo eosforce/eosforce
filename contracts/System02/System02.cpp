@@ -54,8 +54,8 @@ namespace eosiosystem {
       const auto& bpt = bps_tbl.get(tobp, "bpname is not registered");
 
       eosio_assert(restake.symbol == SYMBOL, "only support EOS which has 4 precision");
-      eosio_assert(0 <= restake.amount && restake.amount % 10000 == 0,
-                   "need restake quantity >= 0.0000 EOS and quantity is integer");
+      eosio_assert(0 < restake.amount && restake.amount % 10000 == 0,
+                   "need restake quantity > 0.0000 EOS and quantity is integer");
 
       votes_table votes_tbl(_self, voter);
 

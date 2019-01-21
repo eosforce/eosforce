@@ -240,6 +240,12 @@
          {"name":"bpname",  "type":"account_name"},
          {"name":"timestamp",    "type":"time_point_sec"}
        ]
+     },{
+       "name": "removebp",
+       "base": "",
+       "fields": [
+         {"name":"bpname",  "type":"account_name"}
+       ]
      }
   ],
   "actions": [{
@@ -317,6 +323,10 @@
      },{
        "name": "heartbeat",
        "type": "heartbeat_info",
+       "ricardian_contract": ""
+     },{
+       "name": "removebp",
+       "type": "removebp",
        "ricardian_contract": ""
      }
   ],

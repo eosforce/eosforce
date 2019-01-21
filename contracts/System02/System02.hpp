@@ -90,6 +90,17 @@ namespace eosiosystem {
          uint32_t amount = 0;
       };
 
+      struct producer_blacklist {
+         account_name bpname;
+         bool isactive = false;
+
+         uint64_t primary_key() const { return bpname; }
+         void     deactivate()       {isactive = false;}
+
+         EOSLIB_SERIALIZE(producer_blacklist, ( bpname )(isactive))
+      };
+
+
       struct schedule_info {
          uint64_t version;
          uint32_t block_height;
@@ -126,6 +137,7 @@ namespace eosiosystem {
       typedef eosio::multi_index<N(schedules), schedule_info> schedules_table;
       typedef eosio::multi_index<N(chainstatus), chain_status> cstatus_table;
       typedef eosio::multi_index<N(heartbeat), heartbeat_info> hb_table;
+      typedef eosio::multi_index<N(blackpro), producer_blacklist> blackproducer_table;
 
       void update_elected_bps();
 
@@ -168,6 +180,8 @@ namespace eosiosystem {
       
       // @abi action
       void heartbeat( const account_name bpname, const time_point_sec timestamp );
+      // @abi action
+      void removebp( account_name producer );
    };
 
    EOSIO_ABI(system_contract,
@@ -177,5 +191,6 @@ namespace eosiosystem {
                    (claim)
                    (onblock)(onfee)
                    (setemergency)
-                   (heartbeat))
+                   (heartbeat)
+                   (removebp))
 } /// eosiosystem

@@ -148,7 +148,7 @@ abi_def eosio_contract_abi(const abi_def& eosio_system_abi)
    eos_abi.structs.emplace_back( struct_def {
       "setconfig", "", {
          {"typ", "name"},
-         {"num", "int64_t"},
+         {"num", "int64"},
          {"key", "name"},
          {"fee", "asset"}
       }

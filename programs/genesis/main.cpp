@@ -4,6 +4,7 @@
 
 #include <eosio/chain/genesis_state.hpp>
 #include <eosio/chain/name.hpp>
+#include <eosio/chain/config.hpp>
 
 #include <fstream>
 
@@ -33,16 +34,17 @@ FC_REFLECT(key_map, ( keymap ))
 int main( int argc, const char **argv ) {
    eosio::chain::genesis_state gs;
    const std::string path = "./genesis.json";
+   const std::string activeacc = "./activeacc.json";
    key_map my_keymap;
    key_map my_sign_keymap;
    std::ofstream out("./config.ini");
 
-   for( int i = 0; i < 23; i++ ) {
+   for( int i = 0; i < config::max_producers; i++ ) {
       auto key = fc::crypto::private_key::generate<fc::ecc::private_key_shim>();
       auto pub_key = key.get_public_key();
       eosio::chain::account_tuple tu;
       tu.key = pub_key;
-      tu.asset = eosio::chain::asset(10000);
+      tu.asset = eosio::chain::asset(100000000);
       std::string name("biosbp");
       char mark = 'a' + i;
       name.append(1u, mark);
@@ -50,6 +52,8 @@ int main( int argc, const char **argv ) {
       gs.initial_account_list.push_back(tu);
       auto sig_key = fc::crypto::private_key::generate<fc::ecc::private_key_shim>();
       auto sig_pub_key = sig_key.get_public_key();
+      //auto sig_key = key;
+      //auto sig_pub_key = pub_key;
       out << "producer-name = " << name << "\n";
       out << "private-key = [\"" << string(sig_pub_key) << "\",\"" << string(sig_key) << "\"]\n";
 
@@ -58,7 +62,11 @@ int main( int argc, const char **argv ) {
       tp.name = string_to_name(name.c_str());
       tp.commission_rate = i == 0 ? 0 : i == 22 ? 10000 : 10000 / i;
       gs.initial_producer_list.push_back(tp);
+      tu.key = sig_pub_key;
+      tu.name = string_to_name((std::string(name + 'a')).c_str());
+      gs.initial_account_list.push_back(tu);
       my_keymap.keymap[string_to_name(name.c_str())] = key;
+      my_keymap.keymap[tu.name] = sig_key;
       my_sign_keymap.keymap[string_to_name(name.c_str())] = sig_key;
    }
 
@@ -102,6 +110,7 @@ int main( int argc, const char **argv ) {
    const std::string configini = "./config.ini";
 
    fc::json::save_to_file<eosio::chain::genesis_state>(gs, path, true);
+   fc::json::save_to_file<std::vector<account_tuple>>(gs.initial_account_list, activeacc, true);
    fc::json::save_to_file<key_map>(my_keymap, keypath, true);
    fc::json::save_to_file<key_map>(my_sign_keymap, sigkeypath, true);
 

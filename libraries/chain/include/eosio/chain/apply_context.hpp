@@ -574,6 +574,7 @@ class apply_context {
 
       void add_ram_usage( account_name account, int64_t ram_delta );
       void finalize_trace( action_trace& trace, const fc::time_point& start );
+      int64_t get_num_config_on_chain( const name& typ );
 
    /// Fields:
    public:

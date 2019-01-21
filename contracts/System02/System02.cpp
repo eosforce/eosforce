@@ -87,12 +87,15 @@ namespace eosiosystem {
          });
       }
 
+      blackproducer_table blackproducer(_self, _self);
+      auto blackpro = blackproducer.find(bpname);
+       eosio_assert(blackpro == blackproducer.end() || blackpro->isactive || (!blackpro->isactive && change < 0), "bp is not active");
       if( change > 0 ) {
          acnts_tbl.modify(act, 0, [&]( account_info& a ) {
             a.available.amount -= change;
          });
       }
-
+      
       bps_tbl.modify(bp, 0, [&]( bp_info& b ) {
          b.total_voteage += b.total_staked * ( current_block_num() - b.voteage_update_height );
          b.voteage_update_height = current_block_num();
@@ -159,7 +162,9 @@ namespace eosiosystem {
             }
          });
       }
-
+      blackproducer_table blackproducer(_self, _self);
+      auto blackpro = blackproducer.find(bpname);
+       eosio_assert(blackpro == blackproducer.end() || blackpro->isactive || (!blackpro->isactive && change < 0), "bp is not active");
       if( change > 0 ) {
          acnts_tbl.modify(act, 0, [&]( account_info& a ) {
             a.available.amount -= change;
@@ -294,6 +299,23 @@ namespace eosiosystem {
       }
    }
 
+   void system_contract::removebp( account_name bpname ) {
+      require_auth(_self);
+
+      blackproducer_table blackproducer(_self, _self);
+      auto bp = blackproducer.find(bpname);
+      if( bp == blackproducer.end()) {
+        blackproducer.emplace(bpname, [&]( producer_blacklist& b ) {
+            b.bpname = bpname;
+            b.deactivate();
+         });
+      } else {
+         blackproducer.modify(bp, 0, [&]( producer_blacklist& b ) {
+            b.deactivate();
+         });
+      }
+   }
+
    void system_contract::onfee( const account_name actor, const asset fee, const account_name bpname ) {
       accounts_table acnts_tbl(_self, _self);
       const auto& act = acnts_tbl.get(actor, "account is not found in accounts table");
@@ -336,6 +358,24 @@ namespace eosiosystem {
          cs.emergency = proposal > NUM_OF_TOP_BPS * 2 / 3;
       });
    }
+   
+   void system_contract::heartbeat( const account_name bpname, const time_point_sec timestamp ) {
+      bps_table bps_tbl(_self, _self);
+      hb_table hb_tbl(_self, _self);
+      const auto& bp = bps_tbl.get(bpname, "bpname is not registered");
+
+      auto hb = hb_tbl.find(bpname);
+      if( hb == hb_tbl.end()) {
+         hb_tbl.emplace(bpname, [&]( heartbeat_info& hb ) {
+            hb.bpname = bpname;
+            hb.timestamp = timestamp;
+         });
+      } else {
+         hb_tbl.modify(hb, 0, [&]( heartbeat_info& hb ) {
+            hb.timestamp = timestamp;
+         });
+      }
+   }
 
 //******** private ********//
 
@@ -347,7 +387,10 @@ namespace eosiosystem {
 
       for( auto it = bps_tbl.cbegin(); it != bps_tbl.cend(); ++it ) {
          for( int i = 0; i < NUM_OF_TOP_BPS; ++i ) {
-            if( sorts[size_t(i)] <= it->total_staked ) {
+            blackproducer_table blackproducer(_self, _self);
+            auto blackpro = blackproducer.find(it->name);
+
+            if( sorts[size_t(i)] <= it->total_staked && (blackpro == blackproducer.end() || blackpro->isactive)) {
                eosio::producer_key key;
                key.producer_name = it->name;
                key.block_signing_key = it->block_signing_key;
@@ -373,6 +416,15 @@ namespace eosiosystem {
       bps_table bps_tbl(_self, _self);
       accounts_table acnts_tbl(_self, _self);
       schedules_table schs_tbl(_self, _self);
+      hb_table hb_tbl(_self, _self);
+      
+      /*{
+        char test[500];
+        int64_t hb_intval = get_num_config_on_chain(N(hb.intval));
+        int64_t hb_max = get_num_config_on_chain(N(hb.max));
+        sprintf(test, "------reward_bps: hb_intval: %lld, hb_max: %lld", hb_intval, hb_max);
+        prints((char *)test);
+      }*/
 
       //calculate total staked all of the bps
       int64_t staked_all_bps = 0;
@@ -388,9 +440,20 @@ namespace eosiosystem {
       //reward bps, (bp_reward => bp_account_reward + bp_rewards_pool + eosfund_reward;)
       auto sum_bps_reward = 0;
       for( auto it = bps_tbl.cbegin(); it != bps_tbl.cend(); ++it ) {
-         if( it->total_staked <= rewarding_bp_staked_threshold || it->commission_rate < 1 ||
+         blackproducer_table blackproducer(_self, _self);
+         auto blackpro = blackproducer.find(it->name);
+         if(( blackpro != blackproducer.end() && !blackpro->isactive) || it->total_staked <= rewarding_bp_staked_threshold || it->commission_rate < 1 ||
              it->commission_rate > 10000 ) {
             continue;
+         }
+         
+         if( !is_super_bp(block_producers, it->name)) {
+            int64_t hb_max = get_num_config_on_chain(N(hb.max));
+            if (hb_max == -1) hb_max = 3600;
+            auto hb = hb_tbl.find(it->name);
+            if( hb == hb_tbl.end() || hb->timestamp + hb_max < time_point_sec( now() ) ) {
+                continue;
+            }
          }
 
          auto bp_reward = static_cast<int64_t>( BLOCK_REWARDS_BP * double(it->total_staked) / double(staked_all_bps));

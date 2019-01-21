@@ -16,13 +16,14 @@ namespace eosiosystem {
    using eosio::bytes;
    using eosio::block_timestamp;
    using std::string;
+   using eosio::time_point_sec;
 
 
    static constexpr uint64_t SYMBOL = S(4, EOS);
    static constexpr uint32_t FROZEN_DELAY = 3 * 24 * 60 * 20; //3*24*60*20*3s;
    static constexpr int NUM_OF_TOP_BPS = 23;
-   static constexpr int BLOCK_REWARDS_BP = 9 * 1000; //0.9000 EOS
-   static constexpr int BLOCK_REWARDS_B1 = 1 * 1000; //0.1000 EOS
+   static constexpr int BLOCK_REWARDS_BP = 27000 ; //2.7000 EOS
+   static constexpr int BLOCK_REWARDS_B1 = 3000; //0.3000 EOS
    static constexpr uint32_t UPDATE_CYCLE = 100; //every 100 blocks update
 
    class system_contract : private eosio::contract {
@@ -89,6 +90,17 @@ namespace eosiosystem {
          uint32_t amount = 0;
       };
 
+      struct producer_blacklist {
+         account_name bpname;
+         bool isactive = false;
+
+         uint64_t primary_key() const { return bpname; }
+         void     deactivate()       {isactive = false;}
+
+         EOSLIB_SERIALIZE(producer_blacklist, ( bpname )(isactive))
+      };
+
+
       struct schedule_info {
          uint64_t version;
          uint32_t block_height;
@@ -107,6 +119,15 @@ namespace eosiosystem {
 
          EOSLIB_SERIALIZE(chain_status, ( name )(emergency))
       };
+      
+      struct heartbeat_info {
+         account_name bpname;
+         time_point_sec timestamp;
+         
+         uint64_t primary_key() const { return bpname; }
+         
+         EOSLIB_SERIALIZE(heartbeat_info, ( bpname )(timestamp))
+      };
 
       typedef eosio::multi_index<N(accounts), account_info> accounts_table;
       typedef eosio::multi_index<N(votes), vote_info> votes_table;
@@ -115,6 +136,8 @@ namespace eosiosystem {
       typedef eosio::multi_index<N(bps), bp_info> bps_table;
       typedef eosio::multi_index<N(schedules), schedule_info> schedules_table;
       typedef eosio::multi_index<N(chainstatus), chain_status> cstatus_table;
+      typedef eosio::multi_index<N(heartbeat), heartbeat_info> hb_table;
+      typedef eosio::multi_index<N(blackpro), producer_blacklist> blackproducer_table;
 
       void update_elected_bps();
 
@@ -154,6 +177,11 @@ namespace eosiosystem {
 
       // @abi action
       void setemergency( const account_name bpname, const bool emergency );
+      
+      // @abi action
+      void heartbeat( const account_name bpname, const time_point_sec timestamp );
+      // @abi action
+      void removebp( account_name producer );
    };
 
    EOSIO_ABI(system_contract,
@@ -162,5 +190,7 @@ namespace eosiosystem {
                    (vote4ram)(unfreezeram)
                    (claim)
                    (onblock)(onfee)
-                   (setemergency))
+                   (setemergency)
+                   (heartbeat)
+                   (removebp))
 } /// eosiosystem

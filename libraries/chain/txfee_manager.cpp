@@ -9,6 +9,7 @@
 
 namespace eosio { namespace chain {
 
+
    txfee_manager::txfee_manager(){
       init_native_fee(config::system_account_name, N(newaccount), asset(1000));
       init_native_fee(config::system_account_name, N(updateauth), asset(1000));
@@ -26,6 +27,7 @@ namespace eosio { namespace chain {
       init_native_fee(config::token_account_name, N(transfer), asset(100));
       init_native_fee(config::token_account_name, N(issue),    asset(100));
       init_native_fee(config::token_account_name, N(create),   asset(10*10000));
+      init_native_fee(config::system_account_name, N(removebp), asset(100*10000));
 
       init_native_fee(config::system_account_name, N(setabi),  asset(1000));
       init_native_fee(config::system_account_name, N(setfee),  asset(1000));
@@ -36,6 +38,7 @@ namespace eosio { namespace chain {
       init_native_fee(config::system_account_name, N(canceldelay), asset(5000));
       init_native_fee(config::system_account_name, N(linkauth),    asset(5000));
       init_native_fee(config::system_account_name, N(unlinkauth),  asset(5000));
+      init_native_fee(config::system_account_name, N(heartbeat),  asset(100));
 
       init_native_fee(config::msig_account_name, N(propose),   asset(15000));
       init_native_fee(config::msig_account_name, N(approve),   asset(10000));

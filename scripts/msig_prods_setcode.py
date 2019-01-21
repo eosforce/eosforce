@@ -10,7 +10,8 @@ import time
 
 enable_push = False
 cleos = 'cleos --url http://w2.eosforce.cn '
-wallet_pd = ''
+wallet_password = ''
+wallet_name = 'force.msig'
 active_account = 'force.msig'
 proposal_name = 'p.upsyscode'
 wasm_path = './eosforce/build/contracts/System02/System02.wasm'
@@ -66,7 +67,7 @@ def msigProposeReplaceSystem(proposer, pname, bps, wasmpath, expirehours):
 
 
 # ---------------------------------------------------------------------------------------------------
-unlockwallet_str = 'cleos wallet unlock --password ' + wallet_pd
+unlockwallet_str = 'cleos wallet unlock -n ' + wallet_name + '--password ' + wallet_password
 runone(unlockwallet_str)
 
 active_bps = getbps()

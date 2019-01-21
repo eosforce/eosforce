@@ -156,11 +156,11 @@ BOOST_AUTO_TEST_CASE( forking ) try {
    wlog("set producer schedule to [dan,sam,pam]");
    c.produce_blocks(30);
 
-   auto r2 = c.create_accounts( {N(eosio.token)} );
-   wdump((fc::json::to_pretty_string(r2)));
-   c.set_code( N(eosio.token), eosio_token_wast );
-   c.set_abi( N(eosio.token), eosio_token_abi );
-   c.produce_blocks(10);
+   //auto r2 = c.create_accounts( {N(eosio.token)} );
+   //wdump((fc::json::to_pretty_string(r2)));
+   //c.set_code( N(eosio.token), eosio_token_wast );
+   //c.set_abi( N(eosio.token), eosio_token_abi );
+   //c.produce_blocks(10);
 
 
    auto cr = c.push_action( N(eosio.token), N(create), N(eosio.token), mutable_variant_object()

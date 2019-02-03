@@ -92,3 +92,5 @@ tutorials/bios-script/pw
 tutorials/bios-script/output\.log
 
 tutorials/bios-script/wallet/
+
+tutorials/bios-script/activeacc\.json

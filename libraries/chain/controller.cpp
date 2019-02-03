@@ -1254,7 +1254,7 @@ struct controller_impl {
             // new version use a onfee act in the trx, when exec trx, a onfee action will do first
 
             const auto is_onfee_act = is_func_has_open(self, config::func_typ::onfee_action);
-            const auto is_fee_limit = is_func_has_open(self, config::func_typ::fee_limit);
+            const auto is_fee_limit = is_onfee_act && is_func_has_open(self, config::func_typ::fee_limit);
             trx_context.delay = fc::seconds(trx->trx.delay_sec);
 
             asset fee_ext(0); // fee ext to get more res
@@ -1270,10 +1270,12 @@ struct controller_impl {
                        false
                );
 
-               const auto fee_required = txfee.get_required_fee(self, trx->trx);
-               EOS_ASSERT(trx->trx.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
+               if( !is_fee_limit ) {
+                  const auto fee_required = txfee.get_required_fee(self, trx->trx);
+                  EOS_ASSERT(trx->trx.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
+                  fee_ext = trx->trx.fee - fee_required;
+               }
                EOS_ASSERT(txfee.check_transaction(trx->trx) == true, transaction_exception, "transaction include actor more than one");
-               fee_ext = trx->trx.fee - fee_required;
 
 
                // keep
@@ -1302,7 +1304,7 @@ struct controller_impl {
                       ("block", head->block_num)("trx", trx->trx.id())("actios", trx->trx.actions));
                }
 
-               if(!is_onfee_act) {
+               if( !is_onfee_act ) {
                   trx_context.make_limit_by_contract(fee_ext);
                }
                trx_context.exec();

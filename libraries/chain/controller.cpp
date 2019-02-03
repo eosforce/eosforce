@@ -1254,6 +1254,7 @@ struct controller_impl {
             // new version use a onfee act in the trx, when exec trx, a onfee action will do first
 
             const auto is_onfee_act = is_func_has_open(self, config::func_typ::onfee_action);
+            const auto is_fee_limit = is_func_has_open(self, config::func_typ::fee_limit);
             trx_context.delay = fc::seconds(trx->trx.delay_sec);
 
             asset fee_ext(0); // fee ext to get more res

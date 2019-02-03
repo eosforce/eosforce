@@ -1225,7 +1225,7 @@ struct controller_impl {
                                            bool explicit_billed_cpu_time = false )
    {
       EOS_ASSERT(deadline != fc::time_point(), transaction_exception, "deadline cannot be uninitialized");
-      EOS_ASSERT(trx->trx.context_free_actions.size()==0, transaction_exception, "context free actions size should be zero!");
+      //EOS_ASSERT(trx->trx.context_free_actions.size()==0, transaction_exception, "context free actions size should be zero!");
       check_action(trx->trx.actions);
 
       transaction_trace_ptr trace;

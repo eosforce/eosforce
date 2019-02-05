@@ -1294,7 +1294,9 @@ struct controller_impl {
                                 "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
                   }
                } else {
-                  trx_context.make_fee_act( trx->trx.fee );
+                  asset fee_limit{ 0 };
+                  get_from_extensions(trx->trx.transaction_extensions, transaction::fee_limit, fee_limit);
+                  trx_context.make_fee_act(fee_limit);
                }
             }
 

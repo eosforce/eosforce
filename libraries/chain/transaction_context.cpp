@@ -332,10 +332,11 @@ namespace bacc = boost::accumulators;
    }
 
    // make_fee_act insert onfee act in trx
-   void transaction_context::make_fee_act( const asset& require_fee ) {
+   void transaction_context::make_fee_act( const asset& fee_limit ) {
       EOS_ASSERT(!trx.actions[0].authorization.empty(), transaction_exception, "authorization empty");
       fee_payer = trx.actions[0].authorization[0].actor;
-      max_fee_to_pay = require_fee; // it will work in next version
+      max_fee_to_pay = fee_limit;
+      ilog("fee limit ${f}", ("f", max_fee_to_pay));
       EOS_ASSERT(fee_payer != name{}, transaction_exception, "fee_payer nil");
    }
 

@@ -218,7 +218,7 @@ namespace eosio { namespace chain {
    template <typename T>
    inline void set_to_extensions( extensions_type& exts, const uint16_t& typ, const T& data ) {
       // datas size is not too mush
-      for( const auto& i : exts ){
+      for( auto& i : exts ){
          if( i.first == typ ){
             i.second = fc::raw::pack(data);
             return;

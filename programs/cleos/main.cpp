@@ -188,6 +188,8 @@ uint32_t tx_max_net_usage = 0;
 const asset zeroAsset = asset(0);
 uint32_t delaysec = 0;
 
+string tx_max_fee_limit;
+
 vector<string> tx_permission;
 
 eosio::client::http::http_context context;
@@ -220,6 +222,8 @@ void add_standard_transaction_options(CLI::App* cmd, string default_permission =
    cmd->add_option("--max-net-usage", tx_max_net_usage, localized("set an upper limit on the net usage budget, in bytes, for the transaction (defaults to 0 which means no limit)"));
 
    cmd->add_option("--delay-sec", delaysec, localized("set the delay_sec seconds, defaults to 0s"));
+
+   cmd->add_option("--max-fee", tx_max_fee_limit, localized("set an upper limit on the fee cost by a trx, defaults no limit"));
 }
 
 vector<chain::permission_level> get_account_permissions(const vector<string>& permissions) {
@@ -313,6 +317,8 @@ void sign_transaction(signed_transaction& trx, fc::variant& required_keys, const
    trx = signed_trx.as<signed_transaction>();
 }
 
+inline asset to_asset( const string& s );
+
 fc::variant push_transaction( signed_transaction& trx, int32_t extra_kcpu = 1000, packed_transaction::compression_type compression = packed_transaction::none, asset fee_ext =  zeroAsset) {
    auto info = get_info();
    trx.expiration = info.head_block_time + fc::seconds(fc::time_point::now().time_since_epoch().count()%3600); //tx_expiration;
@@ -338,6 +344,10 @@ fc::variant push_transaction( signed_transaction& trx, int32_t extra_kcpu = 1000
       trx.max_cpu_usage_ms = tx_max_cpu_usage;
       trx.max_net_usage_words = (tx_max_net_usage + 7)/8;
       trx.delay_sec = delaysec;
+
+      if(!tx_max_fee_limit.empty()){
+         set_to_extensions(trx.transaction_extensions, transaction::fee_limit, to_asset(tx_max_fee_limit));
+      }
    }
 
    auto required_keys = determine_required_keys(trx);

@@ -29,8 +29,9 @@ namespace config{
       static const auto onfee_action = N(f.onfeeact);
       static const auto use_system01 = N(f.system1);
       static const auto use_msig     = N(f.msig);
-      static const auto use_eosio_prods     = N(f.prods);
-      static const auto create_eosio_account     = N(f.eosio);
+      static const auto use_eosio_prods      = N(f.prods);
+      static const auto create_eosio_account = N(f.eosio);
+      static const auto fee_limit            = N(f.feelimit);
    }
    
    namespace heartbeat_typ{

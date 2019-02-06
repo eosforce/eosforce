@@ -3239,38 +3239,6 @@ int main( int argc, char** argv ) {
       }
    );
 
-   // wrap subcommand
-   // auto wrap = app.add_subcommand("wrap", localized("Wrap contract commands"), false);
-   // wrap->require_subcommand();
-
-   // // wrap exec
-   // string wrap_con = "eosio.wrap";
-   // executer = "";
-   // string trx_to_exec;
-   // auto wrap_exec = wrap->add_subcommand("exec", localized("Execute a transaction while bypassing authorization checks"));
-   // add_standard_transaction_options(wrap_exec, "executer@active & --contract@active");
-   // wrap_exec->add_option("executer", executer, localized("Account executing the transaction and paying for the deferred transaction RAM"))->required();
-   // wrap_exec->add_option("transaction", trx_to_exec, localized("The JSON string or filename defining the transaction to execute"))->required();
-   // wrap_exec->add_option("--contract,-c", wrap_con, localized("The account which controls the wrap contract"));
-
-   // wrap_exec->set_callback([&] {
-   //    fc::variant trx_var;
-   //    try {
-   //       trx_var = json_from_file_or_string(trx_to_exec);
-   //    } EOS_RETHROW_EXCEPTIONS(transaction_type_exception, "Fail to parse transaction JSON '${data}'", ("data",trx_to_exec))
-
-   //    auto accountPermissions = get_account_permissions(tx_permission);
-   //    if( accountPermissions.empty() ) {
-   //       accountPermissions = vector<permission_level>{{executer, config::active_name}, {wrap_con, config::active_name}};
-   //    }
-
-   //    auto args = fc::mutable_variant_object()
-   //       ("executer", executer )
-   //       ("trx", trx_var);
-
-   //    send_actions({chain::action{accountPermissions, wrap_con, "exec", variant_to_bin( wrap_con, N(exec), args ) }});
-   // });
-
    // system subcommand
    auto system = app.add_subcommand("system", localized("Send eosio.system contract action to the blockchain."), false);
    system->require_subcommand();
@@ -3287,9 +3255,8 @@ int main( int argc, char** argv ) {
    auto voteList = vote_producer_list_subcommand(voteProducer);
    auto claim = vote_producer_claim_subcommand(voteProducer);
    auto unfreeze = vote_producer_unfreeze_subcommand(voteProducer);
-   //auto listProducers = list_producers_subcommand(system);
 
-     string bp_name;
+   string bp_name;
    auto set_or_cancle_emergency = [&](const bool bSet) {
       auto args = fc::mutable_variant_object()
          ("bpname", bp_name)
@@ -3310,9 +3277,6 @@ int main( int argc, char** argv ) {
    cancleemergency->set_callback([&] { set_or_cancle_emergency(false); });
 
    auto listbps = list_bp_subcommand(system);
-
-   //auto regProxy = regproxy_subcommand(system);
-   //auto unregProxy = unregproxy_subcommand(system);
 
    auto cancelDelay = canceldelay_subcommand(system);
 

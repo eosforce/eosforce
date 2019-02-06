@@ -125,7 +125,6 @@ struct vote_producer_vote_subcommand {
    string voter_str;
    string bpname_str;
    double amount;
-   //string con = "eosio";
 
    vote_producer_vote_subcommand(CLI::App* actionRoot) {
       auto vote_proxy = actionRoot->add_subcommand("vote", localized("Vote your stake to a bp"));
@@ -148,7 +147,6 @@ struct vote_producer_vote_subcommand {
 };
 
 struct list_bp_subcommand {
-   string voter_str;
    uint32_t limit = 50;
    list_bp_subcommand(CLI::App* actionRoot) {
       auto list_bps = actionRoot->add_subcommand("listbps", localized("Get all of bp information"));

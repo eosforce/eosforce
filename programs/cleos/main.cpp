@@ -125,6 +125,7 @@ Options:
 #include "localize.hpp"
 #include "config.hpp"
 #include "httpc.hpp"
+#include "cmds.hpp"
 
 using namespace std;
 using namespace eosio;
@@ -192,7 +193,7 @@ vector<string> tx_permission;
 
 eosio::client::http::http_context context;
 
-void add_standard_transaction_options(CLI::App* cmd, string default_permission = "") {
+void add_standard_transaction_options(CLI::App* cmd, string default_permission/* = ""*/) {
    CLI::callback_t parse_expiration = [](CLI::results_t res) -> bool {
       double value_s;
       if (res.size() == 0 || !CLI::detail::lexical_cast(res[0], value_s)) {
@@ -511,7 +512,7 @@ void print_result( const fc::variant& result ) { try {
 } FC_CAPTURE_AND_RETHROW( (result) ) }
 
 using std::cout;
-void send_actions(std::vector<chain::action>&& actions, int32_t extra_kcpu = 1000, packed_transaction::compression_type compression = packed_transaction::none ) {
+void send_actions(std::vector<chain::action>&& actions, int32_t extra_kcpu/* = 1000*/, packed_transaction::compression_type compression/* = packed_transaction::none*/ ) {
    auto result = push_actions( move(actions), extra_kcpu, compression);
 
    if( tx_print_json ) {
@@ -1007,31 +1008,7 @@ struct register_producer_subcommand {
    }
 };
 
-struct update_bp_subcommand {
-   string producer_str;
-   string producer_key_str;
-   string url;
-   uint32_t loc = 0;
 
-   update_bp_subcommand(CLI::App* actionRoot) {
-      auto register_producer = actionRoot->add_subcommand("updatebp", localized("update bp information"));
-      register_producer->add_option("account", producer_str, localized("The account to register as a producer"))->required();
-      register_producer->add_option("producer_key", producer_key_str, localized("The producer's public key"))->required();
-      register_producer->add_option("commission_rate", loc, localized("relative location for purpose of nearest neighbor scheduling"), true);
-      register_producer->add_option("url", url, localized("url where info about producer can be found"), true);
-      add_standard_transaction_options(register_producer);
-
-
-      register_producer->set_callback([this] {
-         public_key_type producer_key;
-         try {
-            producer_key = public_key_type(producer_key_str);
-         } EOS_RETHROW_EXCEPTIONS(public_key_type_exception, "Invalid producer public key: ${public_key}", ("public_key", producer_key_str))
-         auto regprod_var = regproducer_variant(producer_str, producer_key, url, loc );
-         send_actions({create_action({permission_level{producer_str,config::active_name}}, config::system_account_name, N(updatebp), regprod_var)});
-      });
-   }
-};
 
 struct create_account_subcommand {
    string creator;
@@ -1119,152 +1096,6 @@ struct unregister_producer_subcommand {
 
          auto accountPermissions = get_account_permissions(tx_permission, {producer_str,config::active_name});
          send_actions({create_action(accountPermissions, config::system_account_name, N(unregprod), act_payload)});
-      });
-   }
-};
-
-struct vote_producer_claim_subcommand {
-   string voter_str;
-   string bpname_str;
-
-   vote_producer_claim_subcommand(CLI::App* actionRoot) {
-      auto vote_proxy = actionRoot->add_subcommand("claim", localized("Receive dividends on the bp"));
-      vote_proxy->add_option("voter", voter_str, localized("The voting account"))->required();
-      vote_proxy->add_option("bpname", bpname_str, localized("Receive the dividend bp name"))->required();
-      add_standard_transaction_options(vote_proxy);
-      
-
-          vote_proxy->set_callback([this] {
-         fc::variant act_payload = fc::mutable_variant_object()
-                  ("voter", voter_str)
-                  ("bpname", bpname_str)
-                  ;
-         send_actions({create_action({permission_level{voter_str,config::active_name}}, config::system_account_name, N(claim), act_payload)});  
-      });
-   }
-};
-
-struct vote_producer_unfreeze_subcommand {
-   string voter_str;
-   string bpname_str;
-
-   vote_producer_unfreeze_subcommand(CLI::App* actionRoot) {
-      auto vote_proxy = actionRoot->add_subcommand("unfreeze", localized("unfreeze the EOSC which Withdrawal of voting"));
-      vote_proxy->add_option("voter", voter_str, localized("The voting account"))->required();
-      vote_proxy->add_option("bpname", bpname_str, localized("Receive the dividend bp name"))->required();
-      add_standard_transaction_options(vote_proxy);
-      
-      vote_proxy->set_callback([this] {
-         fc::variant act_payload = fc::mutable_variant_object()
-                  ("voter", voter_str)
-                  ("bpname", bpname_str)
-                  ;
-         send_actions({create_action({permission_level{voter_str,config::active_name}}, config::system_account_name, N(unfreeze), act_payload)});  
-      });
-   }
-};
-
-struct vote_producer_list_subcommand {
-   string voter_str;
-   
-
-   vote_producer_list_subcommand(CLI::App* actionRoot) {
-      auto vote_proxy = actionRoot->add_subcommand("list", localized("Get all of Voting information for the voter"));
-      vote_proxy->add_option("voter", voter_str, localized("The voting account"))->required();
-      
-      //add_standard_transaction_options(vote_proxy);
-      
-      vote_proxy->set_callback([this] {
-          auto result = call(get_table_func, fc::mutable_variant_object("json", true)
-                               ("code", name(config::system_account_name).to_string())
-                               ("scope", voter_str)
-                               ("table", "votes")
-                               );
-          std::cout << fc::json::to_pretty_string(result)
-                << std::endl;
-      });
-   }
-};
-
-
-struct vote_producer_vote_subcommand {
-   string voter_str;
-   string bpname_str;
-   double amount;
-   //string con = "eosio";
-
-   vote_producer_vote_subcommand(CLI::App* actionRoot) {
-      auto vote_proxy = actionRoot->add_subcommand("vote", localized("Vote your stake to a bp"));
-      vote_proxy->add_option("voter", voter_str, localized("The voting account"))->required();
-      vote_proxy->add_option("bpname", bpname_str, localized("The account(s) to vote for."))->required();
-      vote_proxy->add_option("amount", amount, localized("The amount of EOS to vote"))->required();
-      add_standard_transaction_options(vote_proxy);
-      
-      vote_proxy->set_callback([this] {
-          char doubleamount[20] = {0};
-          sprintf(doubleamount,"%.4f",amount);
-          auto vote_amount = string(doubleamount) + " EOS";
-         fc::variant act_payload = fc::mutable_variant_object()
-                  ("voter", voter_str)
-                  ("bpname", bpname_str)
-                  ("stake", asset::from_string( vote_amount ));
-         send_actions({create_action({permission_level{voter_str,config::active_name}}, config::system_account_name, N(vote), act_payload)});
-      });
-   }
-};
-
-struct list_bp_subcommand {
-   string voter_str;
-   uint32_t limit = 50;
-   list_bp_subcommand(CLI::App* actionRoot) {
-      auto list_bps = actionRoot->add_subcommand("listbps", localized("Get all of bp information"));
-      list_bps->add_option("-l,--limit", limit, localized("The maximum number of rows to return"));
-      list_bps->set_callback([this] {
-          auto result = call(get_table_func, fc::mutable_variant_object("json", true)
-                               ("code", name(config::system_account_name).to_string())
-                               ("scope", "eosio")
-                               ("table", "bps")
-                               ("limit",limit));
-          std::cout << fc::json::to_pretty_string(result)
-                << std::endl;
-      });
-   }
-};
-
-struct list_producers_subcommand {
-   bool print_json = false;
-   uint32_t limit = 50;
-   std::string lower;
-
-   list_producers_subcommand(CLI::App* actionRoot) {
-      auto list_producers = actionRoot->add_subcommand("listproducers", localized("List producers"));
-      list_producers->add_flag("--json,-j", print_json, localized("Output in JSON format"));
-      list_producers->add_option("-l,--limit", limit, localized("The maximum number of rows to return"));
-      list_producers->add_option("-L,--lower", lower, localized("lower bound value of key, defaults to first"));
-      list_producers->set_callback([this] {
-         auto rawResult = call(get_producers_func, fc::mutable_variant_object
-            ("json", true)("lower_bound", lower)("limit", limit));
-         if ( print_json ) {
-            std::cout << fc::json::to_pretty_string(rawResult) << std::endl;
-            return;
-         }
-         auto result = rawResult.as<eosio::chain_apis::read_only::get_producers_result>();
-         if ( result.rows.empty() ) {
-            std::cout << "No producers found" << std::endl;
-            return;
-         }
-         auto weight = result.total_producer_vote_weight;
-         if ( !weight )
-            weight = 1;
-         printf("%-13s %-57s %-59s %s\n", "Producer", "Producer key", "Url", "Scaled votes");
-         for ( auto& row : result.rows )
-            printf("%-13.13s %-57.57s %-59.59s %1.4f\n",
-                   row["owner"].as_string().c_str(),
-                   row["producer_key"].as_string().c_str(),
-                   row["url"].as_string().c_str(),
-                   row["total_votes"].as_double() / weight);
-         if ( !result.more.empty() )
-            std::cout << "-L " << result.more << " for more" << std::endl;
       });
    }
 };

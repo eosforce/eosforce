@@ -621,25 +621,6 @@ chain::action create_setabi(const name& account, const bytes& abi) {
    };
 }
 
-chain::action create_setfee(const name& account, const name &act, const asset fee, const uint32_t cpu, const uint32_t net, const uint32_t ram) {
-   const auto permission_account =
-         ((cpu == 0)&&(net == 0)&&(ram == 0))
-         ? account             // if no set res limit, just need account permission
-         : name("force.test"); // if set res limit, need force.test
-
-   return action {
-         vector<chain::permission_level>{{permission_account, config::active_name}},
-         setfee{
-               .account   = account,
-               .action    = act,
-               .fee       = fee,
-               .cpu_limit = cpu,
-               .net_limit = net,
-               .ram_limit = ram
-         }
-   };
-}
-
 chain::action create_setcode(const name& account, const bytes& code) {
    return action {
       get_account_permissions(tx_permission, {account,config::active_name}),
@@ -2301,26 +2282,7 @@ int main( int argc, char** argv ) {
    abiSubcommand->add_flag( "-c,--clear", contract_clear, localized("Remove abi on an account"));
    abiSubcommand->add_flag( "--suppress-duplicate-check", suppress_duplicate_check, localized("Don't check for duplicate"));
 
-   string action_to_set_fee;
-   string fee_to_set;
-   uint32_t cpu_limit_by_contract = 0;
-   uint32_t net_limit_by_contract = 0;
-   uint32_t ram_limit_by_contract = 0;
-
-   auto feeSubcommand = setSubcommand->add_subcommand("setfee", localized("Set Fee need to action"));
-   feeSubcommand->add_option("account", account, localized("The account to set the Fee for"))->required();
-   feeSubcommand->add_option("action", action_to_set_fee, localized("The action to set the Fee for"))->required();
-   feeSubcommand->add_option("fee", fee_to_set, localized("The Fee to set to action"))->required();
-   feeSubcommand->add_option("cpu_limit", cpu_limit_by_contract, localized("The cpu max use limit to set to action"))->required();
-   feeSubcommand->add_option("net_limit", net_limit_by_contract, localized("The net max use limit to set to action"))->required();
-   feeSubcommand->add_option("ram_limit", ram_limit_by_contract, localized("The ram max use limit to set to action"))->required();
-   feeSubcommand->set_callback([&] {
-      asset a;
-      a = a.from_string(fee_to_set);
-      dlog("set fee ${act}, ${fee}", ("act", action_to_set_fee)("fee", a));
-      send_actions({create_setfee(account, action_to_set_fee, a, cpu_limit_by_contract, net_limit_by_contract, ram_limit_by_contract)});
-   });
-
+   auto setFeeSubcommand = set_fee_subcommand(setSubcommand);
 
    auto contractSubcommand = setSubcommand->add_subcommand("contract", localized("Create or update the contract on an account"));
    contractSubcommand->add_option("account", account, localized("The account to publish a contract for"))

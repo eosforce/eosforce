@@ -163,4 +163,52 @@ struct list_bp_subcommand {
    }
 };
 
+struct set_fee_subcommand {
+   string account;
+   string action_to_set_fee;
+   string fee_to_set;
+   uint32_t cpu_limit_by_contract = 0;
+   uint32_t net_limit_by_contract = 0;
+   uint32_t ram_limit_by_contract = 0;
+
+   set_fee_subcommand( CLI::App* actionRoot ) {
+      auto set_fee_subcmd = actionRoot->add_subcommand("setfee", localized("Set Fee need to action"));
+      set_fee_subcmd->add_option("account", account, localized("The account to set the Fee for"))->required();
+      set_fee_subcmd->add_option("action", action_to_set_fee, localized("The action to set the Fee for"))->required();
+      set_fee_subcmd->add_option("fee", fee_to_set, localized("The Fee to set to action"))->required();
+      set_fee_subcmd->add_option("cpu_limit", cpu_limit_by_contract, localized("The cpu max use limit to set to action"));
+      set_fee_subcmd->add_option("net_limit", net_limit_by_contract, localized("The net max use limit to set to action"));
+      set_fee_subcmd->add_option("ram_limit", ram_limit_by_contract, localized("The ram max use limit to set to action"));
+      add_standard_transaction_options(set_fee_subcmd);
+
+      set_fee_subcmd->set_callback([this] {
+         asset a;
+         a = a.from_string(fee_to_set);
+         dlog("set fee ${act}, ${fee}", ("act", action_to_set_fee)("fee", a));
+
+         const auto permission_account =
+               ((cpu_limit_by_contract == 0) && (net_limit_by_contract == 0) && (ram_limit_by_contract == 0))
+               ? account             // if no set res limit, just need account permission
+               : name("force.test"); // if set res limit, need force.test
+
+         send_actions(
+               {
+                  action {
+                     vector<chain::permission_level>{ { permission_account, config::active_name } },
+                     setfee{
+                        .account   = account,
+                        .action    = action_to_set_fee,
+                        .fee       = a,
+                        .cpu_limit = cpu_limit_by_contract,
+                        .net_limit = net_limit_by_contract,
+                        .ram_limit = ram_limit_by_contract
+                     }
+                  }
+               });
+      });
+   }
+};
+
+
+
 #endif //EOSFORCE_CLEOS_CMDS_HPP

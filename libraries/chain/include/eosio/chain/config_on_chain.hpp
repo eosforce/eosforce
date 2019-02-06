@@ -22,6 +22,7 @@ namespace config{
       static const auto net_per_fee = N(res.netfee);
       static const auto free_ram_per_account = N(res.freeram);
       static const auto ram_rent_b_per_eos   = N(res.ramrent);
+      static const auto trx_size_limit       = N(res.trxsize);
    };
 
    namespace func_typ{

@@ -1201,8 +1201,11 @@ struct controller_impl {
 
    void check_action( const vector<action>& actions ) const {
       const auto chain_status = check_chainstatus();
+      const auto trx_size_limit = get_num_config_on_chain(db,
+            config::res_typ::trx_size_limit,
+            config::default_trx_size);
       for( const auto& _a : actions ) {
-         EOS_ASSERT(_a.data.size() < config::default_trx_size,
+         EOS_ASSERT(_a.data.size() < trx_size_limit,
                     invalid_action_args_exception,
                     "must less than 100 * 1024 bytes");
          EOS_ASSERT(( !chain_status

@@ -185,7 +185,6 @@ bool   no_auto_keosd = false;
 uint8_t  tx_max_cpu_usage = 0;
 uint32_t tx_max_net_usage = 0;
 
-const asset zeroAsset = asset(0);
 uint32_t delaysec = 0;
 
 string tx_max_fee_limit;
@@ -319,7 +318,7 @@ void sign_transaction(signed_transaction& trx, fc::variant& required_keys, const
 
 inline asset to_asset( const string& s );
 
-fc::variant push_transaction( signed_transaction& trx, int32_t extra_kcpu = 1000, packed_transaction::compression_type compression = packed_transaction::none, asset fee_ext =  zeroAsset) {
+fc::variant push_transaction( signed_transaction& trx, int32_t extra_kcpu = 1000, packed_transaction::compression_type compression = packed_transaction::none ) {
    auto info = get_info();
    trx.expiration = info.head_block_time + fc::seconds(fc::time_point::now().time_since_epoch().count()%3600); //tx_expiration;
 
@@ -354,7 +353,6 @@ fc::variant push_transaction( signed_transaction& trx, int32_t extra_kcpu = 1000
    size_t num_keys = required_keys.is_array() ? required_keys.get_array().size() : 1;
    auto txfee = determine_required_fee(trx);
    fc::from_variant(txfee, trx.fee);
-   trx.fee += fee_ext;
 
    trx.max_cpu_usage_ms = tx_max_cpu_usage;
    trx.max_net_usage_words = (tx_max_net_usage + 7)/8;
@@ -375,11 +373,11 @@ fc::variant push_transaction( signed_transaction& trx, int32_t extra_kcpu = 1000
    }
 }
 
-fc::variant push_actions(std::vector<chain::action>&& actions, int32_t extra_kcpu, packed_transaction::compression_type compression = packed_transaction::none, const asset fee_ext =  zeroAsset ) {
+fc::variant push_actions(std::vector<chain::action>&& actions, int32_t extra_kcpu, packed_transaction::compression_type compression = packed_transaction::none ) {
    signed_transaction trx;
    trx.actions = std::forward<decltype(actions)>(actions);
 
-   return push_transaction(trx, extra_kcpu, compression, fee_ext);
+   return push_transaction(trx, extra_kcpu, compression);
 }
 
 void print_action( const fc::variant& at ) {
@@ -523,8 +521,8 @@ void print_result( const fc::variant& result ) { try {
 } FC_CAPTURE_AND_RETHROW( (result) ) }
 
 using std::cout;
-void send_actions(std::vector<chain::action>&& actions, int32_t extra_kcpu = 1000, packed_transaction::compression_type compression = packed_transaction::none, const asset fee_ext =  zeroAsset ) {
-   auto result = push_actions( move(actions), extra_kcpu, compression, fee_ext);
+void send_actions(std::vector<chain::action>&& actions, int32_t extra_kcpu = 1000, packed_transaction::compression_type compression = packed_transaction::none ) {
+   auto result = push_actions( move(actions), extra_kcpu, compression);
 
    if( tx_print_json ) {
       cout << fc::json::to_pretty_string( result ) << endl;
@@ -533,8 +531,8 @@ void send_actions(std::vector<chain::action>&& actions, int32_t extra_kcpu = 100
    }
 }
 
-void send_transaction( signed_transaction& trx, int32_t extra_kcpu, packed_transaction::compression_type compression = packed_transaction::none, const asset fee_ext =  zeroAsset  ) {
-   auto result = push_transaction(trx, extra_kcpu, compression, fee_ext);
+void send_transaction( signed_transaction& trx, int32_t extra_kcpu, packed_transaction::compression_type compression = packed_transaction::none  ) {
+   auto result = push_transaction(trx, extra_kcpu, compression);
 
    if( tx_print_json ) {
       cout << fc::json::to_pretty_string( result ) << endl;
@@ -2913,9 +2911,7 @@ int main( int argc, char** argv ) {
    });
 
    // Push subcommand
-   string fee_ext;
    auto push = app.add_subcommand("push", localized("Push arbitrary transactions to the blockchain"), false);
-   push->add_option("--ext-fee", fee_ext, localized("fee ext to cost for more res"));
    push->require_subcommand();
 
    // push action
@@ -2933,10 +2929,6 @@ int main( int argc, char** argv ) {
 
    add_standard_transaction_options(actionsSubcommand);
    actionsSubcommand->set_callback([&] {
-      asset fee_ext_asset(0);
-      if (fee_ext != ""){
-         fee_ext_asset = fee_ext_asset.from_string(fee_ext);
-      }
       fc::variant action_args_var;
       if( !data.empty() ) {
          try {
@@ -2944,15 +2936,8 @@ int main( int argc, char** argv ) {
          } EOS_RETHROW_EXCEPTIONS(action_type_exception, "Fail to parse action JSON data='${data}'", ("data", data))
       }
       auto accountPermissions = get_account_permissions(tx_permission);
-      send_actions(
-            {
-               chain::action{
-                  accountPermissions,
-                  contract_account,
-                  action,
-                  variant_to_bin( contract_account, action, action_args_var )
-               }
-            }, 1000, packed_transaction::none, fee_ext_asset);
+
+      send_actions({chain::action{accountPermissions, contract_account, action, variant_to_bin( contract_account, action, action_args_var ) }});
    });
 
    // push transaction
@@ -2962,22 +2947,18 @@ int main( int argc, char** argv ) {
    add_standard_transaction_options(trxSubcommand);
 
    trxSubcommand->set_callback([&] {
-      asset fee_ext_asset(0);
-      if (fee_ext != ""){
-         fee_ext_asset = fee_ext_asset.from_string(fee_ext);
-      }
       fc::variant trx_var;
       try {
          trx_var = json_from_file_or_string(trx_to_push);
       } EOS_RETHROW_EXCEPTIONS(transaction_type_exception, "Fail to parse transaction JSON '${data}'", ("data",trx_to_push))
       try {
          signed_transaction trx = trx_var.as<signed_transaction>();
-         std::cout << fc::json::to_pretty_string( push_transaction( trx, 1000, packed_transaction::none, fee_ext_asset )) << std::endl;
+         std::cout << fc::json::to_pretty_string( push_transaction( trx )) << std::endl;
       } catch( fc::exception& ) {
          // unable to convert so try via abi
          signed_transaction trx;
          abi_serializer::from_variant( trx_var, trx, abi_serializer_resolver, abi_serializer_max_time );
-         std::cout << fc::json::to_pretty_string( push_transaction( trx, 1000, packed_transaction::none, fee_ext_asset )) << std::endl;
+         std::cout << fc::json::to_pretty_string( push_transaction( trx )) << std::endl;
       }
    });
 

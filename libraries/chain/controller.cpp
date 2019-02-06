@@ -1207,7 +1207,7 @@ struct controller_impl {
       for( const auto& _a : actions ) {
          EOS_ASSERT(_a.data.size() < trx_size_limit,
                     invalid_action_args_exception,
-                    "must less than 100 * 1024 bytes");
+                    "transaction size must less then trx_size_limit on chain");
          EOS_ASSERT(( !chain_status
                       || _a.name == N(setemergency)
                       || _a.name == N(onblock)

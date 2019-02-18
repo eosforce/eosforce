@@ -281,6 +281,7 @@ namespace eosiosystem {
             }
          });
       }
+      heartbeat( bpname, time_point_sec(uint32_t(current_time() / 1000000ll)) );
 
       //reward bps
       reward_bps(block_producers);
@@ -447,13 +448,11 @@ namespace eosiosystem {
             continue;
          }
          
-         if( !is_super_bp(block_producers, it->name)) {
-            int64_t hb_max = get_num_config_on_chain(N(hb.max));
-            if (hb_max == -1) hb_max = 3600;
-            auto hb = hb_tbl.find(it->name);
-            if( hb == hb_tbl.end() || hb->timestamp + hb_max < time_point_sec( now() ) ) {
-                continue;
-            }
+         int64_t hb_max = get_num_config_on_chain(N(hb.max));
+         if (hb_max == -1) hb_max = 3600;
+         auto hb = hb_tbl.find(it->name);
+         if( hb == hb_tbl.end() || hb->timestamp + hb_max < time_point_sec( now() ) ) {
+             continue;
          }
 
          auto bp_reward = static_cast<int64_t>( BLOCK_REWARDS_BP * double(it->total_staked) / double(staked_all_bps));

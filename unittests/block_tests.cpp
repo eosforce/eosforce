@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(trusted_producer_test)
    auto blocks = corrupt_trx_in_block(main, N(tstproducera));
    main.validate_push_block( blocks.second );*/
 }
-
+#if 0
 // like trusted_producer_test, except verify that any entry in the trusted_producer list is accepted
 BOOST_AUTO_TEST_CASE(trusted_producer_verify_2nd_test)
 {
@@ -165,5 +165,6 @@ BOOST_AUTO_TEST_CASE(untrusted_producer_test)
       return e.code() == unsatisfied_authorization::code_value ;
    }) ;
 }
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()

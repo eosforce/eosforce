@@ -1201,10 +1201,13 @@ struct controller_impl {
 
    void check_action( const vector<action>& actions ) const {
       const auto chain_status = check_chainstatus();
+      const auto trx_size_limit = get_num_config_on_chain(db,
+            config::res_typ::trx_size_limit,
+            config::default_trx_size);
       for( const auto& _a : actions ) {
-         EOS_ASSERT(_a.data.size() < config::default_trx_size,
+         EOS_ASSERT(_a.data.size() < trx_size_limit,
                     invalid_action_args_exception,
-                    "must less than 100 * 1024 bytes");
+                    "transaction size must less then trx_size_limit on chain");
          EOS_ASSERT(( !chain_status
                       || _a.name == N(setemergency)
                       || _a.name == N(onblock)
@@ -1225,7 +1228,7 @@ struct controller_impl {
                                            bool explicit_billed_cpu_time = false )
    {
       EOS_ASSERT(deadline != fc::time_point(), transaction_exception, "deadline cannot be uninitialized");
-      EOS_ASSERT(trx->trx.context_free_actions.size()==0, transaction_exception, "context free actions size should be zero!");
+      //EOS_ASSERT(trx->trx.context_free_actions.size()==0, transaction_exception, "context free actions size should be zero!");
       check_action(trx->trx.actions);
 
       transaction_trace_ptr trace;
@@ -1254,6 +1257,7 @@ struct controller_impl {
             // new version use a onfee act in the trx, when exec trx, a onfee action will do first
 
             const auto is_onfee_act = is_func_has_open(self, config::func_typ::onfee_action);
+            const auto is_fee_limit = is_onfee_act && is_func_has_open(self, config::func_typ::fee_limit);
             trx_context.delay = fc::seconds(trx->trx.delay_sec);
 
             asset fee_ext(0); // fee ext to get more res
@@ -1269,10 +1273,12 @@ struct controller_impl {
                        false
                );
 
-               const auto fee_required = txfee.get_required_fee(self, trx->trx);
-               EOS_ASSERT(trx->trx.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
+               if( !is_fee_limit ) {
+                  const auto fee_required = txfee.get_required_fee(self, trx->trx);
+                  EOS_ASSERT(trx->trx.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
+                  fee_ext = trx->trx.fee - fee_required;
+               }
                EOS_ASSERT(txfee.check_transaction(trx->trx) == true, transaction_exception, "transaction include actor more than one");
-               fee_ext = trx->trx.fee - fee_required;
 
 
                // keep
@@ -1291,7 +1297,9 @@ struct controller_impl {
                                 "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
                   }
                } else {
-                  trx_context.make_fee_act( trx->trx.fee );
+                  asset fee_limit{ 0 };
+                  get_from_extensions(trx->trx.transaction_extensions, transaction::fee_limit, fee_limit);
+                  trx_context.make_fee_act(fee_limit);
                }
             }
 
@@ -1301,7 +1309,7 @@ struct controller_impl {
                       ("block", head->block_num)("trx", trx->trx.id())("actios", trx->trx.actions));
                }
 
-               if(!is_onfee_act) {
+               if( !is_onfee_act ) {
                   trx_context.make_limit_by_contract(fee_ext);
                }
                trx_context.exec();

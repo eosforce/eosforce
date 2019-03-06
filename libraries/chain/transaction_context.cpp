@@ -168,7 +168,7 @@ namespace bacc = boost::accumulators;
       trace->block_time = c.pending_block_time();
       trace->producer_block_id = c.pending_producer_block_id();
       executed.reserve( trx.total_actions() );
-      EOS_ASSERT( trx.transaction_extensions.size() == 0, unsupported_feature, "we don't support any extensions yet" );
+      //EOS_ASSERT( trx.transaction_extensions.size() == 0, unsupported_feature, "we don't support any extensions yet" );
    }
 
    void transaction_context::init(uint64_t initial_net_usage)
@@ -332,10 +332,11 @@ namespace bacc = boost::accumulators;
    }
 
    // make_fee_act insert onfee act in trx
-   void transaction_context::make_fee_act( const asset& require_fee ) {
+   void transaction_context::make_fee_act( const asset& fee_limit ) {
       EOS_ASSERT(!trx.actions[0].authorization.empty(), transaction_exception, "authorization empty");
       fee_payer = trx.actions[0].authorization[0].actor;
-      max_fee_to_pay = require_fee; // it will work in next version
+      max_fee_to_pay = fee_limit;
+      //ilog("fee limit ${f}", ("f", max_fee_to_pay));
       EOS_ASSERT(fee_payer != name{}, transaction_exception, "fee_payer nil");
    }
 
@@ -437,8 +438,7 @@ namespace bacc = boost::accumulators;
       */
    }
 
-   const action transaction_context::mk_fee_action( const action& act ) {
-      const auto fee = control.get_txfee_manager().get_required_fee(control, act);
+   const action transaction_context::mk_fee_action( const action& act, const asset& fee ) const {
       const bytes param_data = fc::raw::pack(fee_paramter{
             fee_payer, fee, name{}
       });
@@ -454,9 +454,14 @@ namespace bacc = boost::accumulators;
       // if fee_payer is nil, it is mean now is not pay fee by action
       if(fee_payer != name{}) {
          action_traces.emplace_back();
-         const auto& fee_act = mk_fee_action(act);
+         const auto fee = control.get_txfee_manager().get_required_fee(control, act);
+         const auto& fee_act = mk_fee_action(act, fee);
          // for lock developer 's EOSC before lock genesis user 's EOSC
          EOS_ASSERT(get_num_config_on_chain(control.db(), name{fee_payer}, -1) != 1, transaction_exception, "locked developer EOSC account");
+         if(max_fee_to_pay != asset{0}) {
+            fee_costed += fee;
+            EOS_ASSERT(fee_costed <= max_fee_to_pay, transaction_exception, "fee costed more then limit");
+         }
          add_limit_by_fee(act);
          dispatch_action(action_traces.back(), fee_act);
       }

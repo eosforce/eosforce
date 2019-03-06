@@ -22,6 +22,7 @@ namespace config{
       static const auto net_per_fee = N(res.netfee);
       static const auto free_ram_per_account = N(res.freeram);
       static const auto ram_rent_b_per_eos   = N(res.ramrent);
+      static const auto trx_size_limit       = N(res.trxsize);
    };
 
    namespace func_typ{
@@ -29,8 +30,9 @@ namespace config{
       static const auto onfee_action = N(f.onfeeact);
       static const auto use_system01 = N(f.system1);
       static const auto use_msig     = N(f.msig);
-      static const auto use_eosio_prods     = N(f.prods);
-      static const auto create_eosio_account     = N(f.eosio);
+      static const auto use_eosio_prods      = N(f.prods);
+      static const auto create_eosio_account = N(f.eosio);
+      static const auto fee_limit            = N(f.feelimit);
    }
    
    namespace heartbeat_typ{

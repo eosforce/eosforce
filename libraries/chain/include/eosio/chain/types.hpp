@@ -201,6 +201,32 @@ namespace eosio { namespace chain {
     */
    typedef vector<std::pair<uint16_t,vector<char>>> extensions_type;
 
+   // get data to res, if no found return false
+   template <typename T>
+   inline bool get_from_extensions( const extensions_type& exts, const uint16_t& typ, T& res ) {
+      for( const auto& i : exts ){
+         if( i.first == typ ){
+            fc::raw::unpack(i.second, res);
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   // set data to extensions
+   template <typename T>
+   inline void set_to_extensions( extensions_type& exts, const uint16_t& typ, const T& data ) {
+      // datas size is not too mush
+      for( auto& i : exts ){
+         if( i.first == typ ){
+            i.second = fc::raw::pack(data);
+            return;
+         }
+      }
+
+      exts.emplace_back(typ, fc::raw::pack(data));
+   }
 
 } }  // eosio::chain
 

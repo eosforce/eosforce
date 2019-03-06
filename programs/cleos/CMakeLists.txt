@@ -1,4 +1,4 @@
-add_executable( ${CLI_CLIENT_EXECUTABLE_NAME} main.cpp httpc.cpp help_text.cpp localize.hpp config.hpp CLI11.hpp)
+add_executable( ${CLI_CLIENT_EXECUTABLE_NAME} main.cpp httpc.cpp help_text.cpp localize.hpp config.hpp CLI11.hpp cmds.hpp)
 if( UNIX AND NOT APPLE )
   set(rt_library rt )
 endif()

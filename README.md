@@ -57,7 +57,7 @@ you must modify config.ini
 
 then restart nodeos
 
-### you must have a account name of eosforce
+### you must have a account name of eosforce and this account's balance needs at least 100 eosc because sign in need fee
 
 for example account name has a public key and a private key below:
 
@@ -65,7 +65,7 @@ for example account name has a public key and a private key below:
  
  private_key: 5J1111111111111111111
 
-account name of sign in must is the same with  bpname  
+account name of  sign in must is the same with  bpname  
 
 	cleos wallet import $private_key
 	cleos -u https://w1.eosforce.cn push action eosio updatebp '{"bpname":"bpname","block_signing_key":"block_signing_key","commission_rate":"commission_rate","url":"https://eosforce.io"}' -p bpname

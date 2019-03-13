@@ -61,6 +61,15 @@
         {"name":"stake",     "type":"asset"}
       ]
     },{
+        "name": "revote",
+        "base": "",
+        "fields": [
+          {"name":"voter",     "type":"account_name"},
+          {"name":"frombp",    "type":"account_name"},
+          {"name":"tobp",      "type":"account_name"},
+          {"name":"restake",   "type":"asset"}
+        ]
+    },{
       "name": "vote_info",
       "base": "",
       "fields": [
@@ -259,6 +268,10 @@
     },{
       "name": "vote",
       "type": "vote",
+      "ricardian_contract": ""
+    },{
+      "name": "revote",
+      "type": "revote",
       "ricardian_contract": ""
     },{
       "name": "unfreeze",

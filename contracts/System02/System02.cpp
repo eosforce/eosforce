@@ -50,24 +50,24 @@ namespace eosiosystem {
    void system_contract::revote( const account_name voter, const account_name frombp, const account_name tobp, const asset restake ) {
       require_auth(voter);
       eosio_assert(frombp != tobp, " from and to cannot same");
+      eosio_assert(restake.symbol == SYMBOL, "only support EOS which has 4 precision");
+      eosio_assert(asset{0} < restake && restake.amount % 10000 == 0,
+                   "need restake quantity > 0.0000 EOS and quantity is integer");
 
       bps_table bps_tbl(_self, _self);
       const auto& bpf = bps_tbl.get(frombp, "bpname is not registered");
       const auto& bpt = bps_tbl.get(tobp, "bpname is not registered");
 
-      eosio_assert(restake.symbol == SYMBOL, "only support EOS which has 4 precision");
-      eosio_assert(0 < restake.amount && restake.amount % 10000 == 0,
-                   "need restake quantity > 0.0000 EOS and quantity is integer");
-
-      votes_table votes_tbl(_self, voter);
+      const auto curr_block_num = current_block_num();
 
       // votes_table from bp
+      votes_table votes_tbl(_self, voter);
       auto vtsf = votes_tbl.find(frombp);
       eosio_assert(vtsf != votes_tbl.end(), "no vote on this bp");
       eosio_assert(restake <= vtsf->staked, "need restake <= frombp stake");
       votes_tbl.modify(vtsf, 0, [&]( vote_info& v ) {
-          v.voteage += v.staked.amount / 10000 * ( current_block_num() - v.voteage_update_height );
-          v.voteage_update_height = current_block_num();
+          v.voteage += v.staked.amount / 10000 * ( curr_block_num - v.voteage_update_height );
+          v.voteage_update_height = curr_block_num;
           v.staked -= restake;
       });
 
@@ -80,20 +80,21 @@ namespace eosiosystem {
          });
       } else {
          votes_tbl.modify(vtst, 0, [&]( vote_info& v ) {
-             v.voteage += v.staked.amount / 10000 * ( current_block_num() - v.voteage_update_height );
-             v.voteage_update_height = current_block_num();
+             v.voteage += v.staked.amount / 10000 * ( curr_block_num - v.voteage_update_height );
+             v.voteage_update_height = curr_block_num;
              v.staked += restake;
          });
       }
 
       bps_tbl.modify(bpf, 0, [&]( bp_info& b ) {
-          b.total_voteage += b.total_staked * ( current_block_num() - b.voteage_update_height );
-          b.voteage_update_height = current_block_num();
+          b.total_voteage += b.total_staked * ( curr_block_num - b.voteage_update_height );
+          b.voteage_update_height = curr_block_num;
           b.total_staked -= restake.amount / 10000;
       });
+
       bps_tbl.modify(bpt, 0, [&]( bp_info& b ) {
-          b.total_voteage += b.total_staked * ( current_block_num() - b.voteage_update_height );
-          b.voteage_update_height = current_block_num();
+          b.total_voteage += b.total_staked * ( curr_block_num - b.voteage_update_height );
+          b.voteage_update_height = curr_block_num;
           b.total_staked += restake.amount / 10000;
       });
    }

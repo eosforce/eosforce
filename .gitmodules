@@ -30,3 +30,6 @@
 [submodule "libraries/wabt"]
 	path = libraries/wabt
 	url = https://github.com/EOSIO/wabt
+[submodule "externals/grpc"]
+	path = externals/grpc
+	url = https://github.com/grpc/grpc

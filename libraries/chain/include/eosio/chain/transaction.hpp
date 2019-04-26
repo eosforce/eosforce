@@ -57,6 +57,7 @@ namespace eosio { namespace chain {
       enum extdata_type {
          none      = 0,
          fee_limit = 1,
+         voteage_fee = 2
       };
 
       vector<action>         context_free_actions;

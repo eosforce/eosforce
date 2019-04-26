@@ -1260,6 +1260,8 @@ struct controller_impl {
             const auto is_fee_limit = is_onfee_act && is_func_has_open(self, config::func_typ::fee_limit);
             trx_context.delay = fc::seconds(trx->trx.delay_sec);
 
+			   //ilog("push_transaction: is_onfee_act:${is_onfee_act}", ("is_onfee_act", is_onfee_act));
+
             asset fee_ext(0); // fee ext to get more res
             if( !trx->implicit ) {
                authorization.check_authorization(
@@ -1284,8 +1286,19 @@ struct controller_impl {
                // keep
                if( !is_onfee_act ) {
                   try {
+                     auto is_fee_voteage = [trx](account_name &bp_name)  {
+                        if (trx->trx.transaction_extensions.size() > 0) {
+                           return get_from_extensions(trx->trx.transaction_extensions, transaction::voteage_fee, bp_name);
+                        }
+                        return false;
+                     };
+                     account_name bp_name;
+                     auto voteage_as_fee = is_fee_voteage(bp_name);
+                     /*ilog("push_transaction: voteage_as_fee:${voteage_as_fee}, bp_name=${bp_name}", 
+                        ("voteage_as_fee", voteage_as_fee)
+                        ("bp_name", bp_name));*/
                      auto onftrx = std::make_shared<transaction_metadata>(
-                           get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor));
+                           get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor, voteage_as_fee, bp_name));
                      onftrx->implicit = true;
                      auto onftrace = push_transaction(onftrx, fc::time_point::maximum(),
                                                       config::default_min_transaction_cpu_usage, true);
@@ -2040,14 +2053,16 @@ struct controller_impl {
       return trx;
    }
 
-   signed_transaction get_on_fee_transaction( const asset &fee, const account_name &actor)
+   signed_transaction get_on_fee_transaction( const asset &fee, const account_name &actor, bool voteage_as_fee, account_name bp_name)
    {
       action on_fee_act;
       on_fee_act.account = config::system_account_name;
       on_fee_act.name = N(onfee);
       on_fee_act.authorization = vector<permission_level>{{actor, config::active_name}};
-
-      fee_paramter param(actor, fee, self.head_block_header().producer);
+      /*ilog("get_on_fee_transaction: voteage_as_fee:${voteage_as_fee}, bp_name=${bp_name}", 
+                     ("voteage_as_fee", voteage_as_fee)
+                     ("bp_name", bp_name));*/
+      fee_paramter param(actor, fee, voteage_as_fee ? bp_name : self.head_block_header().producer, voteage_as_fee);
       on_fee_act.data = fc::raw::pack(param);
 
       signed_transaction trx;

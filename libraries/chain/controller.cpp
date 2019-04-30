@@ -1208,7 +1208,7 @@ struct controller_impl {
    {
       EOS_ASSERT(deadline != fc::time_point(), transaction_exception, "deadline cannot be uninitialized");
       //EOS_ASSERT(trx->trx.context_free_actions.size()==0, transaction_exception, "context free actions size should be zero!");
-      check_action(trx->trx.actions);
+      check_action(trx->packed_trx->get_transaction().actions);
 
       transaction_trace_ptr trace;
       try {
@@ -1253,7 +1253,6 @@ struct controller_impl {
 
             const auto is_onfee_act = is_func_has_open(self, config::func_typ::onfee_action);
             const auto is_fee_limit = is_onfee_act && is_func_has_open(self, config::func_typ::fee_limit);
-            trx_context.delay = fc::seconds(trx->trx.delay_sec);
 
             asset fee_ext(0); // fee ext to get more res
             if( !trx->implicit ) {
@@ -1267,18 +1266,18 @@ struct controller_impl {
                );
 
                if( !is_fee_limit ) {
-                  const auto fee_required = txfee.get_required_fee(self, trx->trx);
-                  EOS_ASSERT(trx->trx.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
-                  fee_ext = trx->trx.fee - fee_required;
+                  const auto fee_required = txfee.get_required_fee(self, trn);
+                  EOS_ASSERT(trn.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
+                  fee_ext = trn.fee - fee_required;
                }
-               EOS_ASSERT(txfee.check_transaction(trx->trx) == true, transaction_exception, "transaction include actor more than one");
+               EOS_ASSERT(txfee.check_transaction(trn) == true, transaction_exception, "transaction include actor more than one");
 
 
                // keep
                if( !is_onfee_act ) {
                   try {
                      auto onftrx = std::make_shared<transaction_metadata>(
-                           get_on_fee_transaction(trx->trx.fee, trx->trx.actions[0].authorization[0].actor));
+                           get_on_fee_transaction(trn.fee, trn.actions[0].authorization[0].actor));
                      onftrx->implicit = true;
                      auto onftrace = push_transaction(onftrx, fc::time_point::maximum(),
                                                       config::default_min_transaction_cpu_usage, true);
@@ -1291,7 +1290,7 @@ struct controller_impl {
                   }
                } else {
                   asset fee_limit{ 0 };
-                  get_from_extensions(trx->trx.transaction_extensions, transaction::fee_limit, fee_limit);
+                  get_from_extensions(trn.transaction_extensions, transaction::fee_limit, fee_limit);
                   trx_context.make_fee_act(fee_limit);
                }
             }
@@ -1299,7 +1298,7 @@ struct controller_impl {
             try {
                if(explicit_billed_cpu_time && billed_cpu_time_us == 0){
                   EOS_ASSERT(false, transaction_exception, "error trx",
-                      ("block", head->block_num)("trx", trx->trx.id())("actios", trx->trx.actions));
+                      ("block", head->block_num)("trx", trn.id())("actios", trn.actions));
                }
 
                if( !is_onfee_act ) {

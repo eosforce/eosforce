@@ -329,7 +329,7 @@ void heartbeat_plugin_impl::heartbeat() {
       auto hbtrace = chain.push_transaction(hb_trx, fc::time_point::maximum(),
                                        config::default_min_transaction_cpu_usage);*/
       next_function<chain_apis::read_write::push_transaction_results> next = {};
-      auto hb_trx = std::make_shared<packed_transaction>(get_heartbeat_transaction());
+      auto hb_trx = std::make_shared<transaction_metadata>(get_heartbeat_transaction());
       app().get_method<incoming::methods::transaction_async>()(hb_trx, true, 
         [this, next](const fc::static_variant<fc::exception_ptr, transaction_trace_ptr>& result) -> void{ });
    } catch( const fc::exception& e ) {

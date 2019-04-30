@@ -292,26 +292,22 @@ cd $REPO_ROOT
 
 TIME_END=$(( $(date -u +%s) - $TIME_BEGIN ))
 
-printf "${bldred}\n\n _______  _______  _______ _________ _______\n"
-printf '(  ____ \(  ___  )(  ____ \\\\__   __/(  ___  )\n'
-printf "| (    \/| (   ) || (    \/   ) (   | (   ) |\n"
-printf "| (__    | |   | || (_____    | |   | |   | |\n"
-printf "|  __)   | |   | |(_____  )   | |   | |   | |\n"
-printf "| (      | |   | |      ) |   | |   | |   | |\n"
-printf "| (____/\| (___) |/\____) |___) (___| (___) |\n"
-printf "(_______/(_______)\_______)\_______/(_______)\n\n${txtrst}"
+printf "\n\n${bldred}\t _______  _______  _______  _______  _______  _______  _______  _______ \n"
+printf '\t(  ____ \(  ___  )(  ____ \(  ____ \(  ___  )(  ____ )(  ____ \(  ____ \ \n'
+printf "\t| (    \/| (   ) || (    \/| (    \/| (   ) || (    )|| (    \/| (    \/ \n"
+printf "\t| (__    | |   | || (_____ | (__    | |   | || (____)|| |      | (__     \n"
+printf "\t|  __)   | |   | |(_____  )|  __)   | |   | ||     __)| |      |  __)    \n"
+printf "\t| (      | |   | |      ) || (      | |   | || (\ (   | |      | (       \n"
+printf "\t| (____/\| (___) |/\____) || )      | (___) || ) \ \__| (____/\| (____/\ \n"
+printf "\t(_______/(_______)\_______)|/       (_______)|/   \__/(_______/(_______/ \n${txtrst}"
 
-printf "\\nEOSIO has been successfully built. %02d:%02d:%02d\\n" $(($TIME_END/3600)) $(($TIME_END%3600/60)) $(($TIME_END%60))
-printf "==============================================================================================\\n${bldred}"
-printf "(Optional) Testing Instructions:\\n"
+printf "\\n\\tEOSForce has been successfully built. %02d:%02d:%02d\\n\\n" $(($TIME_END/3600)) $(($TIME_END%3600/60)) $(($TIME_END%60))
+printf "\\tTo verify your installation run the following commands:\\n"
+
 print_instructions
-printf "${BIN_LOCATION}/mongod --dbpath ${MONGODB_DATA_LOCATION} -f ${MONGODB_CONF} --logpath ${MONGODB_LOG_LOCATION}/mongod.log &\\n"
-printf "cd ./build && PATH=\$PATH:$HOME/opt/mongodb/bin make test\\n" # PATH is set as currently 'mongo' binary is required for the mongodb test
-printf "${txtrst}==============================================================================================\\n"
-printf "For more information:\\n"
-printf "EOSIO website: https://eos.io\\n"
-printf "EOSIO Telegram channel @ https://t.me/EOSProject\\n"
-printf "EOSIO resources: https://eos.io/resources/\\n"
-printf "EOSIO Stack Exchange: https://eosio.stackexchange.com\\n"
-printf "EOSIO wiki: https://github.com/EOSIO/eos/wiki\\n\\n\\n"
+
+printf "\\tFor more information:\\n"
+printf "\\tEOSForce website: https://www.eosforce.io\\n"
+printf "\\tEOSForce Telegram channel @ https://t.me/eosforce_en\\n"
+printf "\\tEOSForce wiki: https://eosforce.github.io/Documentation/\\n\\n\\n"
 

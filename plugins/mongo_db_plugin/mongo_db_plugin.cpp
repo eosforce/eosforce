@@ -1,6 +1,6 @@
 /**
  *  @file
- *  @copyright defined in eos/LICENSE.txt
+ *  @copyright defined in eos/LICENSE
  */
 #include <eosio/mongo_db_plugin/mongo_db_plugin.hpp>
 #include <eosio/chain/eosio_contract.hpp>
@@ -16,11 +16,10 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/chrono.hpp>
 #include <boost/signals2/connection.hpp>
-#include <boost/thread/thread.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition_variable.hpp>
 
 #include <queue>
+#include <thread>
+#include <mutex>
 
 #include <bsoncxx/builder/basic/kvp.hpp>
 #include <bsoncxx/builder/basic/document.hpp>
@@ -167,9 +166,9 @@ public:
    std::deque<chain::block_state_ptr> block_state_process_queue;
    std::deque<chain::block_state_ptr> irreversible_block_state_queue;
    std::deque<chain::block_state_ptr> irreversible_block_state_process_queue;
-   boost::mutex mtx;
-   boost::condition_variable condition;
-   boost::thread consume_thread;
+   std::mutex mtx;
+   std::condition_variable condition;
+   std::thread consume_thread;
    std::atomic_bool done{false};
    std::atomic_bool startup{true};
    fc::optional<chain::chain_id_type> chain_id;
@@ -295,7 +294,7 @@ bool mongo_db_plugin_impl::filter_include( const transaction& trx ) const
 
 template<typename Queue, typename Entry>
 void mongo_db_plugin_impl::queue( Queue& queue, const Entry& e ) {
-   boost::mutex::scoped_lock lock( mtx );
+   std::unique_lock<std::mutex> lock( mtx );
    auto queue_size = queue.size();
    if( queue_size > max_queue_size ) {
       lock.unlock();
@@ -303,7 +302,7 @@ void mongo_db_plugin_impl::queue( Queue& queue, const Entry& e ) {
       queue_sleep_time += 10;
       if( queue_sleep_time > 1000 )
          wlog("queue size: ${q}", ("q", queue_size));
-      boost::this_thread::sleep_for( boost::chrono::milliseconds( queue_sleep_time ));
+      std::this_thread::sleep_for( std::chrono::milliseconds( queue_sleep_time ));
       lock.lock();
    } else {
       queue_sleep_time -= 10;
@@ -411,7 +410,7 @@ void mongo_db_plugin_impl::consume_blocks() {
       _account_controls = mongo_conn[db_name][account_controls_col];
       insert_default_abi();
       while (true) {
-         boost::mutex::scoped_lock lock(mtx);
+         std::unique_lock<std::mutex> lock(mtx);
          while ( transaction_metadata_queue.empty() &&
                  transaction_trace_queue.empty() &&
                  block_state_queue.empty() &&
@@ -575,6 +574,15 @@ void handle_mongo_exception( const std::string& desc, int line_num ) {
    }
 }
 
+// custom oid to avoid monotonic throttling
+// https://docs.mongodb.com/master/core/bulk-write-operations/#avoid-monotonic-throttling
+bsoncxx::oid make_custom_oid() {
+   bsoncxx::oid x = bsoncxx::oid();
+   const char* p = x.bytes();
+   std::swap((short&)p[0], (short&)p[10]);
+   return x;
+}
+
 } // anonymous namespace
 
 void mongo_db_plugin_impl::purge_abi_cache() {
@@ -645,6 +653,18 @@ optional<abi_serializer> mongo_db_plugin_impl::get_abi_serializer( account_name 
                                        }
                                  ) );
                         }
+                     }
+                  }
+               }
+               // mongo does not like empty json keys
+               // make abi_serializer use empty_name instead of "" for the action data
+               for( auto& s : abi.structs ) {
+                  if( s.name.empty() ) {
+                     s.name = "empty_struct_name";
+                  }
+                  for( auto& f : s.fields ) {
+                     if( f.name.empty() ) {
+                        f.name = "empty_field_name";
                      }
                   }
                }
@@ -730,7 +750,7 @@ void mongo_db_plugin_impl::_process_accepted_transaction( const chain::transacti
    using bsoncxx::builder::basic::make_array;
    namespace bbb = bsoncxx::builder::basic;
 
-   const auto& trx = t->trx;
+   const signed_transaction& trx = t->packed_trx->get_signed_transaction();
 
    if( !filter_include( trx ) ) return;
    
@@ -763,12 +783,13 @@ void mongo_db_plugin_impl::_process_accepted_transaction( const chain::transacti
    }
 
    string signing_keys_json;
-   if( t->signing_keys.valid() ) {
-      signing_keys_json = fc::json::to_string( t->signing_keys->second );
+   if( t->signing_keys_future.valid() ) {
+      signing_keys_json = fc::json::to_string( std::get<2>( t->signing_keys_future.get() ) );
    } else {
-      auto signing_keys = trx.get_signature_keys( *chain_id, false, false );
-      if( !signing_keys.empty() ) {
-         signing_keys_json = fc::json::to_string( signing_keys );
+      flat_set<public_key_type> keys;
+      trx.get_signature_keys( *chain_id, fc::time_point::maximum(), keys, false );
+      if( !keys.empty() ) {
+         signing_keys_json = fc::json::to_string( keys );
       }
    }
 
@@ -822,6 +843,9 @@ mongo_db_plugin_impl::add_action_trace( mongocxx::bulk_write& bulk_action_traces
    if( start_block_reached && store_action_traces && in_filter ) {
       auto action_traces_doc = bsoncxx::builder::basic::document{};
       const chain::base_action_trace& base = atrace; // without inline action traces
+
+      // improve data distributivity when using mongodb sharding
+      action_traces_doc.append( kvp( "_id", make_custom_oid() ) );
 
       auto v = to_variant_with_abi( base );
       string json = fc::json::to_string( v );
@@ -1087,11 +1111,8 @@ void mongo_db_plugin_impl::_process_irreversible_block(const chain::block_state_
          string trx_id_str;
          if( receipt.trx.contains<packed_transaction>() ) {
             const auto& pt = receipt.trx.get<packed_transaction>();
-            // get id via get_raw_transaction() as packed_transaction.id() mutates internal transaction state
-            const auto& raw = pt.get_raw_transaction();
-            const auto& trx = fc::raw::unpack<transaction>( raw );
-            if( !filter_include( trx ) ) continue;
-            const auto& id = trx.id();
+            if( !filter_include( pt.get_signed_transaction() ) ) continue;
+            const auto& id = pt.id();
             trx_id_str = id.str();
          } else {
             const auto& id = receipt.trx.get<transaction_id_type>();
@@ -1530,7 +1551,7 @@ void mongo_db_plugin_impl::init() {
 
             // action traces indexes
             auto action_traces = mongo_conn[db_name][action_traces_col];
-            action_traces.create_index( bsoncxx::from_json( R"xxx({ "trx_id" : 1 })xxx" ));
+            action_traces.create_index( bsoncxx::from_json( R"xxx({ "block_num" : 1 })xxx" ));
 
             // pub_keys indexes
             auto pub_keys = mongo_conn[db_name][pub_keys_col];
@@ -1553,7 +1574,7 @@ void mongo_db_plugin_impl::init() {
 
    ilog("starting db plugin thread");
 
-   consume_thread = boost::thread([this] { consume_blocks(); });
+   consume_thread = std::thread([this] { consume_blocks(); });
 
    startup = false;
 }

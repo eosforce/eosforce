@@ -537,13 +537,13 @@ void apply_eosio_onfee( apply_context& context ) {
       const auto newest_total_voteage =
          bp_info_data.total_voteage + bp_info_data.total_staked * (curr_block_num - bp_info_data.voteage_update_height);
 
-      ilog("apply_eosio_onfee: fee voteage=${voteage}, bp total_voteage=${total_voteage}, bp total_staked=${total_staked}, curr_block_num=${curr_block_num}, bp voteage_update_height=${voteage_update_height}, newest_total_voteage=${newest_total_voteage}", 
+      /*ilog("apply_eosio_onfee: fee voteage=${voteage}, bp total_voteage=${total_voteage}, bp total_staked=${total_staked}, curr_block_num=${curr_block_num}, bp voteage_update_height=${voteage_update_height}, newest_total_voteage=${newest_total_voteage}", 
             ("voteage", voteage)
             ("total_voteage", bp_info_data.total_voteage)
             ("total_staked", bp_info_data.total_staked) 
             ("curr_block_num", curr_block_num)
             ("voteage_update_height", bp_info_data.voteage_update_height) 
-            ("newest_total_voteage", newest_total_voteage));
+            ("newest_total_voteage", newest_total_voteage));*/
       
       auto votes_tbl = native_multi_index<N(votes), memory_db::vote_info>{
             context, config::system_account_name, data.actor

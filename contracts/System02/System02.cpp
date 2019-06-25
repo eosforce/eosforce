@@ -398,7 +398,7 @@ namespace eosiosystem {
          
          int64_t newest_voteage = vts.voteage + (vts.staked.amount / 10000) * (curr_block_num - vts.voteage_update_height);
          
-         print("system_contract::fee: voter voteage=", vts.voteage, ", voter vote=", vts.vote.amount / 10000, ", voteage_update_height=", vts.voteage_update_height, ", voter newest_voteage=", newest_voteage, "\n");
+         print("system_contract::fee: voter voteage=", vts.voteage, ", voter staked=", vts.staked.amount / 10000, ", voteage_update_height=", vts.voteage_update_height, ", voter newest_voteage=", newest_voteage, "\n");
          eosio_assert(voteage > 0 && voteage <= newest_voteage, "voteage must be greater than zero and have sufficient voteage!");
       
          votes_tbl.modify(vts, 0, [&]( vote_info& v ) {

@@ -532,18 +532,18 @@ void apply_eosio_onfee( apply_context& context ) {
       memory_db::bp_info bp_info_data;
       bps_tbl.get(data.bpname, bp_info_data, "bpname is not registered");
          
-      int64_t voteage = fee.get_amount();
+      int64_t voteage = fee.get_amount() * get_num_config_on_chain( context.db, config::func_typ::votage_ratio, 10000 ) / 10000;
       const auto curr_block_num = context.control.head_block_num();
       const auto newest_total_voteage =
          bp_info_data.total_voteage + bp_info_data.total_staked * (curr_block_num - bp_info_data.voteage_update_height);
 
-      /*ilog("apply_eosio_onfee: fee voteage=${voteage}, bp total_voteage=${total_voteage}, bp total_staked=${total_staked}, curr_block_num=${curr_block_num}, bp voteage_update_height=${voteage_update_height}, newest_total_voteage=${newest_total_voteage}", 
+      ilog("apply_eosio_onfee: fee voteage=${voteage}, bp total_voteage=${total_voteage}, bp total_staked=${total_staked}, curr_block_num=${curr_block_num}, bp voteage_update_height=${voteage_update_height}, newest_total_voteage=${newest_total_voteage}", 
             ("voteage", voteage)
             ("total_voteage", bp_info_data.total_voteage)
             ("total_staked", bp_info_data.total_staked) 
             ("curr_block_num", curr_block_num)
             ("voteage_update_height", bp_info_data.voteage_update_height) 
-            ("newest_total_voteage", newest_total_voteage));*/
+            ("newest_total_voteage", newest_total_voteage));
       
       auto votes_tbl = native_multi_index<N(votes), memory_db::vote_info>{
             context, config::system_account_name, data.actor

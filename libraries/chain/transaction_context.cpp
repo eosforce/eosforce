@@ -447,7 +447,7 @@ namespace bacc = boost::accumulators;
          }
          return false;
       };
-      auto voteage_as_fee = is_fee_voteage(trx, bp_name);
+      auto voteage_as_fee = is_func_has_open(control, config::func_typ::votage_as_fee_num) && is_fee_voteage(trx, bp_name);
 
       const bytes param_data = fc::raw::pack(fee_paramter{
             fee_payer, fee, voteage_as_fee ? bp_name : name{}, voteage_as_fee

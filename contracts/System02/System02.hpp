@@ -73,12 +73,6 @@ namespace eosiosystem {
 
          uint64_t primary_key() const { return name; }
 
-         void update( public_key key, uint32_t rate, std::string u ) {
-            block_signing_key = key;
-            commission_rate = rate;
-            url = u;
-         }
-
          EOSLIB_SERIALIZE(bp_info, ( name )(block_signing_key)(commission_rate)(total_staked)
                (rewards_pool)(total_voteage)(voteage_update_height)(url)(emergency))
       };

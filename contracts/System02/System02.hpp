@@ -132,10 +132,23 @@ namespace eosiosystem {
       typedef eosio::multi_index<N(blackpro), producer_blacklist> blackproducer_table;
 
       void update_elected_bps();
-
       void reward_bps( account_name block_producers[] );
-
       bool is_super_bp( account_name block_producers[], account_name name );
+      inline void heartbeat_imp( const account_name bpname, const time_point_sec timestamp ){
+         hb_table hb_tbl(_self, _self);
+
+         const auto hb = hb_tbl.find(bpname);
+         if( hb == hb_tbl.end()) {
+            hb_tbl.emplace(bpname, [&]( heartbeat_info& hb ) {
+               hb.bpname = bpname;
+               hb.timestamp = timestamp;
+            });
+         } else {
+            hb_tbl.modify(hb, 0, [&]( heartbeat_info& hb ) {
+               hb.timestamp = timestamp;
+            });
+         }
+      }
 
    public:
       // @abi action

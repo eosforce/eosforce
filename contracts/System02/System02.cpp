@@ -347,7 +347,8 @@ namespace eosiosystem {
             }
          });
       }
-      heartbeat( bpname, time_point_sec(uint32_t(current_time() / 1000000ll)) );
+
+      heartbeat_imp( bpname, time_point_sec(uint32_t(current_time() / 1000000ll)) );
 
       //reward bps
       reward_bps(block_producers);
@@ -455,20 +456,9 @@ namespace eosiosystem {
    
    void system_contract::heartbeat( const account_name bpname, const time_point_sec timestamp ) {
       bps_table bps_tbl(_self, _self);
-      hb_table hb_tbl(_self, _self);
       const auto& bp = bps_tbl.get(bpname, "bpname is not registered");
 
-      auto hb = hb_tbl.find(bpname);
-      if( hb == hb_tbl.end()) {
-         hb_tbl.emplace(bpname, [&]( heartbeat_info& hb ) {
-            hb.bpname = bpname;
-            hb.timestamp = timestamp;
-         });
-      } else {
-         hb_tbl.modify(hb, 0, [&]( heartbeat_info& hb ) {
-            hb.timestamp = timestamp;
-         });
-      }
+      heartbeat_imp(bpname, timestamp);
    }
 
    void system_contract::update_elected_bps() {

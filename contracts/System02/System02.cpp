@@ -1,6 +1,7 @@
 #include "System02.hpp"
 
 namespace eosiosystem {
+   static constexpr uint64_t SYMBOL = S(4, EOS);
 
    void system_contract::transfer( const account_name from, const account_name to, const asset quantity,
                                    const string memo ) {

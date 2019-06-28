@@ -38,12 +38,16 @@ namespace eosiosystem {
       auto bp = bps_tbl.find(bpname);
       if( bp == bps_tbl.end()) {
          bps_tbl.emplace(bpname, [&]( bp_info& b ) {
-            b.name = bpname;
-            b.update(block_signing_key, commission_rate, url);
+            b.name              = bpname;
+            b.block_signing_key = block_signing_key;
+            b.commission_rate   = commission_rate;
+            b.url               = url;
          });
       } else {
          bps_tbl.modify(bp, 0, [&]( bp_info& b ) {
-            b.update(block_signing_key, commission_rate, url);
+            b.block_signing_key = block_signing_key;
+            b.commission_rate   = commission_rate;
+            b.url               = url;
          });
       }
    }

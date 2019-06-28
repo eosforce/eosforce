@@ -116,6 +116,8 @@ namespace eosiosystem {
       eosio_assert(0 <= stake.amount && stake.amount % 10000 == 0,
                    "need stake quantity >= 0.0000 EOS and quantity is integer");
 
+      const auto curr_block_num = current_block_num();
+
       int64_t change = 0;
       votes_table votes_tbl(_self, voter);
       auto vts = votes_tbl.find(bpname);
@@ -134,12 +136,12 @@ namespace eosiosystem {
          eosio_assert(change <= act.available.amount, "need stake change quantity < your available balance");
 
          votes_tbl.modify(vts, 0, [&]( vote_info& v ) {
-            v.voteage += v.staked.amount / 10000 * ( current_block_num() - v.voteage_update_height );
-            v.voteage_update_height = current_block_num();
+            v.voteage += v.staked.amount / 10000 * ( curr_block_num - v.voteage_update_height );
+            v.voteage_update_height = curr_block_num;
             v.staked = stake;
             if( change < 0 ) {
                v.unstaking.amount += -change;
-               v.unstake_height = current_block_num();
+               v.unstake_height = curr_block_num;
             }
          });
       }
@@ -154,9 +156,9 @@ namespace eosiosystem {
       }
       
       bps_tbl.modify(bp, 0, [&]( bp_info& b ) {
-         b.total_voteage += b.total_staked * ( current_block_num() - b.voteage_update_height );
-         b.voteage_update_height = current_block_num();
-         b.total_staked += change / 10000;
+         b.total_voteage += b.total_staked * ( curr_block_num - b.voteage_update_height );
+         b.voteage_update_height = curr_block_num;
+         b.total_staked += (change / 10000);
       });
    }
 
@@ -192,6 +194,8 @@ namespace eosiosystem {
       eosio_assert(0 <= stake.amount && stake.amount % 10000 == 0,
                    "need stake quantity >= 0.0000 EOS and quantity is integer");
 
+      const auto curr_block_num = current_block_num();
+
       int64_t change = 0;
       votes4ram_table votes_tbl(_self, voter);
       auto vts = votes_tbl.find(bpname);
@@ -210,12 +214,12 @@ namespace eosiosystem {
          eosio_assert(change <= act.available.amount, "need stake change quantity < your available balance");
 
          votes_tbl.modify(vts, 0, [&]( vote_info& v ) {
-            v.voteage += v.staked.amount / 10000 * ( current_block_num() - v.voteage_update_height );
-            v.voteage_update_height = current_block_num();
+            v.voteage += v.staked.amount / 10000 * ( curr_block_num - v.voteage_update_height );
+            v.voteage_update_height = curr_block_num;
             v.staked = stake;
             if( change < 0 ) {
                v.unstaking.amount += -change;
-               v.unstake_height = current_block_num();
+               v.unstake_height = curr_block_num;
             }
          });
       }
@@ -229,8 +233,8 @@ namespace eosiosystem {
       }
 
       bps_tbl.modify(bp, 0, [&]( bp_info& b ) {
-         b.total_voteage += b.total_staked * ( current_block_num() - b.voteage_update_height );
-         b.voteage_update_height = current_block_num();
+         b.total_voteage += b.total_staked * ( curr_block_num - b.voteage_update_height );
+         b.voteage_update_height = curr_block_num;
          b.total_staked += change / 10000;
       });
 
@@ -272,6 +276,9 @@ namespace eosiosystem {
 
    void system_contract::claim( const account_name voter, const account_name bpname ) {
       require_auth(voter);
+
+      const auto curr_block_num = current_block_num();
+
       accounts_table acnts_tbl(_self, _self);
       const auto& act = acnts_tbl.get(voter, "voter is not found in accounts table");
 
@@ -282,9 +289,9 @@ namespace eosiosystem {
       const auto& vts = votes_tbl.get(bpname, "voter have not add votes to the the producer yet");
 
       int64_t newest_voteage =
-            vts.voteage + vts.staked.amount / 10000 * ( current_block_num() - vts.voteage_update_height );
+            vts.voteage + vts.staked.amount / 10000 * ( curr_block_num - vts.voteage_update_height );
       int64_t newest_total_voteage =
-            bp.total_voteage + bp.total_staked * ( current_block_num() - bp.voteage_update_height );
+            bp.total_voteage + bp.total_staked * ( curr_block_num - bp.voteage_update_height );
       eosio_assert(0 < newest_total_voteage, "claim is not available yet");
 
       int128_t amount_voteage = ( int128_t ) bp.rewards_pool.amount * ( int128_t ) newest_voteage;
@@ -299,13 +306,13 @@ namespace eosiosystem {
 
       votes_tbl.modify(vts, 0, [&]( vote_info& v ) {
          v.voteage = 0;
-         v.voteage_update_height = current_block_num();
+         v.voteage_update_height = curr_block_num;
       });
 
       bps_tbl.modify(bp, 0, [&]( bp_info& b ) {
          b.rewards_pool -= reward;
          b.total_voteage = newest_total_voteage - newest_voteage;
-         b.voteage_update_height = current_block_num();
+         b.voteage_update_height = curr_block_num;
       });
    }
 
@@ -315,6 +322,8 @@ namespace eosiosystem {
       accounts_table acnts_tbl(_self, _self);
       schedules_table schs_tbl(_self, _self);
 
+      const auto curr_block_num = current_block_num();
+
       account_name block_producers[NUM_OF_TOP_BPS] = {};
       get_active_producers(block_producers, sizeof(account_name) * NUM_OF_TOP_BPS);
 
@@ -322,7 +331,7 @@ namespace eosiosystem {
       if( sch == schs_tbl.end()) {
          schs_tbl.emplace(bpname, [&]( schedule_info& s ) {
             s.version = schedule_version;
-            s.block_height = current_block_num();
+            s.block_height = curr_block_num;
             for( int i = 0; i < NUM_OF_TOP_BPS; i++ ) {
                s.producers[i].amount = block_producers[i] == bpname ? 1 : 0;
                s.producers[i].bpname = block_producers[i];
@@ -344,7 +353,7 @@ namespace eosiosystem {
       reward_bps(block_producers);
 
       //update schedule
-      if( current_block_num() % UPDATE_CYCLE == 0 ) {
+      if( curr_block_num % UPDATE_CYCLE == 0 ) {
          //reward block.one
          const auto& b1 = acnts_tbl.get(N(b1), "b1 is not found in accounts table");
          acnts_tbl.modify(b1, 0, [&]( account_info& a ) {
@@ -462,8 +471,6 @@ namespace eosiosystem {
       }
    }
 
-//******** private ********//
-
    void system_contract::update_elected_bps() {
       bps_table bps_tbl(_self, _self);
 
@@ -502,14 +509,6 @@ namespace eosiosystem {
       accounts_table acnts_tbl(_self, _self);
       schedules_table schs_tbl(_self, _self);
       hb_table hb_tbl(_self, _self);
-      
-      /*{
-        char test[500];
-        int64_t hb_intval = get_num_config_on_chain(N(hb.intval));
-        int64_t hb_max = get_num_config_on_chain(N(hb.max));
-        sprintf(test, "------reward_bps: hb_intval: %lld, hb_max: %lld", hb_intval, hb_max);
-        prints((char *)test);
-      }*/
 
       //calculate total staked all of the bps
       int64_t staked_all_bps = 0;

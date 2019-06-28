@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "System02.hpp"
 
 namespace eosiosystem {
@@ -435,33 +437,58 @@ namespace eosiosystem {
    void system_contract::update_elected_bps() {
       bps_table bps_tbl(_self, _self);
 
-      std::vector<eosio::producer_key> vote_schedule;
-      std::vector<int64_t> sorts(NUM_OF_TOP_BPS, 0);
+      constexpr auto bps_top_size = static_cast<size_t>(NUM_OF_TOP_BPS);
 
-      for( auto it = bps_tbl.cbegin(); it != bps_tbl.cend(); ++it ) {
-         for( int i = 0; i < NUM_OF_TOP_BPS; ++i ) {
-            blackproducer_table blackproducer(_self, _self);
-            auto blackpro = blackproducer.find(it->name);
+      std::vector< std::pair<eosio::producer_key, int64_t> > vote_schedule;
+      vote_schedule.reserve(32);
 
-            if( sorts[size_t(i)] <= it->total_staked && (blackpro == blackproducer.end() || blackpro->isactive)) {
-               eosio::producer_key key;
-               key.producer_name = it->name;
-               key.block_signing_key = it->block_signing_key;
-               vote_schedule.insert(vote_schedule.begin() + i, key);
-               sorts.insert(sorts.begin() + i, it->total_staked);
+      // Note this output is not same after updated
+      blackproducer_table blackproducer(_self, _self);
+
+      for( const auto& it : bps_tbl ) {
+         const auto blackpro =  blackproducer.find(it.name);
+         if( blackpro != blackproducer.end() && (!blackpro->isactive) ) {
+            continue;
+         }
+
+         const auto vs_size = vote_schedule.size();
+         if(   vs_size >= bps_top_size 
+            && vote_schedule[vs_size - 1].second > it.total_staked ) {
+            continue;
+         }
+
+         // Just 23 node, just find by for
+         for( size_t i = 0; i < bps_top_size; ++i ) {
+            if( vote_schedule[i].second <= it.total_staked ) {
+               vote_schedule.insert(vote_schedule.begin() + i, 
+                  std::make_pair( eosio::producer_key{ it.name, it.block_signing_key }, 
+                                  it.total_staked ) );
+
+               if( vote_schedule.size() > bps_top_size ) {
+                  vote_schedule.resize( bps_top_size );
+               }
                break;
             }
          }
       }
 
-      if( vote_schedule.size() > NUM_OF_TOP_BPS ) {
-         vote_schedule.resize(NUM_OF_TOP_BPS);
+      if( vote_schedule.size() > bps_top_size ) {
+         vote_schedule.resize(bps_top_size);
       }
 
       /// sort by producer name
-      std::sort(vote_schedule.begin(), vote_schedule.end());
+      std::sort(vote_schedule.begin(), vote_schedule.end(), [](const auto& l, const auto& r) -> bool{
+          return l.first.producer_name < r.first.producer_name;
+      });
 
-      bytes packed_schedule = pack(vote_schedule);
+      std::vector<eosio::producer_key> vote_schedule_data;
+      vote_schedule_data.reserve(vote_schedule.size());
+
+      for( const auto& v : vote_schedule ) {
+         vote_schedule_data.push_back(v.first);
+      }
+
+      auto packed_schedule = pack(vote_schedule_data);
       set_proposed_producers(packed_schedule.data(), packed_schedule.size());
    }
 

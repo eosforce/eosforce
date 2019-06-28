@@ -43,13 +43,13 @@ namespace eosio { namespace chain {
         std::map<std::pair<account_name, action_name>, asset> fee_map;
    };
 
-
    class fee_paramter {
      public:
        account_name name;
        asset fee;
        account_name producer;
-       fee_paramter(account_name name, asset fee, account_name producer) : name(name), fee(fee), producer(producer) {};
+	   bool voteage_as_fee;
+       fee_paramter(account_name name, asset fee, account_name producer, bool voteage_as_fee = false) : name(name), fee(fee), producer(producer), voteage_as_fee(voteage_as_fee) {};
    };
 
    // action fee info in db, for action exec by user def code
@@ -88,7 +88,7 @@ namespace eosio { namespace chain {
 
 } } /// namespace eosio::chain
 
-FC_REFLECT(eosio::chain::fee_paramter, (name)(fee)(producer))
+FC_REFLECT(eosio::chain::fee_paramter, (name)(fee)(producer)(voteage_as_fee))
 FC_REFLECT(eosio::chain::action_fee_object, (id)(account)(message_type)(fee))
 
 CHAINBASE_SET_INDEX_TYPE(eosio::chain::action_fee_object, eosio::chain::action_fee_object_index)

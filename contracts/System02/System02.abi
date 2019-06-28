@@ -240,7 +240,8 @@
        "fields": [
          {"name":"actor",  "type":"account_name"},
          {"name":"fee",    "type":"asset"},
-         {"name":"bpname", "type":"account_name"}
+         {"name":"bpname", "type":"account_name"},
+         {"name":"voteage_as_fee", "type":"bool"}
        ]
      },{
        "name": "heartbeat_info",

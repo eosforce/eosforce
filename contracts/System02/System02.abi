@@ -243,6 +243,14 @@
          {"name":"bpname", "type":"account_name"}
        ]
      },{
+       "name": "voteagefee",
+       "base": "",
+       "fields": [
+         {"name":"actor",  "type":"account_name"},
+         {"name":"fee",    "type":"asset"},
+         {"name":"bpname", "type":"account_name"}
+       ]
+     },{
        "name": "heartbeat_info",
        "base": "",
        "fields": [
@@ -335,7 +343,7 @@
        "ricardian_contract": ""
      },{
        "name": "voteagefee",
-       "type": "onfee",
+       "type": "voteagefee",
        "ricardian_contract": ""
      },{
        "name": "heartbeat",

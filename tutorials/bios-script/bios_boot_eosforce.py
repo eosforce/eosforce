@@ -196,8 +196,13 @@ def setFee(account, act, fee, cpu, net, ram):
 def stepSetFuncs():
     # we need set some func start block num
     setFee('eosio', 'setconfig', '0.0100', 100000, 1000000, 1000)
-    setFuncStartBlock('f.ram4vote', 10)
-    setFuncStartBlock('f.onfeeact', 15)
+    setFuncStartBlock('f.system1', 6)
+    setFuncStartBlock('f.msig', 8)
+    setFuncStartBlock('f.prods', 10)
+    setFuncStartBlock('f.eosio', 12)
+    setFuncStartBlock('f.feelimit', 14)
+    setFuncStartBlock('f.ram4vote', 16)
+    setFuncStartBlock('f.onfeeact', 18)
 
 def clearData():
     stepKillAll()

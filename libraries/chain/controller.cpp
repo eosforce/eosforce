@@ -1212,7 +1212,8 @@ struct controller_impl {
          EOS_ASSERT(( !chain_status
                       || _a.name == N(setemergency)
                       || _a.name == N(onblock)
-                      || _a.name == N(onfee)),
+                      || _a.name == N(onfee)
+                      || _a.name == N(voteagefee)),
                     invalid_action_args_exception,
                     "chain is in emergency now !");
       }

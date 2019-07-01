@@ -334,6 +334,10 @@
        "type": "onfee",
        "ricardian_contract": ""
      },{
+       "name": "voteagefee",
+       "type": "onfee",
+       "ricardian_contract": ""
+     },{
        "name": "heartbeat",
        "type": "heartbeat_info",
        "ricardian_contract": ""

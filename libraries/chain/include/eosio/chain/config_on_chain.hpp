@@ -23,6 +23,8 @@ namespace config{
       static const auto free_ram_per_account = N(res.freeram);
       static const auto ram_rent_b_per_eos   = N(res.ramrent);
       static const auto trx_size_limit       = N(res.trxsize);
+      static const auto votage_as_fee_num    = N(res.votagen);
+      static const auto votage_ratio         = N(res.votager);
    };
 
    namespace func_typ{

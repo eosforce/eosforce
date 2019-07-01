@@ -59,7 +59,7 @@ void apply_context::exec_one( action_trace& trace )
             (*native)( *this );
          }
 
-         if(!((act.account == config::system_account_name) && (act.name == N(onfee)))) {
+         if(!((act.account == config::system_account_name) && (act.name == N(onfee) || act.name == N(voteagefee)))) {
             if( a.code.size() > 0
                 && !( act.account == config::system_account_name && act.name == N(setcode) &&
                       receiver == config::system_account_name )) {

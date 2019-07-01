@@ -521,7 +521,7 @@ void apply_eosio_onfee( apply_context& context ) {
 }
 
 void apply_eosio_voteagefee( apply_context& context ) {
-   const auto data = context.act.data_as<onfee>();
+   const auto data = context.act.data_as<voteagefee>();
    const auto& fee = data.fee;
 
    // fee is just can push by system auto, so it need less check

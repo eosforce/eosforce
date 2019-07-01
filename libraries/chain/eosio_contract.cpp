@@ -535,8 +535,7 @@ void apply_eosio_voteagefee( apply_context& context ) {
    memory_db::account_info account_info_data;
    acnts_tbl.get(data.actor, account_info_data, "account is not found in accounts table");
    
-   /*ilog("apply_eosio_onfee: voteage_as_fee=${voteage_as_fee}, bpname=${bpname}", 
-            ("voteage_as_fee", data.voteage_as_fee) 
+   /*ilog("apply_eosio_onfee: bpname=${bpname}", 
             ("bpname", data.bpname));*/
    
    // bps_table

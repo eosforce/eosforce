@@ -429,8 +429,8 @@ namespace eosiosystem {
    
    void system_contract::heartbeat( const account_name bpname, const time_point_sec timestamp ) {
       bps_table bps_tbl(_self, _self);
-      const auto& bp = bps_tbl.get(bpname, "bpname is not registered");
-
+      eosio_assert( bps_tbl.find( bpname ) != bps_tbl.end(), 
+         "bpname is not registered" );
       heartbeat_imp(bpname, timestamp);
    }
 
@@ -445,6 +445,7 @@ namespace eosiosystem {
       // Note this output is not same after updated
       blackproducer_table blackproducer(_self, _self);
 
+      // TODO: use table sorted datas
       for( const auto& it : bps_tbl ) {
          const auto blackpro =  blackproducer.find(it.name);
          if( blackpro != blackproducer.end() && (!blackpro->isactive) ) {
@@ -458,7 +459,7 @@ namespace eosiosystem {
          }
 
          // Just 23 node, just find by for
-         for( size_t i = 0; i < bps_top_size; ++i ) {
+         for( int i = 0; i < bps_top_size; ++i ) {
             if( vote_schedule[i].second <= it.total_staked ) {
                vote_schedule.insert(vote_schedule.begin() + i, 
                   std::make_pair( eosio::producer_key{ it.name, it.block_signing_key }, 
@@ -499,6 +500,7 @@ namespace eosiosystem {
       hb_table hb_tbl(_self, _self);
 
       //calculate total staked all of the bps
+      // TODO: use cache staked_all_bps
       int64_t staked_all_bps = 0;
       for( auto it = bps_tbl.cbegin(); it != bps_tbl.cend(); ++it ) {
          staked_all_bps += it->total_staked;
@@ -509,37 +511,48 @@ namespace eosiosystem {
       //0.5% of staked_all_bps
       const auto rewarding_bp_staked_threshold = staked_all_bps / 200;
 
+      auto hb_max = get_num_config_on_chain(N(hb.max));
+      if ( hb_max < 0 ) {
+         hb_max = 3600;
+      }
+
+      std::set<uint64_t> super_bps;
+      for( int i = 0; i < NUM_OF_TOP_BPS; i++ ) {
+         super_bps.insert( block_producers[i] );
+      }
+
       //reward bps, (bp_reward => bp_account_reward + bp_rewards_pool + eosfund_reward;)
       auto sum_bps_reward = 0;
+      blackproducer_table blackproducer(_self, _self);
       for( auto it = bps_tbl.cbegin(); it != bps_tbl.cend(); ++it ) {
-         blackproducer_table blackproducer(_self, _self);
-         auto blackpro = blackproducer.find(it->name);
-         if(( blackpro != blackproducer.end() && !blackpro->isactive) || it->total_staked <= rewarding_bp_staked_threshold || it->commission_rate < 1 ||
-             it->commission_rate > 10000 ) {
+         const auto blackpro = blackproducer.find(it->name);
+         if(   ( blackpro != blackproducer.end() && !blackpro->isactive) 
+            || it->total_staked <= rewarding_bp_staked_threshold 
+            || it->commission_rate < 1 
+            || it->commission_rate > 10000 ) {
             continue;
          }
          
-         int64_t hb_max = get_num_config_on_chain(N(hb.max));
-         if (hb_max == -1) hb_max = 3600;
          auto hb = hb_tbl.find(it->name);
-         if( hb == hb_tbl.end() || hb->timestamp + hb_max < time_point_sec( now() ) ) {
+         if( hb == hb_tbl.end() || (hb->timestamp + static_cast<uint32_t>(hb_max)) < time_point_sec( now() ) ) {
              continue;
          }
 
-         auto bp_reward = static_cast<int64_t>( BLOCK_REWARDS_BP * double(it->total_staked) / double(staked_all_bps));
+         const auto bp_reward = static_cast<int64_t>( BLOCK_REWARDS_BP * double(it->total_staked) / double(staked_all_bps));
 
          //reward bp account
          auto bp_account_reward = bp_reward * 15 / 100 + bp_reward * 70 / 100 * it->commission_rate / 10000;
-         if( is_super_bp(block_producers, it->name)) {
+         if( super_bps.find( it->name ) != super_bps.end() ) {
             bp_account_reward += bp_reward * 15 / 100;
          }
+
          const auto& act = acnts_tbl.get(it->name, "bpname is not found in accounts table");
          acnts_tbl.modify(act, 0, [&]( account_info& a ) {
             a.available += asset(bp_account_reward, SYMBOL);
          });
 
          //reward pool
-         auto bp_rewards_pool = bp_reward * 70 / 100 * ( 10000 - it->commission_rate ) / 10000;
+         const auto bp_rewards_pool = bp_reward * 70 / 100 * ( 10000 - it->commission_rate ) / 10000;
          const auto& bp = bps_tbl.get(it->name, "bpname is not registered");
          bps_tbl.modify(bp, 0, [&]( bp_info& b ) {
             b.rewards_pool += asset(bp_rewards_pool, SYMBOL);
@@ -565,14 +578,5 @@ namespace eosiosystem {
       acnts_tbl.modify(eosfund, 0, [&]( account_info& a ) {
          a.available += asset(total_eosfund_reward, SYMBOL);
       });
-   }
-
-   bool system_contract::is_super_bp( account_name block_producers[], account_name name ) {
-      for( int i = 0; i < NUM_OF_TOP_BPS; i++ ) {
-         if( name == block_producers[i] ) {
-            return true;
-         }
-      }
-      return false;
    }
 }

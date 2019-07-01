@@ -77,6 +77,8 @@ int main( int argc, const char **argv ) {
    my_keymap.add_init_acc(gs, N(eosfund1), 1, private_key);
    my_keymap.add_init_acc(gs, N(b1), 1, private_key);
 
+   my_keymap.add_init_acc(gs, N(eosio.msig), 1000*10000, private_key);
+
    // for test
    my_keymap.add_init_acc(gs, N(force.test), 1*10000, private_key);
    my_keymap.add_init_acc(gs, N(force.ram), 1*10000, private_key);

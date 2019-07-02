@@ -534,10 +534,7 @@ void apply_eosio_voteagefee( apply_context& context ) {
    };
    memory_db::account_info account_info_data;
    acnts_tbl.get(data.actor, account_info_data, "account is not found in accounts table");
-   
-   /*ilog("apply_eosio_onfee: bpname=${bpname}", 
-            ("bpname", data.bpname));*/
-   
+
    // bps_table
    auto bps_tbl = native_multi_index<N(bps), memory_db::bp_info>{
          context, config::system_account_name, config::system_account_name
@@ -545,7 +542,7 @@ void apply_eosio_voteagefee( apply_context& context ) {
    memory_db::bp_info bp_info_data;
    bps_tbl.get(data.bpname, bp_info_data, "bpname is not registered");
       
-   int64_t voteage = fee.get_amount() * get_num_config_on_chain( context.db, config::res_typ::votage_ratio, 10000 ) / 10000;
+   const auto voteage = fee.get_amount() * get_num_config_on_chain( context.db, config::res_typ::votage_ratio, 10000 ) / 10000;
    const auto curr_block_num = context.control.head_block_num();
    const auto newest_total_voteage =
       bp_info_data.total_voteage + bp_info_data.total_staked * (curr_block_num - bp_info_data.voteage_update_height);
@@ -564,7 +561,7 @@ void apply_eosio_voteagefee( apply_context& context ) {
    memory_db::vote_info vote_info_data;
    votes_tbl.get(data.bpname, vote_info_data, "voter have not add votes to the the producer yet");
    
-   int64_t newest_voteage = vote_info_data.voteage + (vote_info_data.staked.get_amount() / 10000) * (curr_block_num - vote_info_data.voteage_update_height);
+   const auto newest_voteage = vote_info_data.voteage + (vote_info_data.staked.get_amount() / 10000) * (curr_block_num - vote_info_data.voteage_update_height);
    
    /*ilog("apply_eosio_onfee: voter voteage=${voteage}, voter vote=${vote}, voter voteage_update_height=${voteage_update_height}, voter newest_voteage=${newest_voteage}", 
       ("voteage", vote_info_data.voteage) 

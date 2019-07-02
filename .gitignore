@@ -94,3 +94,5 @@ tutorials/bios-script/output\.log
 tutorials/bios-script/wallet/
 
 tutorials/bios-script/activeacc\.json
+
+buildc/

@@ -520,4 +520,68 @@ void apply_eosio_onfee( apply_context& context ) {
    }
 }
 
+void apply_eosio_voteagefee( apply_context& context ) {
+   const auto data = context.act.data_as<voteagefee>();
+   const auto& fee = data.fee;
+
+   // fee is just can push by system auto, so it need less check
+   // need actor authorization
+   // context.require_authorization(data.actor);
+
+   // accounts_table
+   auto acnts_tbl = native_multi_index<N(accounts), memory_db::account_info>{
+         context, config::system_account_name, config::system_account_name
+   };
+   memory_db::account_info account_info_data;
+   acnts_tbl.get(data.actor, account_info_data, "account is not found in accounts table");
+   
+   /*ilog("apply_eosio_onfee: bpname=${bpname}", 
+            ("bpname", data.bpname));*/
+   
+   // bps_table
+   auto bps_tbl = native_multi_index<N(bps), memory_db::bp_info>{
+         context, config::system_account_name, config::system_account_name
+   };
+   memory_db::bp_info bp_info_data;
+   bps_tbl.get(data.bpname, bp_info_data, "bpname is not registered");
+      
+   int64_t voteage = fee.get_amount() * get_num_config_on_chain( context.db, config::res_typ::votage_ratio, 10000 ) / 10000;
+   const auto curr_block_num = context.control.head_block_num();
+   const auto newest_total_voteage =
+      bp_info_data.total_voteage + bp_info_data.total_staked * (curr_block_num - bp_info_data.voteage_update_height);
+
+   /*ilog("apply_eosio_onfee: fee voteage=${voteage}, bp total_voteage=${total_voteage}, bp total_staked=${total_staked}, curr_block_num=${curr_block_num}, bp voteage_update_height=${voteage_update_height}, newest_total_voteage=${newest_total_voteage}", 
+         ("voteage", voteage)
+         ("total_voteage", bp_info_data.total_voteage)
+         ("total_staked", bp_info_data.total_staked) 
+         ("curr_block_num", curr_block_num)
+         ("voteage_update_height", bp_info_data.voteage_update_height) 
+         ("newest_total_voteage", newest_total_voteage));*/
+   
+   auto votes_tbl = native_multi_index<N(votes), memory_db::vote_info>{
+         context, config::system_account_name, data.actor
+   };
+   memory_db::vote_info vote_info_data;
+   votes_tbl.get(data.bpname, vote_info_data, "voter have not add votes to the the producer yet");
+   
+   int64_t newest_voteage = vote_info_data.voteage + (vote_info_data.staked.get_amount() / 10000) * (curr_block_num - vote_info_data.voteage_update_height);
+   
+   /*ilog("apply_eosio_onfee: voter voteage=${voteage}, voter vote=${vote}, voter voteage_update_height=${voteage_update_height}, voter newest_voteage=${newest_voteage}", 
+      ("voteage", vote_info_data.voteage) 
+      ("vote", vote_info_data.staked.get_amount() / 10000)
+      ("voteage_update_height", vote_info_data.voteage_update_height) 
+      ("newest_voteage", newest_voteage));*/
+   eosio_contract_assert(voteage > 0 && voteage <= newest_voteage, "voteage must be greater than zero and have sufficient voteage!");
+   
+   votes_tbl.modify(votes_tbl.find_itr(data.bpname), vote_info_data, 0, [&]( memory_db::vote_info& v ) {
+      v.voteage = newest_voteage - voteage;
+      v.voteage_update_height = curr_block_num;
+   });
+   
+   bps_tbl.modify(bps_tbl.find_itr(data.bpname), bp_info_data, 0, [&]( memory_db::bp_info& b ) {
+      b.total_voteage = static_cast<int64_t>(newest_total_voteage - voteage);
+      b.voteage_update_height = curr_block_num;
+   });
+}
+
 } } // namespace eosio::chain

@@ -439,15 +439,38 @@ namespace bacc = boost::accumulators;
    }
 
    const action transaction_context::mk_fee_action( const action& act, const asset& fee ) const {
-      const bytes param_data = fc::raw::pack(fee_paramter{
-            fee_payer, fee, name{}
-      });
-      return action{
-            vector<permission_level>{{fee_payer, config::active_name}},
-            config::system_account_name,
-            N(onfee),
-            param_data,
+      account_name bp_name;
+
+      auto is_fee_voteage = [](const signed_transaction &trx, account_name &bp_name)  {
+         if (trx.transaction_extensions.size() > 0) {
+            return get_from_extensions(trx.transaction_extensions, transaction::voteage_fee, bp_name);
+         }
+         return false;
       };
+      auto voteage_as_fee = is_func_has_open(control, config::res_typ::votage_as_fee_num) && is_fee_voteage(trx, bp_name);
+      //ilog("mk_fee_action: voteage_as_fee=${voteage_as_fee}", ("voteage_as_fee", voteage_as_fee));
+      if (!voteage_as_fee) {
+         const bytes param_data = fc::raw::pack(fee_paramter{
+               fee_payer, fee, name{}
+         });
+         return action{
+               vector<permission_level>{{fee_payer, config::active_name}},
+               config::system_account_name,
+               N(onfee),
+               param_data,
+         };
+      } else {
+         const bytes param_data = fc::raw::pack(fee_paramter{
+               fee_payer, fee, bp_name
+         });
+         return action{
+               vector<permission_level>{{fee_payer, config::active_name}},
+               config::system_account_name,
+               N(voteagefee),
+               param_data,
+         };
+      }
+      
    }
 
    void transaction_context::dispatch_fee_action( vector<action_trace>& action_traces, const action& act ){

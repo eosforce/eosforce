@@ -185,6 +185,21 @@ struct onfee {
    }
 };
 
+struct voteagefee {
+   account_name actor;
+   asset        fee;
+   account_name bpname;
+
+   static account_name get_account() {
+      return config::system_account_name;
+   }
+
+   static action_name get_name() {
+      return N(voteagefee);
+   }
+};
+
+
 struct onerror {
    uint128_t      sender_id;
    bytes          sent_trx;
@@ -214,4 +229,5 @@ FC_REFLECT( eosio::chain::linkauth                         , (account)(code)(typ
 FC_REFLECT( eosio::chain::unlinkauth                       , (account)(code)(type) )
 FC_REFLECT( eosio::chain::canceldelay                      , (canceling_auth)(trx_id) )
 FC_REFLECT( eosio::chain::onfee                            , (actor)(fee)(bpname) )
+FC_REFLECT( eosio::chain::voteagefee 					   , (actor)(fee)(bpname) )
 FC_REFLECT( eosio::chain::onerror                          , (sender_id)(sent_trx) )

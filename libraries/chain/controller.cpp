@@ -232,6 +232,7 @@ struct controller_impl {
 
    SET_APP_HANDLER( eosio, eosio, canceldelay );
    SET_APP_HANDLER( eosio, eosio, onfee );
+   SET_APP_HANDLER( eosio, eosio, voteagefee );
 
    fork_db.irreversible.connect( [&]( auto b ) {
                                  on_irreversible(b);
@@ -1211,7 +1212,8 @@ struct controller_impl {
          EOS_ASSERT(( !chain_status
                       || _a.name == N(setemergency)
                       || _a.name == N(onblock)
-                      || _a.name == N(onfee)),
+                      || _a.name == N(onfee)
+                      || _a.name == N(voteagefee)),
                     invalid_action_args_exception,
                     "chain is in emergency now !");
       }

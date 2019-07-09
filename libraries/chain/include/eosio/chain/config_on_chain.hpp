@@ -35,6 +35,7 @@ namespace config{
       static const auto create_eosio_account = N(f.eosio);
       static const auto fee_limit            = N(f.feelimit);
       static const auto votage_as_fee_num    = N(f.votagen);
+      static const auto create_prods_account = N(f.cprod);
    }
    
    namespace heartbeat_typ{

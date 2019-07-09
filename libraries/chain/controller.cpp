@@ -1418,6 +1418,20 @@ struct controller_impl {
                       memory_db::account_info{config::system_account_name, eosio::chain::asset(0)});
          }
       }
+
+      // when on the specific block : create eosio account in table accounts of eosio system contract
+      if (is_func_open_in_curr_block(self, config::func_typ::create_prods_account)) {
+         auto db = memory_db(self);
+         memory_db::account_info acc;
+         if (!db.get(config::system_account_name, 
+                     config::system_account_name, N(accounts), 
+                     config::producers_account_name, acc)) {
+            db.insert(config::system_account_name, config::system_account_name, N(accounts),
+                      config::producers_account_name, memory_db::account_info{
+                         config::producers_account_name, 
+                         eosio::chain::asset(0)});
+         }
+      }
    }
 
 

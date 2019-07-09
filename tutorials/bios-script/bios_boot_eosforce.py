@@ -203,6 +203,7 @@ def stepSetFuncs():
     setFuncStartBlock('f.feelimit', 14)
     setFuncStartBlock('f.ram4vote', 16)
     setFuncStartBlock('f.onfeeact', 18)
+    setFuncStartBlock('f.cprod', 20)
 
 def clearData():
     stepKillAll()

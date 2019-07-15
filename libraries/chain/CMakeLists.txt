@@ -49,7 +49,7 @@ add_library( eosio_chain
 #             contracts/chain_initializer.cpp
 
 
-#             transaction_metadata.cpp
+             transaction_metadata.cpp
              ${HEADERS}
              )
 

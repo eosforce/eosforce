@@ -1,35 +1,31 @@
-#include <boost/test/unit_test.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-
-#include <eosio/testing/tester.hpp>
-#include <eosio/chain/abi_serializer.hpp>
-#include <eosio/chain/wasm_eosio_constraints.hpp>
-#include <eosio/chain/resource_limits.hpp>
-#include <eosio/chain/exceptions.hpp>
-#include <eosio/chain/wast_to_wasm.hpp>
-#include <asserter/asserter.wast.hpp>
-#include <asserter/asserter.abi.hpp>
-
-#include <stltest/stltest.wast.hpp>
-#include <stltest/stltest.abi.hpp>
-
-#include <noop/noop.wast.hpp>
-#include <noop/noop.abi.hpp>
-
-#include <fc/io/fstream.hpp>
-
-#include <Runtime/Runtime.h>
-
-#include <fc/variant_object.hpp>
-#include <fc/io/json.hpp>
-
-#include "test_wasts.hpp"
-#include "test_softfloat_wasts.hpp"
-
+/**
+ *  @file
+ *  @copyright defined in eos/LICENSE.txt
+ */
 #include <array>
 #include <utility>
 
+#include <eosio/chain/abi_serializer.hpp>
+#include <eosio/chain/exceptions.hpp>
+#include <eosio/chain/resource_limits.hpp>
+#include <eosio/chain/wasm_eosio_constraints.hpp>
+#include <eosio/chain/wast_to_wasm.hpp>
+#include <eosio/testing/tester.hpp>
+
+#include <Runtime/Runtime.h>
+
+#include <boost/test/unit_test.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+
+#include <fc/io/fstream.hpp>
+#include <fc/io/json.hpp>
+#include <fc/variant_object.hpp>
+
 #include "incbin.h"
+#include "test_wasts.hpp"
+#include "test_softfloat_wasts.hpp"
+
+#include <contracts.hpp>
 
 #ifdef NON_VALIDATING_TEST
 #define TESTER tester
@@ -81,7 +77,7 @@ BOOST_FIXTURE_TEST_CASE( basic_test, TESTER ) try {
    create_accounts( {N(asserter)} );
    produce_block();
 
-   set_code(N(asserter), asserter_wast);
+   set_code(N(asserter), contracts::asserter_wasm());
    produce_blocks(1);
 
    transaction_id_type no_assert_id;
@@ -97,11 +93,11 @@ BOOST_FIXTURE_TEST_CASE( basic_test, TESTER ) try {
       trx.sign( get_private_key( N(asserter), "active" ), control->get_chain_id() );
       auto result = push_transaction( trx );
       BOOST_CHECK_EQUAL(result->receipt->status, transaction_receipt::executed);
-      BOOST_CHECK_EQUAL(result->action_traces.size(), 1);
+      BOOST_CHECK_EQUAL(result->action_traces.size(), 1u);
       BOOST_CHECK_EQUAL(result->action_traces.at(0).receipt.receiver.to_string(),  name(N(asserter)).to_string() );
       BOOST_CHECK_EQUAL(result->action_traces.at(0).act.account.to_string(), name(N(asserter)).to_string() );
       BOOST_CHECK_EQUAL(result->action_traces.at(0).act.name.to_string(),  name(N(procassert)).to_string() );
-      BOOST_CHECK_EQUAL(result->action_traces.at(0).act.authorization.size(),  1 );
+      BOOST_CHECK_EQUAL(result->action_traces.at(0).act.authorization.size(),  1u );
       BOOST_CHECK_EQUAL(result->action_traces.at(0).act.authorization.at(0).actor.to_string(),  name(N(asserter)).to_string() );
       BOOST_CHECK_EQUAL(result->action_traces.at(0).act.authorization.at(0).permission.to_string(),  name(config::active_name).to_string() );
       no_assert_id = trx.id();
@@ -142,7 +138,7 @@ BOOST_FIXTURE_TEST_CASE( prove_mem_reset, TESTER ) try {
    create_accounts( {N(asserter)} );
    produce_block();
 
-   set_code(N(asserter), asserter_wast);
+   set_code(N(asserter), contracts::asserter_wasm());
    produce_blocks(1);
 
    set_fee(N(asserter), provereset::get_name(), asset(100), 0, 0, 0);
@@ -173,8 +169,8 @@ BOOST_FIXTURE_TEST_CASE( abi_from_variant, TESTER ) try {
    create_accounts( {N(asserter)} );
    produce_block();
 
-   set_code(N(asserter), asserter_wast);
-   set_abi(N(asserter), asserter_abi);
+   set_code(N(asserter), contracts::asserter_wasm());
+   set_abi(N(asserter), contracts::asserter_abi().data());
    produce_blocks(1);
 
    auto resolver = [&,this]( const account_name& name ) -> optional<abi_serializer> {
@@ -1041,9 +1037,9 @@ BOOST_FIXTURE_TEST_CASE(noop, TESTER) try {
    create_accounts( {N(noop), N(alice)} );
    produce_block();
 
-   set_code(N(noop), noop_wast);
+   set_code(N(noop), contracts::noop_wasm());
 
-   set_abi(N(noop), noop_abi);
+   set_abi(N(noop), contracts::noop_abi().data());
    const auto& accnt  = control->db().get<account_object,by_name>(N(noop));
    abi_def abi;
    BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
@@ -1866,6 +1862,29 @@ BOOST_FIXTURE_TEST_CASE( getcode_checks, TESTER ) try {
    wasm_to_wast( wasmx.data(), wasmx.size(), true );
 } FC_LOG_AND_RETHROW()
 
+BOOST_FIXTURE_TEST_CASE( big_maligned_host_ptr, TESTER ) try {
+   produce_blocks(2);
+   create_accounts( {N(bigmaligned)} );
+   produce_block();
+
+   string large_maligned_host_ptr_wast_f = fc::format_string(large_maligned_host_ptr, fc::mutable_variant_object()
+                                              ("MAX_WASM_PAGES", eosio::chain::wasm_constraints::maximum_linear_memory/(64*1024))
+                                              ("MAX_NAME_ARRAY", (eosio::chain::wasm_constraints::maximum_linear_memory-1)/sizeof(chain::account_name)));
+
+   set_code(N(bigmaligned), large_maligned_host_ptr_wast_f.c_str());
+   produce_blocks(1);
+
+   signed_transaction trx;
+   action act;
+   act.account = N(bigmaligned);
+   act.name = N();
+   act.authorization = vector<permission_level>{{N(bigmaligned),config::active_name}};
+   trx.actions.push_back(act);
+   set_transaction_headers(trx);
+   trx.sign(get_private_key( N(bigmaligned), "active" ), control->get_chain_id());
+   push_transaction(trx);
+   produce_blocks(1);
+} FC_LOG_AND_RETHROW()
 
 // TODO: restore net_usage_tests
 #if 0

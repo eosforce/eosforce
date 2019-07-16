@@ -154,24 +154,24 @@ def stepMakeGenesis():
     run('mkdir -p ' + os.path.abspath(args.config_dir))
     run('mkdir -p ' + os.path.abspath(args.config_dir) + '/keys/' )
 
-    run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.token/eosio.token.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/System02/System02.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.bios/eosio.bios.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.msig/eosio.msig.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.lock/eosio.lock.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.lock/eosio.lock.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.token.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.token.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/System02.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/System02.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.bios.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.bios.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.msig.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.msig.wasm ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.lock.abi ' + os.path.abspath(args.config_dir))
+    run('cp ' + args.contracts_dir + '/eosio.lock.wasm ' + os.path.abspath(args.config_dir))
 
     # testnet will use new System contract from start
-    run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir) + "/System01.abi")
-    run('cp ' + args.contracts_dir + '/System02/System02.wasm ' + os.path.abspath(args.config_dir) + "/System01.wasm")
+    run('cp ' + args.contracts_dir + '/System02.abi ' + os.path.abspath(args.config_dir) + "/System01.abi")
+    run('cp ' + args.contracts_dir + '/System02.wasm ' + os.path.abspath(args.config_dir) + "/System01.wasm")
 
     # testnet will use new System contract from start
-    run('cp ' + args.contracts_dir + '/System02/System02.abi ' + os.path.abspath(args.config_dir) + "/System.abi")
-    run('cp ' + args.contracts_dir + '/System02/System02.wasm ' + os.path.abspath(args.config_dir) + "/System.wasm")
+    run('cp ' + args.contracts_dir + '/System02.abi ' + os.path.abspath(args.config_dir) + "/System.abi")
+    run('cp ' + args.contracts_dir + '/System02.wasm ' + os.path.abspath(args.config_dir) + "/System.wasm")
 
     run(args.root + 'build/programs/genesis/genesis')
     run('mv ./genesis.json ' + os.path.abspath(args.config_dir))
@@ -242,7 +242,7 @@ commands = [
 ]
 
 parser.add_argument('--root', metavar='', help="Eosforce root dir from git", default='../../')
-parser.add_argument('--contracts-dir', metavar='', help="Path to contracts directory", default='build/contracts/')
+parser.add_argument('--contracts-dir', metavar='', help="Path to contracts directory", default='tutorials/genesis-contracts/')
 parser.add_argument('--cleos', metavar='', help="Cleos command", default='build/programs/cleos/cleos --wallet-url http://127.0.0.1:6666 ')
 parser.add_argument('--nodeos', metavar='', help="Path to nodeos binary", default='build/programs/nodeos/nodeos')
 parser.add_argument('--nodes-dir', metavar='', help="Path to nodes directory", default='./nodes/')

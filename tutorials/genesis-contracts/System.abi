@@ -1,0 +1,167 @@
+{
+  "version": "eosio::abi/1.0",
+  "types": [],
+  "structs": [{
+      "name": "transfer",
+      "base": "",
+      "fields": [
+         {"name":"from",     "type":"account_name"},
+         {"name":"to",       "type":"account_name"},
+         {"name":"quantity", "type":"asset"},
+         {"name":"memo",     "type":"string"}
+      ]
+    },{
+      "name": "updatebp",
+      "base": "",
+      "fields": [
+         {"name":"bpname",            "type":"account_name"},
+         {"name":"block_signing_key", "type":"public_key"},
+         {"name":"commission_rate",   "type":"uint32"},
+         {"name":"url",               "type":"string"}
+      ]
+    },{
+      "name": "unfreeze",
+      "base": "",
+      "fields": [
+      {"name":"voter",      "type":"account_name"},
+      {"name":"bpname",     "type":"account_name"}
+      ]
+    },{
+      "name": "claim",
+      "base": "",
+      "fields": [
+        {"name":"voter",      "type":"account_name"},
+        {"name":"bpname",     "type":"account_name"}
+      ]
+    },{
+      "name": "account_info",
+      "base": "",
+      "fields": [
+        {"name":"name",         "type":"account_name"},
+        {"name":"available",    "type":"asset"}
+      ]
+    },{
+      "name": "vote_parameter",
+      "base": "",
+      "fields": [
+        {"name":"voter",     "type":"account_name"},
+        {"name":"bpname",    "type":"account_name"},
+        {"name":"stake",     "type":"asset"}
+      ]
+    },{
+      "name": "vote_info",
+      "base": "",
+      "fields": [
+        {"name":"bpname",                "type":"account_name"},
+        {"name":"staked",                "type":"asset"},
+        {"name":"voteage",               "type":"int64"},
+        {"name":"voteage_update_height", "type":"uint32"},
+        {"name":"unstaking",             "type":"asset"},
+        {"name":"unstake_height",        "type":"uint32"}
+      ]
+    },{
+      "name": "bp_info",
+      "base": "",
+      "fields": [
+        {"name":"name",                 "type":"account_name"},
+        {"name":"block_signing_key",    "type":"public_key"},
+        {"name":"commission_rate",      "type":"uint32"},
+        {"name":"total_staked",         "type":"int64"},
+        {"name":"rewards_pool",         "type":"asset"},
+        {"name":"total_voteage",        "type":"int64"},
+        {"name":"voteage_update_height","type":"uint32"},
+        {"name":"url",                  "type":"string"},
+        {"name":"emergency",            "type":"bool"}
+      ]
+    },{
+      "name": "setemergency",
+      "base": "",
+      "fields": [
+        {"name":"bpname",    "type":"account_name"},
+        {"name":"emergency", "type":"bool"}
+      ]
+    },{
+      "name": "chain_status",
+      "base": "",
+      "fields": [
+        {"name":"name",       "type":"account_name"},
+        {"name":"emergency",  "type":"bool"}
+      ]
+    },{
+      "name": "producer",
+      "base": "",
+      "fields": [
+        {"name":"bpname",  "type":"account_name"},
+        {"name":"amount",  "type":"uint32"}
+      ]
+    },{
+      "name": "schedule_info",
+      "base": "",
+      "fields": [
+        {"name":"version",     "type":"uint64"},
+        {"name":"block_height","type":"uint32"},
+        {"name":"producers",   "type":"producer[]"}
+      ]
+    }
+  ],
+  "actions": [{
+      "name": "transfer",
+      "type": "transfer",
+      "ricardian_contract": ""
+    },{
+      "name": "updatebp",
+      "type": "updatebp",
+      "ricardian_contract": ""
+    },{
+      "name": "vote",
+      "type": "vote_parameter",
+      "ricardian_contract": ""
+    },{
+      "name": "unfreeze",
+      "type": "unfreeze",
+      "ricardian_contract": ""
+    },{
+      "name": "claim",
+      "type": "claim",
+      "ricardian_contract": ""
+    },{
+      "name": "setemergency",
+      "type": "setemergency",
+      "ricardian_contract": ""
+    }
+  ],
+  "tables": [
+        {
+          "name":"accounts",
+          "type":"account_info",
+          "index_type": "i64",
+          "key_names" : ["name"],
+          "key_types" : ["account_name"]
+       },{
+          "name":"bps",
+          "type":"bp_info",
+          "index_type":"i64",
+          "key_names": ["name"],
+          "key_types": ["account_name"]
+       },{
+          "name":"votes",
+          "type":"vote_info",
+          "index_type":"i64",
+          "key_names": ["bpname"],
+          "key_types": ["account_name"]
+       },{
+          "name":"chainstatus",
+          "type":"chain_status",
+          "index_type":"i64",
+          "key_names": ["name"],
+          "key_types": ["account_name"]
+       },{
+          "name":"schedules",
+          "type":"schedule_info",
+          "index_type":"i64",
+          "key_names": ["version"],
+          "key_types": ["uint64"]
+       }
+  ],
+  "ricardian_clauses": []
+}

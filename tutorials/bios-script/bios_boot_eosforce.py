@@ -62,40 +62,58 @@ def createNodeDir(nodeIndex, bpaccount, key):
     run('rm -rf ' + dir)
     run('mkdir -p ' + dir)
 
+    # data dir
+    run('mkdir -p ' + dir + 'datas/')
+    run('cp -r ' + args.config_dir + ' ' +  dir)
+
+    config_opts = (
+        ('http-server-address = 0.0.0.0:%d\n' % (8000 + nodeIndex)) +
+        ('p2p-listen-endpoint = 0.0.0.0:%d\n\n\n' % (9000 + nodeIndex)) +
+        ('producer-name = %s\n' % (bpaccount['name'])) +
+        ('signature-provider = %s=KEY:%s\n' % ( bpaccount['bpkey'], key[1] )) +
+        ('bp-mapping = %s=KEY:%sa\n\n\n' % ( bpaccount['name'], bpaccount['name'] )) +
+        'plugin = eosio::chain_api_plugin\n' +
+        'plugin = eosio::history_plugin\n' +
+        'plugin = eosio::history_api_plugin\n' +
+        'plugin = eosio::producer_plugin\n' +
+        'plugin = eosio::http_plugin\n' +
+        'plugin = eosio::heartbeat_plugin\n\n\n' +
+        'contracts-console = true\n' +
+        ('agent-name = "TestBPNode%2d"\n' % (nodeIndex)) +
+        'http-validate-host=false\n' +
+        ('max-clients = %d\n' % (datas["maxClients"])) +
+        'chain-state-db-size-mb = 16384\n' +
+        'https-client-validate-peers = false\n' +
+        'access-control-allow-origin = *\n' +
+        'access-control-allow-headers = Content-Type\n' +
+        'p2p-max-nodes-per-host = 10\n' +
+        'allowed-connection = any\n' +
+        'max-transaction-time = 16000\n' +
+        'max-irreversible-block-age = 36000\n' +
+        'enable-stale-production = true\n' +
+        'filter-on=*\n\n\n'
+    )
+    config_opts += ''.join(list(map(lambda i: ('p2p-peer-address = 127.0.0.1:%d\n' % (9001 + (nodeIndex + i) % 23 )), range(6))))
+
+    # config files
+    with open(dir + 'config/config.ini', mode='w') as f:
+        f.write(config_opts)
+
 def createNodeDirs(inits, keys):
     for i in range(0, len(inits)):
         createNodeDir(i + 1, datas["initProducers"][i], keys[i])
 
 def startNode(nodeIndex, bpaccount, key):
     dir = args.nodes_dir + ('%02d-' % nodeIndex) + bpaccount['name'] + '/'
-    otherOpts = ''.join(list(map(lambda i: '    --p2p-peer-address 127.0.0.1:' + str(9001 + i), range(24 - 1))))
-    if not nodeIndex: otherOpts += (
-        '    --plugin eosio::history_plugin'
-        '    --plugin eosio::history_api_plugin'
-    )
 
     print('bpaccount ', bpaccount)
     print('key ', key, ' ', key[1])
 
     cmd = (
         args.nodeos +
-        '    --blocks-dir ' + os.path.abspath(dir) + '/blocks'
-        '    --config-dir ' + os.path.abspath(dir) + '/../../config'
-        '    --data-dir ' + os.path.abspath(dir) +
-        '    --http-server-address 0.0.0.0:' + str(8000 + nodeIndex) +
-        '    --p2p-listen-endpoint 0.0.0.0:' + str(9000 + nodeIndex) +
-        '    --max-clients ' + str(datas["maxClients"]) +
-        '    --p2p-max-nodes-per-host ' + str(datas["maxClients"]) +
-        '    --enable-stale-production'
-        '    --producer-name ' + bpaccount['name'] +
-        '    --signature-provider=' + bpaccount['bpkey'] + '=KEY:' + key[1] +
-        '    --contracts-console ' +
-		'    --bp-mapping=' + bpaccount['name'] + '=KEY:' + bpaccount['name']  + 'a' +
-        '    --plugin eosio::http_plugin' +
-        '    --plugin eosio::chain_api_plugin' +
-        '    --plugin eosio::producer_plugin' +
-        '    --plugin eosio::heartbeat_plugin' +
-        otherOpts)
+        '    --config-dir ' + os.path.abspath(dir) + '/config'
+        '    --data-dir ' + os.path.abspath(dir) + '/datas'
+    )
     with open(dir + '../' + bpaccount['name'] + '.log', mode='w') as f:
         f.write(cmd + '\n\n')
     background(cmd + '    2>>' + dir + '../' + bpaccount['name'] + '.log')

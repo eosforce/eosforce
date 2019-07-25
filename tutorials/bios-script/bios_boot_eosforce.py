@@ -76,8 +76,7 @@ def createNodeDir(nodeIndex, bpaccount, key):
         'plugin = eosio::history_plugin\n' +
         'plugin = eosio::history_api_plugin\n' +
         'plugin = eosio::producer_plugin\n' +
-        'plugin = eosio::http_plugin\n' +
-        'plugin = eosio::heartbeat_plugin\n\n\n' +
+        'plugin = eosio::http_plugin\n\n\n' +
         'contracts-console = true\n' +
         ('agent-name = "TestBPNode%2d"\n' % (nodeIndex)) +
         'http-validate-host=false\n' +

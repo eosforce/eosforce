@@ -199,11 +199,20 @@ def stepMakeGenesis():
 
     run('echo "[]" >> ' + os.path.abspath(args.config_dir) + '/activeacc.json')
 
-def setFuncStartBlock(func_typ, num):
+def setNumConfig(func_typ, num):
     run(args.cleos +
         'push action eosio setconfig ' +
         ('\'{"typ":"%s","num":%s,"key":"","fee":"0.0000 EOS"}\' ' % (func_typ, num)) +
         '-p force.config' )
+
+def setAssetConfig(func_typ, asset):
+    run(args.cleos +
+        'push action eosio setconfig ' +
+        ('\'{"typ":"%s","num":0,"key":"","fee":"%s"}\' ' % (func_typ, asset)) +
+        '-p force.config' )
+
+def setFuncStartBlock(func_typ, num):
+    setNumConfig(func_typ, num)
 
 def setFee(account, act, fee, cpu, net, ram):
     run(args.cleos +
@@ -222,6 +231,9 @@ def stepSetFuncs():
     setFuncStartBlock('f.ram4vote', 16)
     setFuncStartBlock('f.onfeeact', 18)
     setFuncStartBlock('f.cprod', 20)
+
+    setNumConfig('res.trxsize', 10240000) # should add trx size limit in new version
+
 
 def clearData():
     stepKillAll()

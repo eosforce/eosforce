@@ -176,8 +176,6 @@ def stepMakeGenesis():
     run('cp ' + args.contracts_dir + '/eosio.token.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/System02.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/System02.wasm ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.bios.abi ' + os.path.abspath(args.config_dir))
-    run('cp ' + args.contracts_dir + '/eosio.bios.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig.abi ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.msig.wasm ' + os.path.abspath(args.config_dir))
     run('cp ' + args.contracts_dir + '/eosio.lock.abi ' + os.path.abspath(args.config_dir))

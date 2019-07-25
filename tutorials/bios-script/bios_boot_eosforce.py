@@ -66,8 +66,10 @@ def createNodeDir(nodeIndex, bpaccount, key):
     run('mkdir -p ' + dir + 'datas/')
     run('cp -r ' + args.config_dir + ' ' +  dir)
 
-    config_opts = (
-        ('http-server-address = 0.0.0.0:%d\n' % (8000 + nodeIndex)) +
+    config_opts = ''.join(list(map(lambda i: ('p2p-peer-address = 127.0.0.1:%d\n' % (9001 + (nodeIndex + i) % 23 )), range(6))))
+
+    config_opts += (
+        ('\n\nhttp-server-address = 0.0.0.0:%d\n' % (8000 + nodeIndex)) +
         ('p2p-listen-endpoint = 0.0.0.0:%d\n\n\n' % (9000 + nodeIndex)) +
         ('producer-name = %s\n' % (bpaccount['name'])) +
         ('signature-provider = %s=KEY:%s\n' % ( bpaccount['bpkey'], key[1] )) +
@@ -92,7 +94,6 @@ def createNodeDir(nodeIndex, bpaccount, key):
         'enable-stale-production = true\n' +
         'filter-on=*\n\n\n'
     )
-    config_opts += ''.join(list(map(lambda i: ('p2p-peer-address = 127.0.0.1:%d\n' % (9001 + (nodeIndex + i) % 23 )), range(6))))
 
     # config files
     with open(dir + 'config/config.ini', mode='w') as f:

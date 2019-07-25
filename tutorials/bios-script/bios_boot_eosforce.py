@@ -232,6 +232,9 @@ def stepSetFuncs():
 
     setNumConfig('res.trxsize', 10240000) # should add trx size limit in new version
 
+    setFee('eosio', 'votefix',    '0.2500', 5000,   512, 128)
+    setFee('eosio', 'revotefix',  '0.5000', 10000, 1024, 128)
+    setFee('eosio', 'outfixvote', '0.0500', 1000,   512, 128)
 
 def clearData():
     stepKillAll()

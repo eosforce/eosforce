@@ -197,38 +197,41 @@ def stepMakeGenesis():
 
     run('echo "[]" >> ' + os.path.abspath(args.config_dir) + '/activeacc.json')
 
+def cleos(cmd):
+    run(args.cleos + cmd)
+    sleep(.5)
+
+def pushAction(account, action, permission, data_str):
+    data_str = data_str.replace('\'', '\"')
+    cleos( 'push action %s %s \'%s\' -p %s' % (account, action, data_str, permission) )
+
 def setNumConfig(func_typ, num):
-    run(args.cleos +
-        'push action eosio setconfig ' +
-        ('\'{"typ":"%s","num":%s,"key":"","fee":"0.0000 EOS"}\' ' % (func_typ, num)) +
-        '-p force.config' )
+    pushAction( 'eosio', 'setconfig', 'force.config',
+        ('{"typ":"%s","num":%s,"key":"","fee":"0.0000 EOS"}' % (func_typ, num)) )
 
 def setAssetConfig(func_typ, asset):
-    run(args.cleos +
-        'push action eosio setconfig ' +
-        ('\'{"typ":"%s","num":0,"key":"","fee":"%s"}\' ' % (func_typ, asset)) +
-        '-p force.config' )
+    pushAction( 'eosio', 'setconfig', 'force.config',
+        ('{"typ":"%s","num":0,"key":"","fee":"%s"}' % (func_typ, asset)) )
 
 def setFuncStartBlock(func_typ, num):
     setNumConfig(func_typ, num)
 
 def setFee(account, act, fee, cpu, net, ram):
-    run(args.cleos +
-        'set setfee ' +
-        ('%s %s ' % (account, act)) +
-        ('"%s EOS" %d %d %d' % (fee, cpu, net, ram)))
+    cleos( 'set setfee ' +
+           ('%s %s ' % (account, act)) +
+           ('"%s EOS" %d %d %d' % (fee, cpu, net, ram)))
 
 def stepSetFuncs():
     # we need set some func start block num
     setFee('eosio', 'setconfig', '0.0100', 100000, 1000000, 1000)
-    setFuncStartBlock('f.system1', 6)
-    setFuncStartBlock('f.msig', 8)
-    setFuncStartBlock('f.prods', 10)
-    setFuncStartBlock('f.eosio', 12)
+    setFuncStartBlock('f.system1',  10)
+    setFuncStartBlock('f.msig',     11)
+    setFuncStartBlock('f.prods',    12)
+    setFuncStartBlock('f.eosio',    13)
     setFuncStartBlock('f.feelimit', 14)
-    setFuncStartBlock('f.ram4vote', 16)
-    setFuncStartBlock('f.onfeeact', 18)
-    setFuncStartBlock('f.cprod', 20)
+    setFuncStartBlock('f.ram4vote', 15)
+    setFuncStartBlock('f.onfeeact', 16)
+    setFuncStartBlock('f.cprod',    17)
 
     setNumConfig('res.trxsize', 10240000) # should add trx size limit in new version
 

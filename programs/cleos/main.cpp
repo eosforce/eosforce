@@ -2546,6 +2546,20 @@ int main( int argc, char** argv ) {
       std::cout << fc::json::to_pretty_string(call(get_chain_configs, arg)) << std::endl;
    });
 
+   // get fee
+   string get_fee_account_name_str;
+   string get_fee_action_name_str;
+   auto getActionFee = get->add_subcommand("fee", localized("Get fee of action account name and action name"), false);
+   getActionFee->add_option("account", get_fee_account_name_str, localized("Action account"))->required();
+   getActionFee->add_option("action", get_fee_action_name_str, localized("Action name"))->required();
+   getActionFee->set_callback([&] {
+      auto result = call(get_action_fee, fc::mutable_variant_object("json", false)
+         ("account", get_fee_account_name_str)
+         ("action", get_fee_action_name_str)
+      );
+      std::cout << fc::json::to_pretty_string(result) << std::endl;
+   });
+
    // get actions
    string account_name;
    string skip_seq_str;

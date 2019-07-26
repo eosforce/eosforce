@@ -2537,6 +2537,15 @@ int main( int argc, char** argv ) {
       std::cout << fc::json::to_pretty_string(call(get_transaction_func, arg)) << std::endl;
    });
 
+   // get config
+   string chain_config_name_str;
+   auto getChainConfig = get->add_subcommand("config", localized("Get chain config by name from chain"), false);
+   getChainConfig->add_option("name", chain_config_name_str, localized("Name of chain config"))->required();
+   getChainConfig->set_callback([&] {
+      auto arg= fc::mutable_variant_object( "typ", chain_config_name_str);
+      std::cout << fc::json::to_pretty_string(call(get_chain_configs, arg)) << std::endl;
+   });
+
    // get actions
    string account_name;
    string skip_seq_str;

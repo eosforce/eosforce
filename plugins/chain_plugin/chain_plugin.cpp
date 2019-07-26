@@ -1939,6 +1939,10 @@ read_only::get_chain_configs_result read_only::get_chain_configs( const get_chai
    return res;
 }
 
+read_only::get_action_fee_result read_only::get_action_fee( const get_action_fee_params& params )const {
+   return get_action_fee_result{db.get_txfee_manager().get_required_fee(db, params.account, params.action)};
+}
+
 read_only::get_transaction_id_result read_only::get_transaction_id( const read_only::get_transaction_id_params& params)const {
    return params.id();
 }

@@ -18,6 +18,7 @@
 #include <eosio/chain/snapshot.hpp>
 
 #include <eosio/chain/eosio_contract.hpp>
+#include <eosio/chain/config_on_chain.hpp>
 
 #include <boost/signals2/connection.hpp>
 #include <boost/algorithm/string.hpp>
@@ -1920,6 +1921,22 @@ read_only::get_required_fee_result read_only::get_required_fee( const get_requir
    get_required_fee_result result;
    result.required_fee = required_fee;
    return result;
+}
+
+read_only::get_chain_configs_result read_only::get_chain_configs( const get_chain_configs_params& params )const {
+   const auto& itr = db.db().find<config_data_object, by_name>( params.typ );
+   get_chain_configs_result res;
+   res.typ = params.typ;
+
+   if( itr != nullptr ) {
+      res.num = itr->num;
+      res.key = itr->key;
+      res.fee = itr->fee;
+   } else {
+      EOS_ASSERT(false, config_type_exception, "No Config found by name ${t}", ("t", params.typ));
+   }
+
+   return res;
 }
 
 read_only::get_transaction_id_result read_only::get_transaction_id( const read_only::get_transaction_id_params& params)const {

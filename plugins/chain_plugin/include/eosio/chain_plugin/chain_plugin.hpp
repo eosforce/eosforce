@@ -253,6 +253,17 @@ public:
 
    get_required_fee_result get_required_fee( const get_required_fee_params& params)const;
 
+   struct get_chain_configs_params {
+      name typ;
+   };
+   struct get_chain_configs_result {
+      name         typ;
+      int64_t      num = 0;
+      account_name key = 0;
+      asset        fee;
+   };
+
+   get_chain_configs_result get_chain_configs( const get_chain_configs_params& params)const;
 
    using get_transaction_id_params = transaction;
    using get_transaction_id_result = transaction_id_type;
@@ -776,3 +787,5 @@ FC_REFLECT( eosio::chain_apis::read_only::get_required_keys_params, (transaction
 FC_REFLECT( eosio::chain_apis::read_only::get_required_keys_result, (required_keys) )
 FC_REFLECT( eosio::chain_apis::read_only::get_required_fee_params, (transaction) )
 FC_REFLECT( eosio::chain_apis::read_only::get_required_fee_result, (required_fee) )
+FC_REFLECT( eosio::chain_apis::read_only::get_chain_configs_params, (typ) )
+FC_REFLECT( eosio::chain_apis::read_only::get_chain_configs_result, (typ)(num)(key)(fee) )

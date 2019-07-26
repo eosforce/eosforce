@@ -128,7 +128,8 @@ namespace eosio { namespace chain {
                                     3010013, "Invalid fixed key" )
       FC_DECLARE_DERIVED_EXCEPTION( symbol_type_exception,           chain_type_exception,
                                     3010014, "Invalid symbol" )
-
+      FC_DECLARE_DERIVED_EXCEPTION( config_type_exception,           chain_type_exception,
+                                    3015015, "Invalid config" )
 
    FC_DECLARE_DERIVED_EXCEPTION( fork_database_exception, chain_exception,
                                  3020000, "Fork database exception" )

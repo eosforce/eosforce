@@ -1989,14 +1989,35 @@ void get_account( const string& accountName, const string& coresym, bool json_fo
          std::cout << res.core_liquid_balance->get_symbol().name() << " balances: " << std::endl;
          std::cout << indent << std::left << std::setw(11)
                    << "liquid:" << std::right << std::setw(18) << *res.core_liquid_balance << std::endl;
-         std::cout << indent << std::left << std::setw(11)
-                   << "staked:" << std::right << std::setw(18) << staked << std::endl;
-         std::cout << indent << std::left << std::setw(11)
-                   << "unstaking:" << std::right << std::setw(18) << unstaking << std::endl;
          std::cout << indent << std::left << std::setw(11) << "total:" << std::right << std::setw(18) << (*res.core_liquid_balance + staked + unstaking) << std::endl;
          std::cout << std::endl;
       }
-      
+
+      if( res.votes.size() > 0 ) {
+         std::cout << "current votes: " << std::endl;
+         for( const auto& vote_data : res.votes ) {
+            const auto obj = vote_data.get_object();
+            const auto bpname = obj["bpname"].as_string();
+            const auto unstaking = to_asset(obj["unstaking"].as_string());
+            const auto unstake_height = obj["unstake_height"].as_uint64();
+
+            std::string staked_token;
+            if( obj["voteage"].is_object() ) { // there is two version vote abi
+               staked_token = (obj["voteage"].get_object())["staked"].as_string();
+            } else {
+               staked_token = obj["staked"].as_string();
+            }
+
+            std::cout << indent
+                      << std::left << std::setw(11) << bpname 
+                      << std::right << std::setw(18) << staked_token
+                      << indent
+                      << std::left << std::setw(11) << "unstaking:" 
+                      << std::right << std::setw(18) << unstaking
+                      << std::endl;
+         }
+      }
+
       std::cout << std::endl;
    } else {
       std::cout << fc::json::to_pretty_string(json) << std::endl;

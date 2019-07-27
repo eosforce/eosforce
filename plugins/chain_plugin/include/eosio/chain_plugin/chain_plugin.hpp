@@ -208,7 +208,11 @@ public:
    get_raw_code_and_abi_results get_raw_code_and_abi( const get_raw_code_and_abi_params& params)const;
    get_raw_abi_results get_raw_abi( const get_raw_abi_params& params)const;
 
-
+   std::vector<fc::variant> get_table_rows_by_primary_to_json( const name& code,
+                                                               const uint64_t& scope,
+                                                               const name& table, 
+                                                               const abi_serializer& abi,
+                                                               const std::size_t max_size )const;
 
    struct abi_json_to_bin_params {
       name         code;

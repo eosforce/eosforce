@@ -135,10 +135,15 @@ public:
 
       vector<permission>         permissions;
 
+      // useless, but keep same with eosio
       fc::variant                total_resources;
       fc::variant                self_delegated_bandwidth;
       fc::variant                refund_request;
       fc::variant                voter_info;
+
+      // eosforce datas
+      vector<fc::variant>        votes;
+      vector<fc::variant>        fix_votes;
    };
 
    struct get_account_params {
@@ -779,7 +784,7 @@ FC_REFLECT( eosio::chain_apis::read_only::get_scheduled_transactions_result, (tr
 FC_REFLECT( eosio::chain_apis::read_only::get_account_results,
             (account_name)(head_block_num)(head_block_time)(privileged)(last_code_update)(created)
             (core_liquid_balance)(ram_quota)(net_weight)(cpu_weight)(net_limit)(cpu_limit)(ram_usage)(permissions)
-            (total_resources)(self_delegated_bandwidth)(refund_request)(voter_info) )
+            (total_resources)(self_delegated_bandwidth)(refund_request)(voter_info)(votes)(fix_votes) )
 // @swap code_hash
 FC_REFLECT( eosio::chain_apis::read_only::get_code_results, (account_name)(code_hash)(wast)(wasm)(abi) )
 FC_REFLECT( eosio::chain_apis::read_only::get_code_hash_results, (account_name)(code_hash) )

@@ -19,6 +19,7 @@
 
 #include <eosio/chain/eosio_contract.hpp>
 #include <eosio/chain/config_on_chain.hpp>
+#include <eosio/chain/memory_db.hpp>
 
 #include <boost/signals2/connection.hpp>
 #include <boost/algorithm/string.hpp>
@@ -1796,17 +1797,17 @@ read_only::get_account_results read_only::get_account( const get_account_params&
          core_symbol = *(params.expected_core_symbol);
 
       const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(
-            boost::make_tuple( config::token_account_name, params.account_name, N(accounts) ));
+            boost::make_tuple( config::system_account_name, config::system_account_name, N(accounts) ));
       if( t_id != nullptr ) {
          const auto &idx = d.get_index<key_value_index, by_scope_primary>();
-         auto it = idx.find(boost::make_tuple( t_id->id, core_symbol.to_symbol_code() ));
-         if( it != idx.end() && it->value.size() >= sizeof(asset) ) {
-            asset bal;
+         auto it = idx.find(boost::make_tuple( t_id->id, params.account_name ));
+         if( it != idx.end() && it->value.size() >= sizeof(memory_db::account_info) ) {
+            memory_db::account_info acc_info;
             fc::datastream<const char *> ds(it->value.data(), it->value.size());
-            fc::raw::unpack(ds, bal);
+            fc::raw::unpack(ds, acc_info);
 
-            if( bal.get_symbol().valid() && bal.get_symbol() == core_symbol ) {
-               result.core_liquid_balance = bal;
+            if( acc_info.available.get_symbol().valid() ) {
+               result.core_liquid_balance = acc_info.available;
             }
          }
       }
@@ -1822,38 +1823,19 @@ read_only::get_account_results read_only::get_account( const get_account_params&
          }
       }
 
-      t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple( config::system_account_name, params.account_name, N(delband) ));
-      if (t_id != nullptr) {
-         const auto &idx = d.get_index<key_value_index, by_scope_primary>();
-         auto it = idx.find(boost::make_tuple( t_id->id, params.account_name ));
-         if ( it != idx.end() ) {
-            vector<char> data;
-            copy_inline_row(*it, data);
-            result.self_delegated_bandwidth = abis.binary_to_variant( "delegated_bandwidth", data, abi_serializer_max_time, shorten_abi_errors );
-         }
-      }
+      const std::size_t max_send_to_res = 16;
 
-      t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple( config::system_account_name, params.account_name, N(refunds) ));
-      if (t_id != nullptr) {
-         const auto &idx = d.get_index<key_value_index, by_scope_primary>();
-         auto it = idx.find(boost::make_tuple( t_id->id, params.account_name ));
-         if ( it != idx.end() ) {
-            vector<char> data;
-            copy_inline_row(*it, data);
-            result.refund_request = abis.binary_to_variant( "refund_request", data, abi_serializer_max_time, shorten_abi_errors );
-         }
-      }
+      result.votes = get_table_rows_by_primary_to_json( config::system_account_name, 
+                                                        params.account_name, 
+                                                        N(votes), 
+                                                        abis,
+                                                        max_send_to_res );
 
-      t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple( config::system_account_name, config::system_account_name, N(voters) ));
-      if (t_id != nullptr) {
-         const auto &idx = d.get_index<key_value_index, by_scope_primary>();
-         auto it = idx.find(boost::make_tuple( t_id->id, params.account_name ));
-         if ( it != idx.end() ) {
-            vector<char> data;
-            copy_inline_row(*it, data);
-            result.voter_info = abis.binary_to_variant( "voter_info", data, abi_serializer_max_time, shorten_abi_errors );
-         }
-      }
+      result.fix_votes = get_table_rows_by_primary_to_json( config::system_account_name, 
+                                                            params.account_name, 
+                                                            N(fixvotes), 
+                                                            abis,
+                                                            max_send_to_res );
    }
    return result;
 }
@@ -1941,6 +1923,40 @@ read_only::get_chain_configs_result read_only::get_chain_configs( const get_chai
 
 read_only::get_action_fee_result read_only::get_action_fee( const get_action_fee_params& params )const {
    return get_action_fee_result{db.get_txfee_manager().get_required_fee(db, params.account, params.action)};
+}
+
+std::vector<fc::variant> read_only::get_table_rows_by_primary_to_json( const name& code,
+                                                                       const uint64_t& scope,
+                                                                       const name& table,
+                                                                       const abi_serializer& abis,
+                                                                       const std::size_t max_size ) const {
+   std::vector<fc::variant> result;
+
+   const auto& d = db.db();
+
+   const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(code, scope, table));
+   if( t_id != nullptr ) {
+      const auto &idx = d.get_index<key_value_index, by_scope_primary>();
+      result.reserve(max_size);
+
+      decltype(t_id->id) next_tid(t_id->id._id + 1);
+      const auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
+      const auto upper = idx.lower_bound(boost::make_tuple(next_tid));
+
+      std::size_t added = 0;
+      vector<char> data;
+      data.reserve(4096);
+      for( auto itr = lower; itr != upper; ++itr ) {
+         if(added >= max_size) {
+            break;
+         }
+         copy_inline_row(*itr, data);
+         result.push_back(abis.binary_to_variant(abis.get_table_type(table), data, abi_serializer_max_time, shorten_abi_errors));
+         added++;
+      }
+   }
+
+   return result;
 }
 
 read_only::get_transaction_id_result read_only::get_transaction_id( const read_only::get_transaction_id_params& params)const {

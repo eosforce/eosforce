@@ -19,6 +19,7 @@
 
 #include <eosio/chain/eosio_contract.hpp>
 #include <eosio/chain/config_on_chain.hpp>
+#include <eosio/chain/memory_db.hpp>
 
 #include <boost/signals2/connection.hpp>
 #include <boost/algorithm/string.hpp>
@@ -1796,17 +1797,17 @@ read_only::get_account_results read_only::get_account( const get_account_params&
          core_symbol = *(params.expected_core_symbol);
 
       const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(
-            boost::make_tuple( config::token_account_name, params.account_name, N(accounts) ));
+            boost::make_tuple( config::system_account_name, config::system_account_name, N(accounts) ));
       if( t_id != nullptr ) {
          const auto &idx = d.get_index<key_value_index, by_scope_primary>();
-         auto it = idx.find(boost::make_tuple( t_id->id, core_symbol.to_symbol_code() ));
-         if( it != idx.end() && it->value.size() >= sizeof(asset) ) {
-            asset bal;
+         auto it = idx.find(boost::make_tuple( t_id->id, params.account_name ));
+         if( it != idx.end() && it->value.size() >= sizeof(memory_db::account_info) ) {
+            memory_db::account_info acc_info;
             fc::datastream<const char *> ds(it->value.data(), it->value.size());
-            fc::raw::unpack(ds, bal);
+            fc::raw::unpack(ds, acc_info);
 
-            if( bal.get_symbol().valid() && bal.get_symbol() == core_symbol ) {
-               result.core_liquid_balance = bal;
+            if( acc_info.available.get_symbol().valid() ) {
+               result.core_liquid_balance = acc_info.available;
             }
          }
       }

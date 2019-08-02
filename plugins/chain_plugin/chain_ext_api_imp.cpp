@@ -88,7 +88,9 @@ read_only::get_vote_rewards_result read_only::get_vote_rewards( const read_only:
    const auto amount_voteage = static_cast<int128_t>( bp_data.rewards_pool.get_amount() ) 
                              * voter_total_assetage;
    const auto& reward = asset{
-      static_cast<int64_t>( amount_voteage / bp_total_assetage )
+      bp_total_assetage > 0
+            ? static_cast<int64_t>( amount_voteage / bp_total_assetage )
+            : 0
    };
 
    return {

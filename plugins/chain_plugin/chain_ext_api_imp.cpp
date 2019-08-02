@@ -34,8 +34,7 @@ const auto sys_account = chain::config::system_account_name;
 
 // get_vote_rewards get voter 's reward by vote in eosforce
 read_only::get_vote_rewards_result read_only::get_vote_rewards( const read_only::get_vote_rewards_params& p )const {
-   ilog( "get_vote_rewards ${acc} from ${bp}", 
-         ("acc", p.voter)("bp", p.bp_name));
+   //ilog( "get_vote_rewards ${acc} from ${bp}", ("acc", p.voter)("bp", p.bp_name));
 
    const auto curr_block_num = db.head_block_num();
 
@@ -45,14 +44,14 @@ read_only::get_vote_rewards_result read_only::get_vote_rewards( const read_only:
                chain::contract_table_query_exception,
                "cannot find bp info by name ${n}", ("n", p.bp_name) );
 
-   ilog( "bp data: ${data}", ("data", bp_data) );
+   //ilog( "bp data: ${data}", ("data", bp_data) );
 
    const auto bp_total_assetage = 
         ( static_cast<int128_t>(bp_data.total_staked)
           * static_cast<int128_t>(curr_block_num - bp_data.voteage_update_height) )
       + bp_data.total_voteage;
 
-   ilog( "bp data: ${data} on ${n}", ("data", bp_total_assetage)("n", curr_block_num) );
+   //ilog( "bp data: ${data} on ${n}", ("data", bp_total_assetage)("n", curr_block_num) );
 
    uint64_t voter_total_assetage = 0;
 
@@ -61,13 +60,13 @@ read_only::get_vote_rewards_result read_only::get_vote_rewards( const read_only:
    const auto is_has_curr_vote = get_table_row_by_primary_key(
          sys_account, p.voter, N(votes), p.bp_name, curr_vote_data );
    if( is_has_curr_vote ) {
-      ilog( "get current vote data : ${d}", ("d", curr_vote_data) );
+      //ilog( "get current vote data : ${d}", ("d", curr_vote_data) );
       const auto curr_vote_assetage = 
          (   static_cast<int128_t>(curr_vote_data.staked.get_amount() / curr_vote_data.staked.precision()) 
            * static_cast<int128_t>(curr_block_num - curr_vote_data.voteage_update_height) )
          + curr_vote_data.voteage;
       
-      ilog( "get current vote assetage : ${d}", ("d", curr_vote_assetage) );
+      //ilog( "get current vote assetage : ${d}", ("d", curr_vote_assetage) );
       voter_total_assetage += curr_vote_assetage;
    }
 
@@ -75,7 +74,7 @@ read_only::get_vote_rewards_result read_only::get_vote_rewards( const read_only:
    walk_table_by_seckey<chain::memory_db::votefix_info>( 
       sys_account, p.voter, N(fixvotes), p.bp_name, 
       [&]( unsigned int c, const chain::memory_db::votefix_info& v ) -> bool{
-         ilog("walk fix ${n} : ${data}", ("n", c)("data", v));
+         //ilog("walk fix ${n} : ${data}", ("n", c)("data", v));
          const auto fix_votepower_age =
             (   static_cast<int128_t>(v.votepower_age.staked.get_amount() / v.votepower_age.staked.precision())
               * static_cast<int128_t>(curr_block_num - v.votepower_age.update_height) )

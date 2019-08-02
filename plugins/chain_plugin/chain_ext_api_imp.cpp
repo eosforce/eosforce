@@ -72,6 +72,17 @@ read_only::get_vote_rewards_result read_only::get_vote_rewards( const read_only:
    }
 
    // 3. Need calc the sum of voter 's fix-time vote voteage
+   walk_table_by_seckey<chain::memory_db::votefix_info>( 
+      sys_account, p.voter, N(fixvotes), p.bp_name, 
+      [&]( unsigned int c, const chain::memory_db::votefix_info& v ) -> bool{
+         ilog("walk fix ${n} : ${data}", ("n", c)("data", v));
+         const auto fix_votepower_age =
+            (   static_cast<int128_t>(v.votepower_age.staked.get_amount() / v.votepower_age.staked.precision())
+              * static_cast<int128_t>(curr_block_num - v.votepower_age.update_height) )
+            + v.votepower_age.age;
+         voter_total_assetage += fix_votepower_age;
+         return false; // no break
+   } );
 
    // 4. Make reward to result
    const auto amount_voteage = static_cast<int128_t>( bp_data.rewards_pool.get_amount() ) 

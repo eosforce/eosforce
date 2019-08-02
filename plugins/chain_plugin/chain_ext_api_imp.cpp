@@ -34,8 +34,8 @@ const auto sys_account = chain::config::system_account_name;
 
 // get_vote_rewards get voter 's reward by vote in eosforce
 read_only::get_vote_rewards_result read_only::get_vote_rewards( const read_only::get_vote_rewards_params& p )const {
-   ilog( "get_vote_rewards ${acc} from ${bp} in ${num}, ${json}", 
-         ("acc", p.voter)("bp", p.bp_name)("json", p.json)("num", p.block_num) );
+   ilog( "get_vote_rewards ${acc} from ${bp}", 
+         ("acc", p.voter)("bp", p.bp_name));
 
    const auto curr_block_num = db.head_block_num();
 

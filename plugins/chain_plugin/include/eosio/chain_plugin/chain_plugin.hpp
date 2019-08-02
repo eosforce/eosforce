@@ -408,10 +408,8 @@ public:
    get_producers_result get_producers( const get_producers_params& params )const;
 
    struct get_vote_rewards_params {
-      bool         json      = false;
       account_name voter     = 0;
       account_name bp_name   = 0;
-      uint32_t     block_num = 0;
    };
 
    struct get_vote_rewards_result {
@@ -851,5 +849,5 @@ FC_REFLECT( eosio::chain_apis::read_only::get_chain_configs_params, (typ) )
 FC_REFLECT( eosio::chain_apis::read_only::get_chain_configs_result, (typ)(num)(key)(fee) )
 FC_REFLECT( eosio::chain_apis::read_only::get_action_fee_params, (account)(action) )
 FC_REFLECT( eosio::chain_apis::read_only::get_action_fee_result, (fee) )
-FC_REFLECT( eosio::chain_apis::read_only::get_vote_rewards_params, (json)(voter)(bp_name)(block_num) )
+FC_REFLECT( eosio::chain_apis::read_only::get_vote_rewards_params, (voter)(bp_name) )
 FC_REFLECT( eosio::chain_apis::read_only::get_vote_rewards_result, (vote_reward)(vote_assetage_sum)(block_num)(ext_datas) )

@@ -15,6 +15,7 @@
 #include <eosio/chain/abi_serializer.hpp>
 #include <eosio/chain/plugin_interface.hpp>
 #include <eosio/chain/types.hpp>
+#include <eosio/chain/memory_db.hpp>
 
 #include <boost/container/flat_set.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
@@ -219,6 +220,29 @@ public:
                                                                const name& table, 
                                                                const abi_serializer& abi,
                                                                const std::size_t max_size )const;
+   template< typename T >
+   bool get_table_row_by_primary_key( const uint64_t& code, const uint64_t& scope,
+                                      const uint64_t& table, const uint64_t& id, T& out ) const {
+
+      const auto* tab = db.db().find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(code, scope, table));
+      if( !tab ) {
+         return false;
+      }
+
+      const auto* obj = db.db().find<chain::key_value_object, chain::by_scope_primary>(
+            boost::make_tuple( tab->id, id ) );
+      if( !obj ) {
+         return false;
+      }
+
+      vector<char> data;
+      copy_inline_row(*obj, data);
+      chain::datastream<const char*> ds( data.data(), data.size() );
+
+      fc::raw::unpack(ds, out);
+
+      return true;
+   }
 
    struct abi_json_to_bin_params {
       name         code;

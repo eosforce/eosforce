@@ -1,6 +1,8 @@
 file(GLOB HEADERS "include/eosio/chain_plugin/*.hpp")
 add_library( chain_plugin
              chain_plugin.cpp
+             chain_api_helper.cpp
+             chain_ext_api_imp.cpp
              ${HEADERS} )
 
 target_link_libraries( chain_plugin eosio_chain appbase )

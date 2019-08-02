@@ -102,6 +102,12 @@ public:
       uint64_t primary_key() const { return name; }
    };
 
+   struct assetage {
+      asset     staked        = asset{ 0 };
+      int64_t   age           = 0;
+      uint32_t  update_height = 0;
+   };
+
     struct eoslock_account {
         account_name owner;
         asset     balance;
@@ -113,6 +119,20 @@ public:
       account_name voter;
       asset staked = asset{0};
       uint64_t primary_key() const { return voter; }
+   };
+
+   struct votefix_info {
+      uint64_t     key                = 0;
+      account_name voter              = 0;
+      account_name bpname             = 0;
+      name         fvote_typ          = name{ 0 };
+      assetage     votepower_age;
+      asset        vote               = asset{ 0 };
+      uint32_t     start_block_num    = 0;
+      uint32_t     withdraw_block_num = 0;
+      bool         is_withdraw        = false;
+
+      uint64_t primary_key() const { return key; }
    };
 
    struct bp_info {
@@ -286,3 +306,7 @@ FC_REFLECT(eosio::chain::memory_db::currency_stats, (supply)(max_supply)(issuer)
 FC_REFLECT(eosio::chain::memory_db::vote_info,
            (bpname)(staked)(voteage)(voteage_update_height)(unstaking)(unstake_height))
 FC_REFLECT(eosio::chain::memory_db::vote4ram_info, (voter)(staked))
+FC_REFLECT(eosio::chain::memory_db::assetage, (staked)(age)(update_height))
+FC_REFLECT(eosio::chain::memory_db::votefix_info, 
+               (key)(voter)(bpname)(fvote_typ)(votepower_age)(vote)
+               (start_block_num)(withdraw_block_num)(is_withdraw))

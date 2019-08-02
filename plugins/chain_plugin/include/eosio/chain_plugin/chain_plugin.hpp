@@ -15,6 +15,7 @@
 #include <eosio/chain/abi_serializer.hpp>
 #include <eosio/chain/plugin_interface.hpp>
 #include <eosio/chain/types.hpp>
+#include <eosio/chain/memory_db.hpp>
 
 #include <boost/container/flat_set.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
@@ -213,11 +214,92 @@ public:
    get_raw_code_and_abi_results get_raw_code_and_abi( const get_raw_code_and_abi_params& params)const;
    get_raw_abi_results get_raw_abi( const get_raw_abi_params& params)const;
 
+   // some helper funcs for get data from table in chain
+   inline uint64_t get_table_index( const uint64_t& table, const uint64_t& pos ) const {
+      auto index = table & 0xFFFFFFFFFFFFFFF0ULL;
+      EOS_ASSERT( index == table, chain::contract_table_query_exception, "Unsupported table name: ${n}", ("n", table) );
+      index |= (pos & 0x000000000000000FULL);
+      return index;
+   }
+
    std::vector<fc::variant> get_table_rows_by_primary_to_json( const name& code,
                                                                const uint64_t& scope,
                                                                const name& table, 
                                                                const abi_serializer& abi,
-                                                               const std::size_t max_size )const;
+                                                               const std::size_t max_size ) const;
+   template< typename T >
+   bool get_table_row_by_primary_key( const uint64_t& code, const uint64_t& scope,
+                                      const uint64_t& table, const uint64_t& id, T& out ) const {
+
+      const auto* tab = db.db().find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(code, scope, table));
+      if( !tab ) {
+         return false;
+      }
+
+      const auto* obj = db.db().find<chain::key_value_object, chain::by_scope_primary>(
+            boost::make_tuple( tab->id, id ) );
+      if( !obj ) {
+         return false;
+      }
+
+      vector<char> data;
+      copy_inline_row(*obj, data);
+      chain::datastream<const char*> ds( data.data(), data.size() );
+
+      fc::raw::unpack(ds, out);
+
+      return true;
+   }
+
+   template<typename T>
+   void walk_table_by_seckey( const uint64_t& code,
+                              const uint64_t& scope,
+                              const uint64_t& table,
+                              const uint64_t& key,
+                              const std::function<bool(unsigned int, const T&)>& f ) const {
+      const auto& d = db.db();
+
+      const auto table_with_index = get_table_index( table, 0 ); // 0 is for the first seckey index
+
+      const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>( boost::make_tuple(code, scope, table) );
+      const auto* index_t_id = d.find<chain::table_id_object, chain::by_code_scope_table>( boost::make_tuple(code, scope, table_with_index) );
+   
+      if (t_id != nullptr && index_t_id != nullptr) {
+         const auto& secidx = d.get_index<chain::index64_index, chain::by_secondary>();
+         decltype(index_t_id->id) low_tid(index_t_id->id._id);
+         decltype(index_t_id->id) next_tid(index_t_id->id._id + 1);
+         auto lower = secidx.lower_bound( boost::make_tuple( low_tid, key ) );
+         auto upper = secidx.lower_bound( boost::make_tuple( low_tid, key + 1 ) );
+   
+         vector<char> data;
+         auto end = fc::time_point::now() + fc::microseconds(1000 * 10); /// 10ms max time
+
+         unsigned int count = 0;
+         auto itr = lower;
+         T obj;
+         for( ; itr != upper; ++itr ) {
+            const auto* itr2 = d.find<chain::key_value_object, chain::by_scope_primary>(
+               boost::make_tuple(t_id->id, itr->primary_key)
+            );
+
+            if( itr2 == nullptr ) {
+               continue;
+            }
+
+            copy_inline_row( *itr2, data );
+            chain::datastream<const char*> ds( data.data(), data.size() );
+            fc::raw::unpack( ds, obj );
+
+            if( f( count, obj ) ) {
+               break;
+            }
+
+            ++count;
+            EOS_ASSERT( fc::time_point::now() <= end, chain::contract_table_query_exception, "walk table cost too much time!" );
+         }
+         EOS_ASSERT( itr == upper, chain::contract_table_query_exception, "not walk all item in table!" );
+      }
+   }
 
    struct abi_json_to_bin_params {
       name         code;
@@ -381,6 +463,20 @@ public:
    };
 
    get_producers_result get_producers( const get_producers_params& params )const;
+
+   struct get_vote_rewards_params {
+      account_name voter     = 0;
+      account_name bp_name   = 0;
+   };
+
+   struct get_vote_rewards_result {
+      asset     vote_reward;
+      uint128_t vote_assetage_sum = 0;
+      uint32_t  block_num         = 0;
+      vector<fc::variant> ext_datas;
+   };
+
+   get_vote_rewards_result get_vote_rewards( const get_vote_rewards_params& params )const;
 
    struct get_producer_schedule_params {
    };
@@ -810,3 +906,5 @@ FC_REFLECT( eosio::chain_apis::read_only::get_chain_configs_params, (typ) )
 FC_REFLECT( eosio::chain_apis::read_only::get_chain_configs_result, (typ)(num)(key)(fee) )
 FC_REFLECT( eosio::chain_apis::read_only::get_action_fee_params, (account)(action) )
 FC_REFLECT( eosio::chain_apis::read_only::get_action_fee_result, (fee) )
+FC_REFLECT( eosio::chain_apis::read_only::get_vote_rewards_params, (voter)(bp_name) )
+FC_REFLECT( eosio::chain_apis::read_only::get_vote_rewards_result, (vote_reward)(vote_assetage_sum)(block_num)(ext_datas) )

@@ -1925,40 +1925,6 @@ read_only::get_action_fee_result read_only::get_action_fee( const get_action_fee
    return get_action_fee_result{db.get_txfee_manager().get_required_fee(db, params.account, params.action)};
 }
 
-std::vector<fc::variant> read_only::get_table_rows_by_primary_to_json( const name& code,
-                                                                       const uint64_t& scope,
-                                                                       const name& table,
-                                                                       const abi_serializer& abis,
-                                                                       const std::size_t max_size ) const {
-   std::vector<fc::variant> result;
-
-   const auto& d = db.db();
-
-   const auto* t_id = d.find<chain::table_id_object, chain::by_code_scope_table>(boost::make_tuple(code, scope, table));
-   if( t_id != nullptr ) {
-      const auto &idx = d.get_index<key_value_index, by_scope_primary>();
-      result.reserve(max_size);
-
-      decltype(t_id->id) next_tid(t_id->id._id + 1);
-      const auto lower = idx.lower_bound(boost::make_tuple(t_id->id));
-      const auto upper = idx.lower_bound(boost::make_tuple(next_tid));
-
-      std::size_t added = 0;
-      vector<char> data;
-      data.reserve(4096);
-      for( auto itr = lower; itr != upper; ++itr ) {
-         if(added >= max_size) {
-            break;
-         }
-         copy_inline_row(*itr, data);
-         result.push_back(abis.binary_to_variant(abis.get_table_type(table), data, abi_serializer_max_time, shorten_abi_errors));
-         added++;
-      }
-   }
-
-   return result;
-}
-
 read_only::get_transaction_id_result read_only::get_transaction_id( const read_only::get_transaction_id_params& params)const {
    return params.id();
 }

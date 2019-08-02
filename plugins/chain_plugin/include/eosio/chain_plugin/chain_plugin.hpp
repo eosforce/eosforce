@@ -213,6 +213,7 @@ public:
    get_raw_code_and_abi_results get_raw_code_and_abi( const get_raw_code_and_abi_params& params)const;
    get_raw_abi_results get_raw_abi( const get_raw_abi_params& params)const;
 
+   // some helper funcs for get data from table in chain
    std::vector<fc::variant> get_table_rows_by_primary_to_json( const name& code,
                                                                const uint64_t& scope,
                                                                const name& table, 

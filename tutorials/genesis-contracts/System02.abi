@@ -61,6 +61,15 @@
         {"name":"stake",     "type":"asset"}
       ]
     },{
+        "name": "revote",
+        "base": "",
+        "fields": [
+          {"name":"voter",     "type":"account_name"},
+          {"name":"frombp",    "type":"account_name"},
+          {"name":"tobp",      "type":"account_name"},
+          {"name":"restake",   "type":"asset"}
+        ]
+    },{
       "name": "vote_info",
       "base": "",
       "fields": [
@@ -151,7 +160,7 @@
           {"name":"accounts",  "type":"permission_level_weight[]"},
           {"name":"waits",     "type":"wait_weight[]"}
         ]
-      }{
+      },{
        "name": "newaccount",
        "base": "",
        "fields": [
@@ -225,6 +234,35 @@
          {"name":"key",  "type":"account_name"},
          {"name":"fee",  "type":"asset"}
        ]
+     },{
+       "name": "onfee",
+       "base": "",
+       "fields": [
+         {"name":"actor",  "type":"account_name"},
+         {"name":"fee",    "type":"asset"},
+         {"name":"bpname", "type":"account_name"}
+       ]
+     },{
+       "name": "voteagefee",
+       "base": "",
+       "fields": [
+         {"name":"actor",  "type":"account_name"},
+         {"name":"fee",    "type":"asset"},
+         {"name":"bpname", "type":"account_name"}
+       ]
+     },{
+       "name": "heartbeat_info",
+       "base": "",
+       "fields": [
+         {"name":"bpname",  "type":"account_name"},
+         {"name":"timestamp",    "type":"time_point_sec"}
+       ]
+     },{
+       "name": "removebp",
+       "base": "",
+       "fields": [
+         {"name":"bpname",  "type":"account_name"}
+       ]
      }
   ],
   "actions": [{
@@ -238,6 +276,10 @@
     },{
       "name": "vote",
       "type": "vote",
+      "ricardian_contract": ""
+    },{
+      "name": "revote",
+      "type": "revote",
       "ricardian_contract": ""
     },{
       "name": "unfreeze",
@@ -295,6 +337,22 @@
        "name": "setconfig",
        "type": "setconfig",
        "ricardian_contract": ""
+     },{
+       "name": "onfee",
+       "type": "onfee",
+       "ricardian_contract": ""
+     },{
+       "name": "voteagefee",
+       "type": "voteagefee",
+       "ricardian_contract": ""
+     },{
+       "name": "heartbeat",
+       "type": "heartbeat_info",
+       "ricardian_contract": ""
+     },{
+       "name": "removebp",
+       "type": "removebp",
+       "ricardian_contract": ""
      }
   ],
   "tables": [
@@ -334,6 +392,12 @@
           "index_type":"i64",
           "key_names": ["version"],
           "key_types": ["uint64"]
+       },{
+          "name":"heartbeat",
+          "type":"heartbeat_info",
+          "index_type":"i64",
+          "key_names": ["bpname"],
+          "key_types": ["account_name"]
        }
   ],
   "ricardian_clauses": []

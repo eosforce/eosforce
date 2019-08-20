@@ -37,18 +37,19 @@ DOXYGEN=false
 ENABLE_COVERAGE_TESTING=false
 CORE_SYMBOL_NAME="EOS"
 START_MAKE=true
+EOSFORCE_VERSION_STR="1.7.0"
 
 TIME_BEGIN=$( date -u +%s )
 txtbld=$(tput bold)
 bldred=${txtbld}$(tput setaf 1)
 txtrst=$(tput sgr0)
 
-export SRC_LOCATION=${HOME}/src
-export OPT_LOCATION=${HOME}/opt
-export VAR_LOCATION=${HOME}/var
-export ETC_LOCATION=${HOME}/etc
-export BIN_LOCATION=${HOME}/bin
-export DATA_LOCATION=${HOME}/data
+export SRC_LOCATION=${HOME}/eosforce/${EOSFORCE_VERSION_STR}/src
+export OPT_LOCATION=${HOME}/eosforce/${EOSFORCE_VERSION_STR}/opt
+export VAR_LOCATION=${HOME}/eosforce/${EOSFORCE_VERSION_STR}/var
+export ETC_LOCATION=${HOME}/eosforce/${EOSFORCE_VERSION_STR}/etc
+export BIN_LOCATION=${HOME}/eosforce/${EOSFORCE_VERSION_STR}/bin
+export DATA_LOCATION=${HOME}/eosforce/${EOSFORCE_VERSION_STR}/data
 export CMAKE_VERSION_MAJOR=3
 export CMAKE_VERSION_MINOR=13
 export CMAKE_VERSION_PATCH=2

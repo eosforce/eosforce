@@ -74,8 +74,8 @@ void apply_context::exec_one()
          }
 
 
-         if( !(    (act.account == config::system_account_name) 
-                && (act.name == N(onfee) || act.name == N(voteagefee))) ) {
+         if( !(    (act->account == config::system_account_name) 
+                && (act->name == N(onfee) || act->name == N(voteagefee))) ) {
             if( ( receiver_account->code_hash != digest_type() ) &&
                   (  !( act->account == config::system_account_name
                         && act->name == N( setcode )

@@ -65,7 +65,7 @@ namespace eosio { namespace chain {
          friend struct controller_impl;
          friend class apply_context;
 
-         inline bool is_need_fee_action() const { return fee_payer != name{} }
+         inline bool is_need_fee_action() const { return fee_payer != name{}; }
          const action mk_fee_action( const action& act, const asset& fee ) const;
          uint32_t schedule_fee_action( const action& act, const account_name receiver );
          void make_limit_by_contract( const asset &fee_ext );

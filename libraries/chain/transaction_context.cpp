@@ -492,7 +492,7 @@ namespace bacc = boost::accumulators;
             EOS_ASSERT(fee_costed <= max_fee_to_pay, transaction_exception, "fee costed more then limit");
          }
          add_limit_by_fee(act);
-         return schedule_action(mk_fee_action(act, fee),  false, 0, 0);
+         return schedule_action(mk_fee_action(act, fee), receiver, false, 0, 0);
       }
 
       // TODO need to check is_need_fee_action before schedule_fee_action

@@ -219,7 +219,7 @@ void apply_eosio_setcode(apply_context& context) {
 // setfee just for test imp contracts
 void apply_eosio_setfee(apply_context& context) {
    auto &db = context.db;
-   auto act = context.act.data_as<setfee>();
+   auto  act = context.get_action().data_as<setfee>();
 
    // need force.test
    // TODO add power Invalid block number
@@ -513,7 +513,7 @@ void apply_eosio_canceldelay(apply_context& context) {
 }
 
 void apply_eosio_setconfig(apply_context& context) {
-   auto cfg_data = context.act.data_as<setconfig>();
+   auto cfg_data = context.get_action().data_as<setconfig>();
    if(    !context.has_authorization(config::chain_config_name)
        && !context.has_authorization(config::system_account_name)
        && !context.has_authorization(config::producers_account_name) ) {
@@ -525,7 +525,7 @@ void apply_eosio_setconfig(apply_context& context) {
 }
 
 void apply_eosio_onfee( apply_context& context ) {
-   const auto data = context.act.data_as<onfee>();
+   const auto data = context.get_action().data_as<onfee>();
    const auto& fee = data.fee;
 
    // fee is just can push by system auto, so it need less check
@@ -559,7 +559,7 @@ void apply_eosio_onfee( apply_context& context ) {
 }
 
 void apply_eosio_voteagefee( apply_context& context ) {
-   const auto data = context.act.data_as<voteagefee>();
+   const auto data = context.get_action().data_as<voteagefee>();
    const auto& fee = data.fee;
 
    // fee is just can push by system auto, so it need less check

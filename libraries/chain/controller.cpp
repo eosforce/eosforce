@@ -999,41 +999,55 @@ struct controller_impl {
    }
 
    // initialize_contract init sys contract
-   void initialize_contract( const uint64_t& contract,
+   void initialize_contract( const uint64_t& contract_account_name,
                              const bytes& code,
                              const bytes& abi,
                              const bool privileged = false ) {
-      const auto& code_id = fc::sha256::hash(code.data(), (uint32_t) code.size());
+      const auto& code_hash = fc::sha256::hash(code.data(), (uint32_t) code.size());
       const int64_t code_size = code.size();
       const int64_t abi_size = abi.size();
 
-      const auto& account = db.get<account_object, by_name>(contract);
+      const auto& account = db.get<account_object, by_name>( contract_account_name );
       db.modify(account, [&]( auto& a ) {
-         a.last_code_update = conf.genesis.initial_timestamp;
-         a.privileged = privileged;
-
-         a.code_version = code_id;
-         a.code.resize(code_size);
-         memcpy(a.code.data(), code.data(), code_size);
-
-         a.abi.resize(abi_size);
          if( abi_size > 0 ) {
-            memcpy(a.abi.data(), abi.data(), abi_size);
+            a.abi.assign(abi.data(), abi_size);
          }
       });
 
-      const auto& account_sequence = db.get<account_sequence_object, by_name>(contract);
-      db.modify(account_sequence, [&]( auto& aso ) {
-         aso.code_sequence += 1;
-         aso.abi_sequence += 1;
+      const code_object* new_code_entry = db.find<code_object, by_code_hash>( boost::make_tuple(code_hash, 0, 0) );
+      if( new_code_entry ) {
+         db.modify(*new_code_entry, [&](code_object& o) {
+            ++o.code_ref_count;
+         });
+      } else {
+         db.create<code_object>([&](code_object& o) {
+            o.code_hash = code_hash;
+            o.code.assign(code.data(), code_size);
+            o.code_ref_count = 1;
+            o.first_block_used = 1;
+            o.vm_type = 0;
+            o.vm_version = 0;
+         });
+      }
+
+      const auto& account_meta = db.get<account_metadata_object, by_name>( contract_account_name );
+      db.modify(account_meta, [&]( auto& a ) {
+         a.set_privileged( privileged );
+         a.code_sequence += 1;
+         a.abi_sequence += 1;
+         a.vm_type = 0;
+         a.vm_version = 0;
+         a.code_hash = code_hash;
+         a.last_code_update = conf.genesis.initial_timestamp;
       });
 
-      const auto& usage  = db.get<resource_limits::resource_usage_object, resource_limits::by_owner>( contract );
+      // TODO need change
+      const auto& usage  = db.get<resource_limits::resource_usage_object, resource_limits::by_owner>( contract_account_name );
       db.modify( usage, [&]( auto& u ) {
           u.ram_usage += (code_size + abi_size) * config::setcode_ram_bytes_multiplier;
       });
 
-      ilog("initialize_contract: name:${n}, code_size:${code}, abi_size:${abi}", ("n", account.name)("code",code_size)("abi",abi_size));
+      ilog("initialize_contract: name:${n}", ("n", account.name));
    }
 
    // initialize_eos_stats init stats for eos token

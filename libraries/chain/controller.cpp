@@ -451,7 +451,7 @@ struct controller_impl {
     */
    void initialize_blockchain_state() {
       wlog( "Initializing new blockchain with genesis state" );
-      producer_schedule_type initial_schedule{ 0, {{config::system_account_name, conf.genesis.initial_key}} };
+      producer_schedule_type initial_schedule{ 0, {} };
 
       initial_schedule.producers.reserve(config::max_producers);
       for( const auto& producer : conf.genesis.initial_producer_list ) {

@@ -8,7 +8,6 @@
 #include <eosio/chain/exceptions.hpp>
 #include <eosio/chain/authorization_manager.hpp>
 #include <eosio/chain/txfee_manager.hpp>
-#include <eosio/chain/producer_object.hpp>
 #include <eosio/chain/code_object.hpp>
 #include <eosio/chain/config.hpp>
 #include <eosio/chain/wasm_interface.hpp>

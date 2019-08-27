@@ -4,7 +4,6 @@
  */
 #include <eosio/chain/config_on_chain.hpp>
 #include <eosio/heartbeat_plugin/heartbeat_plugin.hpp>
-#include <eosio/chain/producer_object.hpp>
 #include <eosio/chain/plugin_interface.hpp>
 #include <eosio/chain/global_property_object.hpp>
 #include <eosio/chain/transaction_object.hpp>

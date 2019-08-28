@@ -2088,7 +2088,8 @@ struct controller_impl {
 
          // this implicitly asserts that all header fields (less the signature) are identical
          EOS_ASSERT( producer_block_id == ab._id, block_validate_exception, "Block ID does not match",
-                     ("producer_block_id",producer_block_id)("validator_block_id",ab._id) );
+                     ("producer_block_id",producer_block_id)("validator_block_id",ab._id)
+                     ("block_num", b->block_num()) );
 
          auto bsp = std::make_shared<block_state>(
                         std::move( ab._pending_block_header_state ),

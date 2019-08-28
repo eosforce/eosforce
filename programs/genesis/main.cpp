@@ -33,6 +33,9 @@ FC_REFLECT(key_map, ( keymap ))
 
 int main( int argc, const char **argv ) {
    eosio::chain::genesis_state gs;
+
+   gs.initial_timestamp = fc::time_point::now();
+
    const std::string path = "./genesis.json";
    const std::string activeacc = "./activeacc.json";
    key_map my_keymap;

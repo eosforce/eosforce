@@ -62,7 +62,7 @@ export NO_CPP17=${NO_CPP17:-false}
 export PIN_COMPILER=${PIN_COMPILER:-false}
 export BUILD_CLANG=${BUILD_CLANG:-false}
 
-export CORE_SYMBOL_NAME=${CORE_SYMBOL_NAME:-SYS}
+export CORE_SYMBOL_NAME=${CORE_SYMBOL_NAME:-EOS}
 
 export CPU_CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 export CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Release}

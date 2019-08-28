@@ -36,7 +36,7 @@ function usage() {
    printf "Usage: $0 OPTION...
   -P          Build with pinned clang and libcxx
   -o TYPE     Build <Debug|Release|RelWithDebInfo|MinSizeRel> (default: Release)
-  -s NAME     Core Symbol Name <1-7 characters> (default: SYS)
+  -s NAME     Core Symbol Name <1-7 characters> (default: EOS)
   -b DIR      Use pre-built boost in DIR
   -i DIR      Directory to use for installing dependencies & EOSIO (default: $HOME)
   -y          Noninteractive mode (answers yes to every prompt)
@@ -228,22 +228,21 @@ execute cd $REPO_ROOT 1>/dev/null
 
 TIME_END=$(( $(date -u +%s) - $TIME_BEGIN ))
 
-printf "\n\n${bldred}\t _______  _______  _______  _______  _______  _______  _______  _______ \n"
-printf '\t(  ____ \(  ___  )(  ____ \(  ____ \(  ___  )(  ____ )(  ____ \(  ____ \ \n'
-printf "\t| (    \/| (   ) || (    \/| (    \/| (   ) || (    )|| (    \/| (    \/ \n"
-printf "\t| (__    | |   | || (_____ | (__    | |   | || (____)|| |      | (__     \n"
-printf "\t|  __)   | |   | |(_____  )|  __)   | |   | ||     __)| |      |  __)    \n"
-printf "\t| (      | |   | |      ) || (      | |   | || (\ (   | |      | (       \n"
-printf "\t| (____/\| (___) |/\____) || )      | (___) || ) \ \__| (____/\| (____/\ \n"
-printf "\t(_______/(_______)\_______)|/       (_______)|/   \__/(_______/(_______/ \n${txtrst}"
+echo " _______  _______  _______  _______  _______  _______  _______  _______  "
+echo "(  ____ \(  ___  )(  ____ \(  ____ \(  ___  )(  ____ )(  ____ \(  ____ \ "
+echo "| (    \/| (   ) || (    \/| (    \/| (   ) || (    )|| (    \/| (    \/ "
+echo "| (__    | |   | || (_____ | (__    | |   | || (____)|| |      | (__     "
+echo "|  __)   | |   | |(_____  )|  __)   | |   | ||     __)| |      |  __)    "
+echo "| (      | |   | |      ) || (      | |   | || (\ (   | |      | (       "
+echo "| (____/\| (___) |/\____) || )      | (___) || ) \ \__| (____/\| (____/\ "
+echo "(_______/(_______)\_______)|/       (_______)|/   \__/(_______/(_______/ "
 
-printf "\\n\\tEOSForce has been successfully built. %02d:%02d:%02d\\n\\n" $(($TIME_END/3600)) $(($TIME_END%3600/60)) $(($TIME_END%60))
-printf "\\tTo verify your installation run the following commands:\\n"
+echo "EOSForce has been successfully built. %02d:%02d:%02d" $(($TIME_END/3600)) $(($TIME_END%3600/60)) $(($TIME_END%60))
+echo "To verify your installation run the following commands:"
 
-print_instructions
 
-printf "\\tFor more information:\\n"
-printf "\\tEOSForce website: https://www.eosforce.io\\n"
-printf "\\tEOSForce Telegram channel @ https://t.me/eosforce_en\\n"
-printf "\\tEOSForce wiki: https://eosforce.github.io/Documentation/\\n\\n\\n"
+echo "For more information:"
+echo "EOSForce website: https://www.eosforce.io"
+echo "EOSForce Telegram channel @ https://t.me/eosforce_en"
+echo "EOSForce wiki: https://eosforce.github.io/Documentation/"
 

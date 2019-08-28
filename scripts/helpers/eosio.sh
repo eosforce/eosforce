@@ -43,7 +43,7 @@ function setup() {
         echo "SUDO_LOCATION: ${SUDO_LOCATION}"
         echo "PIN_COMPILER: ${PIN_COMPILER}"
     fi
-    ( [[ -d $BUILD_DIR ]] && [[ -z $BUILD_DIR_CLEANUP_SKIP ]] ) && execute rm -rf $BUILD_DIR # cleanup old build directory; support disabling it (Zach requested)
+    #( [[ -d $BUILD_DIR ]] && [[ -z $BUILD_DIR_CLEANUP_SKIP ]] ) && execute rm -rf $BUILD_DIR # cleanup old build directory; support disabling it (Zach requested)
     execute-always mkdir -p $TEMP_DIR
     execute mkdir -p $BUILD_DIR
     execute mkdir -p $SRC_DIR

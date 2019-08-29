@@ -1819,8 +1819,6 @@ struct controller_impl {
                      ("schedule", static_cast<producer_schedule_type>(gpo.proposed_schedule) ) );
             }
 
-            check_func_open();
-
             EOS_ASSERT( gpo.proposed_schedule.version == pbhs.active_schedule_version + 1,
                         producer_schedule_exception, "wrong producer schedule version specified" );
 
@@ -1830,6 +1828,8 @@ struct controller_impl {
                gp.proposed_schedule.clear();
             });
          }
+
+         check_func_open();
 
          try {
             auto onbtrx = std::make_shared<transaction_metadata>( get_on_block_transaction() );

@@ -339,7 +339,7 @@ void apply_context::execute_inline( action&& a ) {
    // TODO need use a function in apply_context
    if( trx_context.is_need_fee_action() ) {
       _inline_actions.emplace_back(
-         trx_context.schedule_fee_action(a, inline_receiver)
+         trx_context.schedule_fee_action(a, config::system_account_name)
       );
    }
 
@@ -362,7 +362,7 @@ void apply_context::execute_context_free_inline( action&& a ) {
    // TODO need use a function in apply_context
    if( trx_context.is_need_fee_action() ) {
       _cfa_inline_actions.emplace_back(
-         trx_context.schedule_fee_action(a, inline_receiver)
+         trx_context.schedule_fee_action(a, config::system_account_name)
       );
    }
 

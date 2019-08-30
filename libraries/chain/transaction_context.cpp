@@ -504,14 +504,14 @@ namespace bacc = boost::accumulators;
 
       if( apply_context_free ) {
          for( const auto& act : trx.context_free_actions ) {
-            schedule_fee_action( act, act.account );
+            schedule_fee_action( act, config::system_account_name );
             schedule_action( act, act.account, true, 0, 0 );
          }
       }
 
       if( delay == fc::microseconds() ) {
          for( const auto& act : trx.actions ) {
-            schedule_fee_action( act, act.account );
+            schedule_fee_action( act, config::system_account_name );
             schedule_action( act, act.account, false, 0, 0 );
          }
       }

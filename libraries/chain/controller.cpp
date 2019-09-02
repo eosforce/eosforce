@@ -1538,14 +1538,16 @@ struct controller_impl {
 
             asset fee_ext(0); // fee ext to get more res
             if( !trx->implicit ) {
-               authorization.check_authorization(
-                       trn.actions,
-                       recovered_keys,
-                       {},
-                       trx_context.delay,
-                       [&trx_context](){ trx_context.checktime(); },
-                       false
-               );
+               if( check_auth ) {
+                  authorization.check_authorization(
+                        trn.actions,
+                        recovered_keys,
+                        {},
+                        trx_context.delay,
+                        [&trx_context](){ trx_context.checktime(); },
+                        false
+                  );
+               }
 
                if( !is_fee_limit ) {
                   const auto fee_required = txfee.get_required_fee(self, trn);
@@ -2073,6 +2075,8 @@ struct controller_impl {
                // but in eosforce block will include error, this will make chain error,
                // so eosforce should no throw
                // throw *trace->except;
+
+               // TODO in new version for EOSForce, error trx will not put into block, so it need change
             }
 
             EOS_ASSERT( trx_receipts.size() > 0,

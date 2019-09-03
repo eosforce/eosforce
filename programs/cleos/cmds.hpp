@@ -28,7 +28,7 @@ fc::variant call( const std::string& path, const T& v );
 template<>
 fc::variant call( const std::string& url, const std::string& path);
 
-void send_actions(std::vector<chain::action>&& actions, int32_t extra_kcpu = 1000, packed_transaction::compression_type compression = packed_transaction::none );
+void send_actions(std::vector<chain::action>&& actions, packed_transaction::compression_type compression = packed_transaction::none );
 void add_standard_transaction_options(CLI::App* cmd, string default_permission = "");
 chain::action create_action(const vector<permission_level>& authorization, const account_name& code, const action_name& act, const fc::variant& args);
 fc::variant regproducer_variant(const account_name& producer, const public_key_type& key, const string& url, uint32_t location);
@@ -191,20 +191,15 @@ struct set_fee_subcommand {
                ? account             // if no set res limit, just need account permission
                : name("force.test"); // if set res limit, need force.test
 
-         send_actions(
-               {
-                  action {
-                     vector<chain::permission_level>{ { permission_account, config::active_name } },
-                     setfee{
-                        .account   = account,
-                        .action    = action_to_set_fee,
-                        .fee       = a,
-                        .cpu_limit = cpu_limit_by_contract,
-                        .net_limit = net_limit_by_contract,
-                        .ram_limit = ram_limit_by_contract
-                     }
-                  }
-               });
+         fc::variant setfee_data = fc::mutable_variant_object()
+               ("account", account)
+               ("action", action_to_set_fee)
+               ("fee", a)
+               ("cpu_limit", cpu_limit_by_contract)
+               ("net_limit", net_limit_by_contract)
+               ("ram_limit", ram_limit_by_contract);
+
+         send_actions({create_action({permission_level{ permission_account, config::active_name }}, config::system_account_name, N(setfee), setfee_data )});
       });
    }
 };

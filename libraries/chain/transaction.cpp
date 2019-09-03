@@ -50,6 +50,16 @@ typedef multi_index_container<
    >
 > recovery_cache_type;
 
+void deferred_transaction_generation_context::reflector_init() {
+      static_assert( fc::raw::has_feature_reflector_init_on_unpacked_reflected_types,
+                     "deferred_transaction_generation_context expects FC to support reflector_init" );
+
+
+      EOS_ASSERT( sender != account_name(), ill_formed_deferred_transaction_generation_context,
+                  "Deferred transaction generation context extension must have a non-empty sender account",
+      );
+}
+
 void transaction_header::set_reference_block( const block_id_type& reference_block ) {
    ref_block_num    = fc::endian_reverse_u32(reference_block._hash[0]);
    ref_block_prefix = reference_block._hash[1];
@@ -99,10 +109,11 @@ fc::microseconds transaction::get_signature_keys( const vector<signature_type>& 
 
    std::unique_lock<std::mutex> lock(cache_mtx, std::defer_lock);
    fc::microseconds sig_cpu_usage;
+   const auto digest_time = fc::time_point::now() - start;
    for(const signature_type& sig : signatures) {
-      auto now = fc::time_point::now();
-      EOS_ASSERT( now < deadline, tx_cpu_usage_exceeded, "transaction signature verification executed for too long",
-                  ("now", now)("deadline", deadline)("start", start) );
+      auto sig_start = fc::time_point::now();
+      EOS_ASSERT( sig_start < deadline, tx_cpu_usage_exceeded, "transaction signature verification executed for too long",
+                  ("now", sig_start)("deadline", deadline)("start", start) );
       public_key_type recov;
       const auto& tid = id();
       lock.lock();
@@ -110,7 +121,7 @@ fc::microseconds transaction::get_signature_keys( const vector<signature_type>& 
       if( it == recovery_cache.get<by_sig>().end() || it->trx_id != tid ) {
          lock.unlock();
          recov = public_key_type( sig, digest );
-         fc::microseconds cpu_usage = fc::time_point::now() - start;
+         fc::microseconds cpu_usage = fc::time_point::now() - sig_start;
          lock.lock();
          recovery_cache.emplace_back( cached_pub_key{tid, recov, sig, cpu_usage} ); //could fail on dup signatures; not a problem
          sig_cpu_usage += cpu_usage;
@@ -131,9 +142,48 @@ fc::microseconds transaction::get_signature_keys( const vector<signature_type>& 
       recovery_cache.erase( recovery_cache.begin());
    lock.unlock();
 
-   return sig_cpu_usage;
+   return sig_cpu_usage + digest_time;
 } FC_CAPTURE_AND_RETHROW() }
 
+vector<transaction_extensions> transaction::validate_and_extract_extensions()const {
+   using transaction_extensions_t = transaction_extension_types::transaction_extensions_t;
+   using decompose_t = transaction_extension_types::decompose_t;
+
+   static_assert( std::is_same<transaction_extensions_t, eosio::chain::transaction_extensions>::value,
+                  "transaction_extensions is not setup as expected" );
+
+   vector<transaction_extensions_t> results;
+
+   uint16_t id_type_lower_bound = 0;
+
+   for( size_t i = 0; i < transaction_extensions.size(); ++i ) {
+      const auto& e = transaction_extensions[i];
+      auto id = e.first;
+
+      EOS_ASSERT( id >= id_type_lower_bound, invalid_transaction_extension,
+                  "Transaction extensions are not in the correct order (ascending id types required)"
+      );
+
+      results.emplace_back();
+
+      auto match = decompose_t::extract<transaction_extensions_t>( id, e.second, results.back() );
+      EOS_ASSERT( match, invalid_transaction_extension,
+                  "Transaction extension with id type ${id} is not supported",
+                  ("id", id)
+      );
+
+      if( match->enforce_unique ) {
+         EOS_ASSERT( i == 0 || id > id_type_lower_bound, invalid_transaction_extension,
+                     "Transaction extension with id type ${id} is not allowed to repeat",
+                     ("id", id)
+         );
+      }
+
+      id_type_lower_bound = id;
+   }
+
+   return results;
+}
 
 const signature_type& signed_transaction::sign(const private_key_type& key, const chain_id_type& chain_id) {
    signatures.push_back(key.sign(sig_digest(chain_id, context_free_data)));

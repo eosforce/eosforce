@@ -200,7 +200,7 @@ template<uint64_t TableName, typename T>
 class native_multi_index{
 private:
    name current_receiver() {
-      return _ctx.receiver;
+      return _ctx.get_receiver();
    }
 
 private:

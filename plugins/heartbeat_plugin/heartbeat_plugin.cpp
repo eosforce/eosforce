@@ -4,7 +4,6 @@
  */
 #include <eosio/chain/config_on_chain.hpp>
 #include <eosio/heartbeat_plugin/heartbeat_plugin.hpp>
-#include <eosio/chain/producer_object.hpp>
 #include <eosio/chain/plugin_interface.hpp>
 #include <eosio/chain/global_property_object.hpp>
 #include <eosio/chain/transaction_object.hpp>
@@ -15,6 +14,7 @@
 #include <fc/io/json.hpp>
 #include <fc/smart_ref_impl.hpp>
 #include <fc/scoped_exit.hpp>
+#include <fc/log/logger_config.hpp>
 
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -43,12 +43,6 @@ using std::string;
 using std::vector;
 using std::deque;
 using boost::signals2::scoped_connection;
-
-// HACK TO EXPOSE LOGGER MAP
-
-namespace fc {
-   extern std::unordered_map<std::string,logger>& get_logger_map();
-}
 
 const fc::string logger_name("heartbeat_plugin");
 fc::logger heartbeat_log;
@@ -217,24 +211,15 @@ void heartbeat_plugin::plugin_initialize(const boost::program_options::variables
 } FC_LOG_AND_RETHROW() 
 }
 
-void heartbeat_plugin::plugin_startup()
-{ try {
-   auto& logger_map = fc::get_logger_map();
-   if(logger_map.find(logger_name) != logger_map.end()) {
-      heartbeat_log = logger_map[logger_name];
-   }
+void heartbeat_plugin::plugin_startup() { 
+   try {
+      fc::logger::update( logger_name, heartbeat_log );
+      fc::logger::update( trx_trace_logger_name, heartbeat_trx_trace_log );
 
-   if( logger_map.find(trx_trace_logger_name) != logger_map.end()) {
-      heartbeat_trx_trace_log = logger_map[trx_trace_logger_name];
-   }
-
-   ilog("heartbeat plugin:  plugin_startup() begin");
-
-
-   my->schedule_heartbeat_loop();
-
-   ilog("heartbeat plugin:  plugin_startup() end");
-} FC_CAPTURE_AND_RETHROW() }
+      ilog("heartbeat plugin:  plugin_startup() begin");
+      my->schedule_heartbeat_loop();
+   } FC_CAPTURE_AND_RETHROW() 
+}
 
 void heartbeat_plugin::plugin_shutdown() {
    try {
@@ -267,29 +252,27 @@ void heartbeat_plugin_impl::schedule_heartbeat_loop() {
 }
 
 action heartbeat_plugin_impl::get_action( account_name code, action_name acttype, vector<permission_level> auths,
-                                   const variant_object& data ) const 
-{ 
-try {
-   chain::controller& chain = app().get_plugin<chain_plugin>().chain();
-   const auto& acnt = chain.get_account(code);
-   auto abi = acnt.get_abi();
-   const fc::microseconds abi_serializer_max_time{1000*1000};
-   chain::abi_serializer abis(abi, abi_serializer_max_time);
+                                   const variant_object& data ) const {
+   try {
+      chain::controller& chain = app().get_plugin<chain_plugin>().chain();
+      const auto& acnt = chain.get_account(code);
+      auto abi = acnt.get_abi();
+      const fc::microseconds abi_serializer_max_time{1000*1000};
+      chain::abi_serializer abis(abi, abi_serializer_max_time);
 
-   string action_type_name = abis.get_action_type(acttype);
-   FC_ASSERT( action_type_name != string(), "unknown action type ${a}", ("a",acttype) );
+      string action_type_name = abis.get_action_type(acttype);
+      FC_ASSERT( action_type_name != string(), "unknown action type ${a}", ("a",acttype) );
 
-   action act;
-   act.account = code;
-   act.name = acttype;
-   act.authorization = auths;
-   act.data = abis.variant_to_binary(action_type_name, data, abi_serializer_max_time);
-   return act;
-} FC_CAPTURE_AND_RETHROW() 
+      action act;
+      act.account = code;
+      act.name = acttype;
+      act.authorization = auths;
+      act.data = abis.variant_to_binary(action_type_name, data, abi_serializer_max_time);
+      return act;
+   } FC_CAPTURE_AND_RETHROW() 
 }
 
-signed_transaction heartbeat_plugin_impl::get_heartbeat_transaction()
-{
+signed_transaction heartbeat_plugin_impl::get_heartbeat_transaction() {
    FC_ASSERT( !_keys.empty(), "no signing keys!" );
    FC_ASSERT( !_bp_mappings.empty(), "no mapping producer_name!" );
    FC_ASSERT( _bp_mappings.size() == 1, "only one mapping producer_name allowed!" );

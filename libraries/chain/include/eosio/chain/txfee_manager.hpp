@@ -16,17 +16,13 @@ namespace eosio { namespace chain {
 
    class txfee_manager {
       public:
-
          explicit txfee_manager();
-
-         bool check_transaction( const transaction& trx)const;
 
          asset get_required_fee( const controller& ctl, const transaction& trx )const;
          asset get_required_fee( const controller& ctl, const action& act )const;
          asset get_required_fee( const controller& ctl, const account_name& account, const action_name& act )const;
 
       private:
-
         inline void init_native_fee(const account_name &acc, const action_name &act, const asset &fee) {
            fee_map[std::make_pair(acc, act)] = fee;
         }

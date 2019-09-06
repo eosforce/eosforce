@@ -1554,8 +1554,6 @@ struct controller_impl {
                   EOS_ASSERT(trn.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
                   fee_ext = trn.fee - fee_required;
                }
-               EOS_ASSERT(txfee.check_transaction(trn) == true, transaction_exception, "transaction include actor more than one");
-
 
                // keep
                if( !is_onfee_act ) {

@@ -327,20 +327,6 @@ void producer_heartbeat_plugin::plugin_initialize(const variables_map& options) 
       if(options.count("chain-state-db-size-mb")){
          my->state_db_size = options["chain-state-db-size-mb"].as<uint64_t>();
       }
-      
-      if(options.count("actor-blacklist")){
-         auto blacklist_actors = options["actor-blacklist"].as<std::vector<std::string>>();
-         remove_duplicates(blacklist_actors);
-         sort(blacklist_actors.begin(), blacklist_actors.end());
-         auto output=apply(blacklist_actors,[](std::string element){
-             std::ostringstream stringStream;
-             stringStream << "actor-blacklist=" << element << "\n";
-             return stringStream.str();
-            });
-         std::string actor_blacklist_str = std::accumulate(output.begin(), output.end(), std::string(""));
-         my->actor_blacklist_hash = (string)fc::sha256::hash(actor_blacklist_str);
-         my->actor_blacklist_count = blacklist_actors.size();
-      }      
       if( options.count("heartbeat-signature-provider") ) {
             auto key_spec_pair = options["heartbeat-signature-provider"].as<std::string>();
             

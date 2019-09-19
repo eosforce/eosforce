@@ -9,6 +9,8 @@
 *.dot
 *.abi.hpp
 *.cmake
+!.cicd
+!CMakeModules/*.cmake
 *.ninja
 \#*
 \.#*
@@ -72,6 +74,8 @@ witness_node_data_dir
 *.pyc
 *.pyo
 
+Testing/*
+build.tar.gz
 build/*
 build-debug/*
 

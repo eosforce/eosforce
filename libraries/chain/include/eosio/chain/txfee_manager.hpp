@@ -86,6 +86,6 @@ namespace eosio { namespace chain {
 } } /// namespace eosio::chain
 
 FC_REFLECT(eosio::chain::fee_paramter, (name)(fee)(producer))
-FC_REFLECT(eosio::chain::action_fee_object, (id)(account)(message_type)(fee))
+FC_REFLECT(eosio::chain::action_fee_object, (id)(account)(message_type)(fee)(cpu_limit)(net_limit)(ram_limit))
 
 CHAINBASE_SET_INDEX_TYPE(eosio::chain::action_fee_object, eosio::chain::action_fee_object_index)

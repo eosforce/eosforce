@@ -47,13 +47,7 @@ using resource_limits::resource_limits_manager;
 
 // in chain_func_check.cpp
 void check_func_open( const controller& ctl, const controller::config& conf, chainbase::database& db );
-
-void initialize_contract( chainbase::database& db,
-                          const uint64_t&      contract_account_name,
-                          const bytes&         code,
-                          const bytes&         abi,
-                          const time_point&    update_time_point,
-                          const bool           privileged );
+void initialize_eosc_chain( controller& ctl, const controller::config& conf, chainbase::database& db );
 
 using controller_index_set = index_set<
    account_index,
@@ -933,84 +927,6 @@ struct controller_impl {
       resource_limits.verify_account_ram_usage(name);
    }
 
-   // initialize_producer init bios bps in initial_producer_list
-   void initialize_producer() {
-      auto db = memory_db(self);
-      for( const auto& producer : conf.genesis.initial_producer_list ) {
-         // store bp data in bp table
-         db.insert(config::system_account_name, config::system_account_name, N(bps),
-                   producer.name,
-                   memory_db::bp_info{
-                         producer.name,
-                         producer.bpkey,
-                         producer.commission_rate,
-                         producer.url});
-      }
-   }
-
-   // initialize_chain_emergency init chain emergency stat
-   void initialize_chain_emergency() {
-      memory_db(self).insert(
-            config::system_account_name, config::system_account_name, N(chainstatus),
-            config::system_account_name,
-            memory_db::chain_status{N(chainstatus), false});
-   }
-
-   // initialize_account init account from genesis;
-   // inactive account freeze(lock) asset by inactive_freeze_percent;
-   void initialize_account() {
-      std::set<account_name> active_acc_set;
-      for (const auto &account : conf.active_initial_account_list) {
-         active_acc_set.insert(account.name);
-      }
-
-      const auto acc_name_a = N(a);
-      auto db = memory_db(self);
-      for (const auto &account : conf.genesis.initial_account_list) {
-         const auto &public_key = account.key;
-         auto acc_name = account.name;
-         if (acc_name == acc_name_a) {
-            const auto pk_str = std::string(public_key);
-            const auto name_r = pk_str.substr(pk_str.size() - 12, 12);
-            acc_name = string_to_name(format_name(name_r).c_str());
-         }
-
-         // init asset
-         eosio::chain::asset amount;
-         if (active_acc_set.find(account.name) == active_acc_set.end()) {
-            //issue eoslock token to this account
-            uint64_t eoslock_amount = account.asset.get_amount() * conf.inactive_freeze_percent / 100;
-            db.insert(
-                    config::eoslock_account_name, config::eoslock_account_name, N(accounts), acc_name,
-                     memory_db::eoslock_account{acc_name, eosio::chain::asset(eoslock_amount, symbol(4, "EOSLOCK"))});
-
-            //inactive account freeze(lock) asset
-            amount = account.asset - eosio::chain::asset(eoslock_amount);
-         } else {
-            //active account
-            amount = account.asset;
-         }
-
-         // initialize_account_to_table
-         db.insert(
-                 config::system_account_name, config::system_account_name, N(accounts), acc_name,
-                 memory_db::account_info{acc_name, amount});
-         const authority auth(public_key);
-         create_native_account(acc_name, auth, auth, false);
-      }
-   }
-
-   // initialize_eos_stats init stats for eos token
-   void initialize_eos_stats() {
-      const auto& sym = symbol(CORE_SYMBOL).to_symbol_code();
-      memory_db(self).insert(config::token_account_name, sym, N(stat),
-                             config::token_account_name,
-                             memory_db::currency_stats{
-                                   asset(10000000),
-                                   asset(100000000000),
-                                   config::token_account_name});
-   }
-
    void initialize_database() {
       // Initialize block summary index
       for (int i = 0; i < 0x10000; i++)
@@ -1038,23 +954,10 @@ struct controller_impl {
       authorization.initialize_database();
       resource_limits.initialize_database();
 
-      authority system_auth( conf.genesis.initial_key );
+      authority system_auth(conf.genesis.initial_key);
       create_native_account( config::system_account_name, system_auth, system_auth, true );
-      create_native_account( config::token_account_name, system_auth, system_auth, false );
-      create_native_account( config::eoslock_account_name, system_auth, system_auth, false );
 
-      initialize_contract( db, config::system_account_name, conf.System_code, conf.System_abi, conf.genesis.initial_timestamp, true );
-      initialize_contract( db, config::token_account_name, conf.token_code, conf.token_abi, conf.genesis.initial_timestamp, false );
-      initialize_eos_stats();
-      initialize_contract( db, config::eoslock_account_name, conf.lock_code, conf.lock_abi, conf.genesis.initial_timestamp, false );
-
-      initialize_account();
-      initialize_producer();
-      initialize_chain_emergency();
-
-      // vote4ram func, as the early eosforce user's ram not limit
-      // so at first we set freeram to -1 to unlimit user ram
-      set_num_config_on_chain(db, config::res_typ::free_ram_per_account, -1);
+      initialize_eosc_chain( self, conf, db );
 
       auto empty_authority = authority(1, {}, {});
       auto active_producers_authority = authority(1, {}, {});

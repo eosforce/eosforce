@@ -904,10 +904,6 @@ struct controller_impl {
    }
 
    void create_native_account( account_name name, const authority& owner, const authority& active, bool is_privileged = false ) {
-      if (db.find<account_object, by_name>(name) != nullptr) {
-        // elog("create_native_account, This account already exists : ${name}", ("name", name));
-        return;
-      }
       db.create<account_object>([&](auto& a) {
          a.name = name;
          a.creation_date = conf.genesis.initial_timestamp;
@@ -941,10 +937,6 @@ struct controller_impl {
    void initialize_producer() {
       auto db = memory_db(self);
       for( const auto& producer : conf.genesis.initial_producer_list ) {
-         // create accpimt for init bps
-         const authority auth(producer.bpkey);
-         create_native_account(producer.name, auth, auth, false);
-
          // store bp data in bp table
          db.insert(config::system_account_name, config::system_account_name, N(bps),
                    producer.name,

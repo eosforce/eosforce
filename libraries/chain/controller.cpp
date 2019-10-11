@@ -3379,6 +3379,10 @@ void controller_impl::on_activation<builtin_protocol_feature_t::replace_deferred
    }
 }
 
+void controller::create_native_account( account_name name, const authority& owner, const authority& active, bool is_privileged ) {
+   my->create_native_account( name, owner, active, is_privileged );
+}
+
 /// End of protocol feature activation handlers
 
 } } /// eosio::chain

@@ -338,6 +338,8 @@ namespace eosio { namespace chain {
             return pretty_output;
          }
 
+         void create_native_account( account_name name, const authority& owner, const authority& active, bool is_privileged );
+
       private:
          friend class apply_context;
          friend class transaction_context;

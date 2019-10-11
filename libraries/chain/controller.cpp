@@ -1163,7 +1163,9 @@ struct controller_impl {
          if( !is_onfee_act ) {
             trx_context.make_limit_by_contract(fee_ext);
          }else{
-            trx_context.make_fee_act(fee_ext);
+            asset fee_limit{ 0 };
+            get_from_extensions(dtrx.transaction_extensions, transaction::fee_limit, fee_limit);
+            trx_context.make_fee_act(fee_limit);
          }
 
          if( trx_context.enforce_whiteblacklist && pending->_block_status == controller::block_status::incomplete ) {
@@ -1399,7 +1401,7 @@ struct controller_impl {
                   );
                }
 
-               if( !is_fee_limit ) {
+               if( !is_onfee_act ) {
                   const auto fee_required = txfee.get_required_fee(self, trn);
                   EOS_ASSERT(trn.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
                   fee_ext = trn.fee - fee_required;

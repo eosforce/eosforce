@@ -57,6 +57,7 @@ add_library( eosio_chain
              thread_utils.cpp
 
              chain_func_check.cpp
+             chain_init_eosc.cpp
 
              ${HEADERS}
              )

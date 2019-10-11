@@ -45,6 +45,16 @@ namespace eosio { namespace chain {
 
 using resource_limits::resource_limits_manager;
 
+// in chain_func_check.cpp
+void check_func_open( const controller& ctl, const controller::config& conf, chainbase::database& db );
+
+void initialize_contract( chainbase::database& db,
+                          const uint64_t&      contract_account_name,
+                          const bytes&         code,
+                          const bytes&         abi,
+                          const time_point&    update_time_point,
+                          const bool           privileged );
+
 using controller_index_set = index_set<
    account_index,
    account_metadata_index,
@@ -1001,58 +1011,6 @@ struct controller_impl {
       }
    }
 
-   // initialize_contract init sys contract
-   void initialize_contract( const uint64_t& contract_account_name,
-                             const bytes& code,
-                             const bytes& abi,
-                             const bool privileged = false ) {
-      const auto& code_hash = fc::sha256::hash(code.data(), (uint32_t) code.size());
-      const int64_t code_size = code.size();
-      const int64_t abi_size = abi.size();
-
-      const auto& account = db.get<account_object, by_name>( contract_account_name );
-      db.modify(account, [&]( auto& a ) {
-         if( abi_size > 0 ) {
-            a.abi.assign(abi.data(), abi_size);
-         }
-      });
-
-      const code_object* new_code_entry = db.find<code_object, by_code_hash>( boost::make_tuple(code_hash, 0, 0) );
-      if( new_code_entry ) {
-         db.modify(*new_code_entry, [&](code_object& o) {
-            ++o.code_ref_count;
-         });
-      } else {
-         db.create<code_object>([&](code_object& o) {
-            o.code_hash = code_hash;
-            o.code.assign(code.data(), code_size);
-            o.code_ref_count = 1;
-            o.first_block_used = 1;
-            o.vm_type = 0;
-            o.vm_version = 0;
-         });
-      }
-
-      const auto& account_meta = db.get<account_metadata_object, by_name>( contract_account_name );
-      db.modify(account_meta, [&]( auto& a ) {
-         a.set_privileged( privileged );
-         a.code_sequence += 1;
-         a.abi_sequence += 1;
-         a.vm_type = 0;
-         a.vm_version = 0;
-         a.code_hash = code_hash;
-         a.last_code_update = conf.genesis.initial_timestamp;
-      });
-
-      // TODO need change
-      const auto& usage  = db.get<resource_limits::resource_usage_object, resource_limits::by_owner>( contract_account_name );
-      db.modify( usage, [&]( auto& u ) {
-          u.ram_usage += (code_size + abi_size) * config::setcode_ram_bytes_multiplier;
-      });
-
-      ilog("initialize_contract: name:${n}", ("n", account.name));
-   }
-
    // initialize_eos_stats init stats for eos token
    void initialize_eos_stats() {
       const auto& sym = symbol(CORE_SYMBOL).to_symbol_code();
@@ -1096,10 +1054,10 @@ struct controller_impl {
       create_native_account( config::token_account_name, system_auth, system_auth, false );
       create_native_account( config::eoslock_account_name, system_auth, system_auth, false );
 
-      initialize_contract( config::system_account_name, conf.System_code, conf.System_abi, true );
-      initialize_contract( config::token_account_name, conf.token_code, conf.token_abi );
+      initialize_contract( db, config::system_account_name, conf.System_code, conf.System_abi, conf.genesis.initial_timestamp, true );
+      initialize_contract( db, config::token_account_name, conf.token_code, conf.token_abi, conf.genesis.initial_timestamp, false );
       initialize_eos_stats();
-      initialize_contract(config::eoslock_account_name, conf.lock_code, conf.lock_abi);
+      initialize_contract( db, config::eoslock_account_name, conf.lock_code, conf.lock_abi, conf.genesis.initial_timestamp, false );
 
       initialize_account();
       initialize_producer();
@@ -1658,58 +1616,6 @@ struct controller_impl {
       } FC_CAPTURE_AND_RETHROW((trace))
    } /// push_transaction
 
-   // check_func_open
-   void check_func_open() {
-      // when on the specific block : load new System contract
-      if( is_func_open_in_curr_block( self, config::func_typ::use_system01, 3385100 ) ) {
-         initialize_contract(config::system_account_name, conf.System01_code, conf.System01_abi, true);
-      }
-
-      // when on the specific block : load eosio.msig contract
-      if( is_func_open_in_curr_block( self, config::func_typ::use_msig, 4356456 ) ) {
-         initialize_contract(config::msig_account_name, conf.msig_code, conf.msig_abi, true);
-      }
-
-      // when on the specific block : update auth eosio@active to eosio.prods@active
-      if( is_func_open_in_curr_block( self, config::func_typ::use_eosio_prods) ) {
-         ilog("update auth eosio@active to eosio.prods@active");
-         update_eosio_authority();
-      }
-
-      // vote4ram func, as the early eosforce user's ram not limit
-      // so at first we set freeram to -1 to unlimit user ram
-      // when vote4ram open, change to 8kb per user
-      if( is_func_open_in_curr_block(self, config::func_typ::vote_for_ram) ) {
-         set_num_config_on_chain(db, config::res_typ::free_ram_per_account, 8 * 1024);
-      }
-
-       // when on the specific block : create eosio account in table accounts of eosio system contract
-      if (is_func_has_open(self, config::func_typ::create_eosio_account, 5814500)) {
-         auto db = memory_db(self);
-         memory_db::account_info acc;
-         if (!db.get(config::system_account_name, config::system_account_name, N(accounts),
-                     config::system_account_name, acc)) {
-            db.insert(config::system_account_name, config::system_account_name, N(accounts),
-                      config::system_account_name,
-                      memory_db::account_info{config::system_account_name, eosio::chain::asset(0)});
-         }
-      }
-
-      // when on the specific block : create eosio account in table accounts of eosio system contract
-      if (is_func_open_in_curr_block(self, config::func_typ::create_prods_account)) {
-         auto db = memory_db(self);
-         memory_db::account_info acc;
-         if (!db.get(config::system_account_name, 
-                     config::system_account_name, N(accounts), 
-                     config::producers_account_name, acc)) {
-            db.insert(config::system_account_name, config::system_account_name, N(accounts),
-                      config::producers_account_name, memory_db::account_info{
-                         config::producers_account_name, 
-                         eosio::chain::asset(0)});
-         }
-      }
-   }
-
    void start_block( block_timestamp_type when,
                      uint16_t confirm_block_count,
                      const vector<digest_type>& new_protocol_feature_activations,
@@ -1832,7 +1738,7 @@ struct controller_impl {
             });
          }
 
-         check_func_open();
+         check_func_open( self, conf, db );
 
          try {
             auto onbtrx = std::make_shared<transaction_metadata>( get_on_block_transaction() );
@@ -2337,21 +2243,6 @@ struct controller_impl {
          trx_digests.emplace_back( a.digest() );
 
       return merkle( move(trx_digests) );
-   }
-
-   void update_eosio_authority() {
-      auto update_permission = [&]( auto& permission, auto threshold ) {
-         auto auth = authority( threshold, {}, {});
-         auth.accounts.push_back({{config::producers_account_name, config::active_name}, 1});
-
-         if( static_cast<authority>(permission.auth) != auth ) {
-            db.modify(permission, [&]( auto& po ) {
-               po.auth = auth;
-            });
-         }
-      };
-
-      update_permission( authorization.get_permission({config::system_account_name, config::active_name}), 1);
    }
 
    void update_producers_authority() {

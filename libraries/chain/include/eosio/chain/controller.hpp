@@ -190,7 +190,6 @@ namespace eosio { namespace chain {
          authorization_manager&                get_mutable_authorization_manager();
          const protocol_feature_manager&       get_protocol_feature_manager()const;
          const txfee_manager&                  get_txfee_manager()const;
-         txfee_manager&                        get_mutable_txfee_manager();
 
          const flat_set<account_name>&   get_actor_whitelist() const;
          const flat_set<account_name>&   get_actor_blacklist() const;

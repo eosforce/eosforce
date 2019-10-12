@@ -6,7 +6,6 @@
 #include <eosio/chain/exceptions.hpp>
 
 #include <eosio/chain/account_object.hpp>
-#include <eosio/chain/memory_db.hpp>
 #include <eosio/chain/code_object.hpp>
 #include <eosio/chain/block_summary_object.hpp>
 #include <eosio/chain/eosio_contract.hpp>
@@ -21,11 +20,7 @@
 
 #include <eosio/chain/protocol_feature_manager.hpp>
 #include <eosio/chain/authorization_manager.hpp>
-#include <eosio/chain/txfee_manager.hpp>
-#include <eosio/chain/config_on_chain.hpp>
 #include <eosio/chain/resource_limits.hpp>
-#include <eosio/chain/resource_limits_private.hpp>
-#include <eosio/chain/config.hpp>
 #include <eosio/chain/chain_snapshot.hpp>
 #include <eosio/chain/thread_utils.hpp>
 
@@ -35,11 +30,15 @@
 #include <fc/scoped_exit.hpp>
 #include <fc/variant_object.hpp>
 
+#include <eosio/chain/memory_db.hpp>
+#include <eosio/chain/txfee_manager.hpp>
+#include <eosio/chain/config_on_chain.hpp>
+#include <eosio/chain/resource_limits_private.hpp>
+#include <eosio/chain/config.hpp>
 #include <eosio/chain/eosio_contract.hpp>
 #include <set>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/post.hpp>
-
 
 namespace eosio { namespace chain {
 
@@ -314,7 +313,6 @@ struct controller_impl {
     wasmif( cfg.wasm_runtime, db ),
     resource_limits( db ),
     authorization( s, db ),
-    txfee(),
     protocol_features( std::move(pfs) ),
     conf( cfg ),
     chain_id( cfg.genesis.compute_chain_id() ),
@@ -1862,14 +1860,19 @@ struct controller_impl {
             bool transaction_failed =  trace && trace->except;
             bool transaction_can_fail = receipt.status == transaction_receipt_header::hard_fail && receipt.trx.contains<transaction_id_type>();
             if( transaction_failed && !transaction_can_fail) {
-               edump((*trace));
-               // the eosio 's block not contain the block which has error,
-               // so general a block 's push_transaction func called by apply_block in other pb should no exception.
-               // but in eosforce block will include error, this will make chain error,
-               // so eosforce should no throw
-               // throw *trace->except;
-
-               // TODO in new version for EOSForce, error trx will not put into block, so it need change
+               const auto is_onfee_act = is_func_has_open( self, config::func_typ::onfee_action );
+               if( is_onfee_act ) {
+                  // in new version of eosc, block will not contain the block which has error also
+                  edump((*trace));
+                  throw *trace->except;
+               } else {
+                  // the eosio 's block not contain the block which has error,
+                  // so general a block 's push_transaction func called by apply_block in other pb should no exception.
+                  // but in eosforce block will include error, this will make chain error,
+                  // so eosforce should no throw
+                  elog( "Error trx for early version eosc in ${block_num}, id: ${id}, trx: ${trx}",
+                        ("block_num", trace->block_num)("id", trace->id)("trx", receipt.trx) );
+               }
             }
 
             EOS_ASSERT( trx_receipts.size() > 0,
@@ -2396,10 +2399,6 @@ authorization_manager&         controller::get_mutable_authorization_manager()
 }
 
 const txfee_manager&   controller::get_txfee_manager()const
-{
-   return my->txfee;
-}
-txfee_manager&         controller::get_mutable_txfee_manager()
 {
    return my->txfee;
 }

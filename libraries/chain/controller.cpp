@@ -1162,7 +1162,7 @@ struct controller_impl {
          trx_context.init_for_deferred_trx( gtrx.published );
          if( !is_onfee_act ) {
             trx_context.make_limit_by_contract(fee_ext);
-         }else{
+         } else {
             asset fee_limit{ 0 };
             get_from_extensions(dtrx.transaction_extensions, transaction::fee_limit, fee_limit);
             trx_context.make_fee_act(fee_limit);
@@ -1396,16 +1396,17 @@ struct controller_impl {
 
             // is_onfee_act on early version eosforce we use a trx contain onfee act before do trx
             // new version use a onfee act in the trx, when exec trx, a onfee action will do first
-
             const auto is_onfee_act = is_func_has_open(self, config::func_typ::onfee_action);
-            const auto is_fee_limit = is_onfee_act && is_func_has_open(self, config::func_typ::fee_limit);
 
             if( !trx->implicit ) {
                if( !is_onfee_act ) {
+                  // in early version of eosc, the fee is cost by a trx
+                  // from the `onfee_action` block num, the fee will cost by fee action for each action in trx
                   const auto fee_required = txfee.get_required_fee(self, trn);
                   EOS_ASSERT(trn.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
                   const auto fee_ext = trn.fee - fee_required;
 
+                  // old onfee trx
                   try {
                      auto onftrx = std::make_shared<transaction_metadata>(
                            get_on_fee_transaction(trn.fee, trn.actions[0].authorization[0].actor));
@@ -1422,6 +1423,7 @@ struct controller_impl {
 
                   trx_context.make_limit_by_contract( fee_ext );
                } else {
+                  // from the `onfee_action` block num, the fee will cost by fee action for each action in trx
                   asset fee_limit{ 0 };
                   get_from_extensions(trn.transaction_extensions, transaction::fee_limit, fee_limit);
                   trx_context.make_fee_act( fee_limit );

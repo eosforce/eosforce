@@ -1382,33 +1382,30 @@ struct controller_impl {
             }
 
             trx_context.delay = fc::seconds(trn.delay_sec);
+
+            if( check_auth ) {
+               authorization.check_authorization(
+                       trn.actions,
+                       recovered_keys,
+                       {},
+                       trx_context.delay,
+                       [&trx_context](){ trx_context.checktime(); },
+                       false
+               );
+            }
+
             // is_onfee_act on early version eosforce we use a trx contain onfee act before do trx
             // new version use a onfee act in the trx, when exec trx, a onfee action will do first
 
             const auto is_onfee_act = is_func_has_open(self, config::func_typ::onfee_action);
             const auto is_fee_limit = is_onfee_act && is_func_has_open(self, config::func_typ::fee_limit);
 
-            asset fee_ext(0); // fee ext to get more res
             if( !trx->implicit ) {
-               if( check_auth ) {
-                  authorization.check_authorization(
-                        trn.actions,
-                        recovered_keys,
-                        {},
-                        trx_context.delay,
-                        [&trx_context](){ trx_context.checktime(); },
-                        false
-                  );
-               }
-
                if( !is_onfee_act ) {
                   const auto fee_required = txfee.get_required_fee(self, trn);
                   EOS_ASSERT(trn.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
-                  fee_ext = trn.fee - fee_required;
-               }
+                  const auto fee_ext = trn.fee - fee_required;
 
-               // keep
-               if( !is_onfee_act ) {
                   try {
                      auto onftrx = std::make_shared<transaction_metadata>(
                            get_on_fee_transaction(trn.fee, trn.actions[0].authorization[0].actor));
@@ -1422,33 +1419,29 @@ struct controller_impl {
                      EOS_ASSERT(false, transaction_exception,
                                 "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
                   }
+
+                  trx_context.make_limit_by_contract( fee_ext );
                } else {
                   asset fee_limit{ 0 };
                   get_from_extensions(trn.transaction_extensions, transaction::fee_limit, fee_limit);
-                  trx_context.make_fee_act(fee_limit);
+                  trx_context.make_fee_act( fee_limit );
                }
             }
 
             try {
-               if(explicit_billed_cpu_time && billed_cpu_time_us == 0){
-                  EOS_ASSERT(false, transaction_exception, "error trx",
-                      ("block", head->block_num)("trx", trn.id())("actios", trn.actions));
-               }
-
-               if( !is_onfee_act ) {
-                  trx_context.make_limit_by_contract(fee_ext);
-               }
+               EOS_ASSERT( !explicit_billed_cpu_time || billed_cpu_time_us != 0,
+                           transaction_exception, "error trx",
+                           ("block", head->block_num)("trx", trn.id())("actios", trn.actions) );
                trx_context.exec();
                trx_context.finalize(); // Automatically rounds up network and CPU usage in trace and bills payers if successful
-             } catch (const fc::exception &e) {
-               // keep
+            } catch( const fc::exception &e ) {
                if( !is_onfee_act ) {
                   trace->except = e;
                   trace->except_ptr = std::current_exception();
                } else {
                   throw;
                }
-             }
+            }
 
             auto restore = make_block_restore_point();
 

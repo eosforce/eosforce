@@ -473,7 +473,7 @@ void apply_context::schedule_deferred_transaction( const uint128_t& sender_id, a
       } catch( const fc::exception& e ) {
          if( disallow_send_to_self_bypass || !is_sending_only_to_self(receiver) ) {
             throw;
-         } else {
+         } else if( control.is_producing_block() ) {
             subjective_block_production_exception new_exception(FC_LOG_MESSAGE( error, "Authorization failure with sent deferred transaction consisting only of actions to self"));
             for (const auto& log: e.get_log()) {
                new_exception.append_log(log);
@@ -483,7 +483,7 @@ void apply_context::schedule_deferred_transaction( const uint128_t& sender_id, a
       } catch( ... ) {
          if( disallow_send_to_self_bypass || !is_sending_only_to_self(receiver) ) {
             throw;
-         } else {
+         } else if( control.is_producing_block() ) {
             EOS_THROW(subjective_block_production_exception, "Unexpected exception occurred validating sent deferred transaction consisting only of actions to self");
          }
       }

@@ -116,7 +116,7 @@ namespace chain {
           u.ram_usage += (code_size + abi_size) * config::setcode_ram_bytes_multiplier;
       });
 
-      ilog("initialize_contract: name:${n}", ("n", account.name));
+      //ilog("initialize_contract: name:${n}", ("n", account.name));
    }
 
    // check_func_open
@@ -135,7 +135,7 @@ namespace chain {
 
       // when on the specific block : update auth eosio@active to eosio.prods@active
       if( is_func_open_in_curr_block( ctl, config::func_typ::use_eosio_prods) ) {
-         ilog("update auth eosio@active to eosio.prods@active");
+         //ilog("update auth eosio@active to eosio.prods@active");
          update_eosio_authority( db, ctl.get_authorization_manager() );
       }
 

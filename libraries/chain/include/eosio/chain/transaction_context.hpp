@@ -127,6 +127,7 @@ namespace eosio { namespace chain {
          int64_t                       billed_cpu_time_us = 0;
          bool                          explicit_billed_cpu_time = false;
 
+         // some info to process fee for eosc
          account_name                  fee_payer      = name{};
          asset                         fee_costed     = asset{0};
          asset                         max_fee_to_pay = asset{0};

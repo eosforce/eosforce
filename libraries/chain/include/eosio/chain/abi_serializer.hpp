@@ -8,7 +8,6 @@
 #include <eosio/chain/exceptions.hpp>
 #include <fc/variant_object.hpp>
 #include <fc/scoped_exit.hpp>
-#include <fc/reflect/reflect.hpp>
 
 namespace eosio { namespace chain {
 

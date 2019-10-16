@@ -66,6 +66,7 @@ namespace eosio { namespace testing {
    };
 
    std::vector<uint8_t> read_wasm( const char* fn );
+   chain::bytes         read_wasm_byte( const char* fn );
    std::vector<char>    read_abi( const char* fn );
    std::string          read_wast( const char* fn );
    using namespace eosio::chain;
@@ -371,48 +372,7 @@ namespace eosio { namespace testing {
       }
       controller::config vcfg;
 
-      static eosio::chain::genesis_state gen_eosforce_config() {
-         eosio::chain::genesis_state gs;
-
-         // TODO may need fix data
-         gs.initial_timestamp = fc::time_point::from_iso_string( "2019-10-15T12:00:00" );
-         gs.initial_key = get_public_key( config::system_account_name, "active" );
-
-         // init accounts
-         gs.initial_account_list.push_back(
-            eosio::chain::account_tuple { 
-               get_public_key( N(eosforce), "active" ), eosio::chain::asset(1000000000 * 10000), N(eosforce) 
-            } );
-         gs.initial_account_list.push_back(
-            eosio::chain::account_tuple {
-               get_public_key( N(force.test), "active" ), eosio::chain::asset(100000 * 10000), N(force.test) 
-            } );
-         gs.initial_account_list.push_back(
-            eosio::chain::account_tuple {
-               get_public_key( N(b1), "active" ), eosio::chain::asset(1 * 10000), N(b1)
-            } );
-
-         const auto& biosbp_str = std::string("biosbp");
-
-         for( int i = 0; i < config::max_producers; i++ ) {
-            const auto name_str = biosbp_str + static_cast<char>('a' + i);
-            const auto bpname = string_to_name( name_str.c_str() );
-            const auto pub_key = get_public_key( bpname, "active" );
-
-            const auto tu = eosio::chain::account_tuple {
-               pub_key,
-               eosio::chain::asset(1000 * 10000),
-               bpname
-            };
-            gs.initial_account_list.push_back(tu);
-            gs.initial_producer_list.push_back(
-               eosio::chain::producer_tuple{ 
-                  bpname, pub_key, 100, "https://www.eosforce.io/"
-               } );
-         }
-
-         return gs;
-      }
+      static void gen_eosforce_config( controller::config& cfg );
 
       static controller::config default_config() {
          fc::temp_directory tempdir;
@@ -425,9 +385,7 @@ namespace eosio { namespace testing {
          vcfg.reversible_guard_size = 0;
          vcfg.contracts_console = false;
 
-         vcfg.genesis = gen_eosforce_config();
-
-         // FIXME: fill genesis contracts data
+         gen_eosforce_config( vcfg );
 
          for(int i = 0; i < boost::unit_test::framework::master_test_suite().argc; ++i) {
             if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--wavm"))

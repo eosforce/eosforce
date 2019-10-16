@@ -14,6 +14,7 @@ eosio::chain::asset core_from_string(const std::string& s) {
 }
 
 namespace eosio { namespace testing {
+
    std::string read_wast( const char* fn ) {
       std::ifstream wast_file(fn);
       FC_ASSERT( wast_file.is_open(), "wast file cannot be found" );
@@ -43,6 +44,20 @@ namespace eosio { namespace testing {
       return wasm;
    }
 
+   chain::bytes read_wasm_byte( const char* fn ) {
+      std::ifstream wasm_file(fn, std::ios::binary);
+      FC_ASSERT( wasm_file.is_open(), "wasm file cannot be found" );
+      wasm_file.seekg(0, std::ios::end);
+      bytes wasm;
+      int len = wasm_file.tellg();
+      FC_ASSERT( len >= 0, "wasm file length is -1" );
+      wasm.resize(len);
+      wasm_file.seekg(0, std::ios::beg);
+      wasm_file.read((char*)wasm.data(), wasm.size());
+      wasm_file.close();
+      return wasm;
+   }
+
    std::vector<char> read_abi( const char* fn ) {
       std::ifstream abi_file(fn);
       FC_ASSERT( abi_file.is_open(), "abi file cannot be found" );
@@ -56,6 +71,61 @@ namespace eosio { namespace testing {
       abi[abi.size()-1] = '\0';
       abi_file.close();
       return abi;
+   }
+
+   void validating_tester::gen_eosforce_config( controller::config& cfg ) {
+      eosio::chain::genesis_state gs;
+
+      // TODO may need fix data
+      gs.initial_timestamp = fc::time_point::from_iso_string( "2019-10-15T12:00:00" );
+      gs.initial_key = get_public_key( config::system_account_name, "active" );
+
+      // init accounts
+      gs.initial_account_list.push_back(
+         eosio::chain::account_tuple { 
+            get_public_key( N(eosforce), "active" ), eosio::chain::asset(1000000000 * 10000), N(eosforce) 
+         } );
+      gs.initial_account_list.push_back(
+         eosio::chain::account_tuple {
+            get_public_key( N(force.test), "active" ), eosio::chain::asset(100000 * 10000), N(force.test) 
+         } );
+      gs.initial_account_list.push_back(
+         eosio::chain::account_tuple {
+            get_public_key( N(b1), "active" ), eosio::chain::asset(1 * 10000), N(b1)
+         } );
+
+      const auto& biosbp_str = std::string("biosbp");
+
+      for( int i = 0; i < config::max_producers; i++ ) {
+         const auto name_str = biosbp_str + static_cast<char>('a' + i);
+         const auto bpname = string_to_name( name_str.c_str() );
+         const auto pub_key = get_public_key( bpname, "active" );
+
+         const auto tu = eosio::chain::account_tuple {
+            pub_key,
+            eosio::chain::asset(1000 * 10000),
+            bpname
+         };
+         gs.initial_account_list.push_back(tu);
+         gs.initial_producer_list.push_back(
+            eosio::chain::producer_tuple{ 
+               bpname, pub_key, 100, "https://www.eosforce.io/"
+            } );
+      }
+
+      cfg.genesis = gs;
+
+      // fill genesis contracts data
+      cfg.System_code   = contracts::system_wasm_byte();
+      cfg.System_abi    = contracts::system_abi();
+      cfg.token_code    = contracts::eosio_token_wasm_byte();
+      cfg.token_abi     = contracts::eosio_token_abi();
+      cfg.lock_code     = contracts::eosio_lock_wasm_byte();
+      cfg.lock_abi      = contracts::eosio_lock_abi();
+      cfg.msig_code     = contracts::eosio_msig_wasm_byte();
+      cfg.msig_abi      = contracts::eosio_msig_abi();
+      cfg.System01_code = contracts::system_1_wasm_byte();
+      cfg.System01_abi  = contracts::system_1_abi();
    }
 
    const fc::microseconds base_tester::abi_serializer_max_time{1000*1000}; // 1s for slow test machines

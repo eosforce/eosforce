@@ -201,55 +201,7 @@ namespace eosio { namespace testing {
             cfg.wasm_runtime = chain::wasm_interface::vm_type::wabt;
       }
 
-// load system contract
-     	{
-#include <System/System.wast.hpp>
-#include <System/System.abi.hpp>
-#include <System01/System01.wast.hpp>
-#include <System01/System01.abi.hpp>
-#include <eosio.token/eosio.token.wast.hpp>
-#include <eosio.token/eosio.token.abi.hpp>
-#include <eosio.msig/eosio.msig.wast.hpp>
-#include <eosio.msig/eosio.msig.abi.hpp>
-#include <eosio.bios/eosio.bios.wast.hpp>
-#include <eosio.bios/eosio.bios.abi.hpp>
-
-         std::vector<uint8_t> wasm;
-         abi_def abi;
-         		
-         wasm = wast_to_wasm(System_wast);
-         cfg.System_code.assign(wasm.begin(), wasm.end());
-         abi = fc::json::from_string(System_abi).as<abi_def>();
-         cfg.System_abi = fc::raw::pack(abi);
-         
-         wasm = wast_to_wasm(eosio_token_wast);
-         cfg.token_code.assign(wasm.begin(), wasm.end());
-         abi  = fc::json::from_string(eosio_token_abi).as<abi_def>();
-         cfg.token_abi = fc::raw::pack(abi);
-         
-         wasm = wast_to_wasm(System01_wast);
-         cfg.System01_code.assign(wasm.begin(), wasm.end());
-         abi  = fc::json::from_string(System01_abi).as<abi_def>();
-         cfg.System01_abi = fc::raw::pack(abi);
-         
-         wasm = wast_to_wasm(eosio_msig_wast);
-         cfg.msig_code.assign(wasm.begin(), wasm.end());
-         abi  = fc::json::from_string(eosio_msig_abi).as<abi_def>();
-         cfg.msig_abi = fc::raw::pack(abi);
-
-        //  wasm = wast_to_wasm(eosio_bios_wast);
-        //  cfg.bios_code.assign(wasm.begin(), wasm.end());
-        //  abi  = fc::json::from_string(eosio_bios_abi).as<abi_def>();
-        //  cfg.bios_abi = fc::raw::pack(abi);
-/*         
-         ./libraries/chain/controller.cpp:782:      initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi, true);
-./libraries/chain/controller.cpp:783:      initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
-./libraries/chain/controller.cpp:1345:            initialize_contract(N(eosio), conf.System01_code, conf.System01_abi, true);
-./libraries/chain/controller.cpp:1351:            initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
-
-*/
-		}
-
+      // FIXME: load system contract
 
       open(nullptr);
       execute_setup_policy(policy);
@@ -945,17 +897,15 @@ namespace eosio { namespace testing {
       push_transaction( trx );
    }
 
-   void base_tester::set_fee( account_name account, 
-     			 action_name action, 
-   				 asset fee, 
-   				 uint32_t cpu_limit, 
-   				 uint32_t net_limit,
-   				 uint32_t ram_limit,
-   				 const private_key_type* signer) {
-   	//   if(fee_map[action] == account) return ;
-      //   fee_map[action] = account;
-   	  signed_transaction trx;
-      trx.actions.emplace_back( vector<permission_level>{{account,config::active_name}},
+   void base_tester::set_fee( account_name account,
+                              action_name action, 
+                              const asset& fee, 
+                              uint32_t cpu_limit, 
+                              uint32_t net_limit, 
+                              uint32_t ram_limit,
+                              const private_key_type* signer) {
+      signed_transaction trx;
+      trx.actions.emplace_back( vector<permission_level>{ {account, config::active_name} },
                                 setfee{
                                    .account    = account,
                                    .action     = action,
@@ -975,17 +925,15 @@ namespace eosio { namespace testing {
    }
 
    void base_tester::set_fee( account_name auth, 
-   				 account_name account,
-     			 action_name action, 
-   				 asset fee, 
-   				 uint32_t cpu_limit, 
-   				 uint32_t net_limit,
-   				 uint32_t ram_limit,
-   				 const private_key_type* signer) {
-   	//   if(fee_map[action] == account) return ;
-      //   fee_map[action] = account;
-   	  signed_transaction trx;
-      trx.actions.emplace_back( vector<permission_level>{{auth,config::active_name}},
+                              account_name account,
+                              action_name action, 
+                              const asset& fee, 
+                              uint32_t cpu_limit, 
+                              uint32_t net_limit,
+                              uint32_t ram_limit,
+                              const private_key_type* signer) {
+      signed_transaction trx;
+      trx.actions.emplace_back( vector<permission_level>{ {auth, config::active_name} },
                                 setfee{
                                    .account    = account,
                                    .action     = action,

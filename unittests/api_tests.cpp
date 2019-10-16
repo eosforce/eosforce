@@ -625,7 +625,7 @@ BOOST_AUTO_TEST_CASE(ram_billing_in_notify_tests) { try {
 /*************************************************************************************
  * context free action tests
  *************************************************************************************/
-/*BOOST_FIXTURE_TEST_CASE(cf_action_tests, TESTER) { try {
+BOOST_FIXTURE_TEST_CASE(cf_action_tests, TESTER) { try {
       produce_blocks(2);
       create_account( N(testapi) );
       create_account( N(dummy) );
@@ -854,7 +854,7 @@ BOOST_FIXTURE_TEST_CASE(deferred_cfa_success, TESTER)  try {
       });
    BOOST_REQUIRE_EQUAL( validate(), true );
 } FC_LOG_AND_RETHROW()
-*/
+
 /*************************************************************************************
  * checktime_tests test case
  *************************************************************************************/
@@ -908,7 +908,7 @@ BOOST_AUTO_TEST_CASE(checktime_fail_tests) { try {
 
 #warning TODO call the contract before testing to cache it, and validate that it was cached
 
-/*   BOOST_CHECK_EXCEPTION( call_test( t, test_api_action<TEST_METHOD("test_checktime", "checktime_failure")>{},
+   BOOST_CHECK_EXCEPTION( call_test( t, test_api_action<TEST_METHOD("test_checktime", "checktime_failure")>{},
                                      5000, 200, fc::raw::pack(10000000000000000000ULL) ),
                           deadline_exception, is_deadline_exception );
 
@@ -927,7 +927,7 @@ BOOST_AUTO_TEST_CASE(checktime_fail_tests) { try {
                                     0, 200, fc::raw::pack(10000000000000000000ULL) ),
                           block_cpu_usage_exceeded, is_block_cpu_usage_exceeded );
 
-   BOOST_REQUIRE_EQUAL( t.validate(), true );*/
+   BOOST_REQUIRE_EQUAL( t.validate(), true );
 } FC_LOG_AND_RETHROW() }
 
 
@@ -996,7 +996,7 @@ BOOST_FIXTURE_TEST_CASE(checktime_hashing_fail, TESTER) { try {
 	produce_blocks(10);
 	set_code( N(testapi), contracts::test_api_wasm() );
 	produce_blocks(1);
-/*
+
         //hit deadline exception, but cache the contract
         BOOST_CHECK_EXCEPTION( call_test( *this, test_api_action<TEST_METHOD("test_checktime", "checktime_sha1_failure")>{},
                                           5000, 3 ),
@@ -1037,7 +1037,7 @@ BOOST_FIXTURE_TEST_CASE(checktime_hashing_fail, TESTER) { try {
                                           5000, 3 ),
                                deadline_exception, is_deadline_exception );
 
-   BOOST_REQUIRE_EQUAL( validate(), true );*/
+   BOOST_REQUIRE_EQUAL( validate(), true );
 } FC_LOG_AND_RETHROW() }
 
 /*************************************************************************************
@@ -1051,7 +1051,7 @@ BOOST_FIXTURE_TEST_CASE(transaction_tests, TESTER) { try {
    produce_blocks(1);
 
    // test for zero auth
-/*   {
+   {
       signed_transaction trx;
       auto tm = test_api_action<TEST_METHOD("test_action", "require_auth")>{};
       action act({}, tm);
@@ -1066,7 +1066,7 @@ BOOST_FIXTURE_TEST_CASE(transaction_tests, TESTER) { try {
          }
       );
    }
-*/
+
    // test send_action
    CALL_TEST_FUNCTION(*this, "test_transaction", "send_action", {});
 
@@ -1112,7 +1112,7 @@ BOOST_FIXTURE_TEST_CASE(transaction_tests, TESTER) { try {
    }
 
    // test test_transaction_size
-   //CALL_TEST_FUNCTION(*this, "test_transaction", "test_transaction_size", fc::raw::pack(54) ); // TODO: Need a better way to test this.
+   CALL_TEST_FUNCTION(*this, "test_transaction", "test_transaction_size", fc::raw::pack(54) ); // TODO: Need a better way to test this.
 
    // test test_read_transaction
    // this is a bit rough, but I couldn't figure out a better way to compare the hashes
@@ -1578,7 +1578,7 @@ BOOST_FIXTURE_TEST_CASE(db_tests, TESTER) { try {
    set_code( N(testapi2), contracts::test_api_db_wasm() );
    set_abi(  N(testapi2), contracts::test_api_db_abi().data() );
    produce_blocks(1);
-/*
+
    push_action( N(testapi), N(pg),  N(testapi), mutable_variant_object() ); // primary_i64_general
    push_action( N(testapi), N(pl),  N(testapi), mutable_variant_object() ); // primary_i64_lowerbound
    push_action( N(testapi), N(pu),  N(testapi), mutable_variant_object() ); // primary_i64_upperbound
@@ -1671,7 +1671,7 @@ BOOST_FIXTURE_TEST_CASE(db_tests, TESTER) { try {
 
    push_action( N(testapi), N(sk32align), N(testapi), mutable_variant_object() ); // misaligned_secondary_key256_tests
 
-   BOOST_REQUIRE_EQUAL( validate(), true );*/
+   BOOST_REQUIRE_EQUAL( validate(), true );
 } FC_LOG_AND_RETHROW() }
 
 /*************************************************************************************
@@ -1733,7 +1733,7 @@ BOOST_FIXTURE_TEST_CASE(multi_index_tests, TESTER) { try {
 /*************************************************************************************
  * crypto_tests test cases
  *************************************************************************************/
-/*BOOST_FIXTURE_TEST_CASE(crypto_tests, TESTER) { try {
+BOOST_FIXTURE_TEST_CASE(crypto_tests, TESTER) { try {
    produce_blocks(1000);
    create_account(N(testapi) );
    produce_blocks(1000);
@@ -1798,119 +1798,7 @@ BOOST_FIXTURE_TEST_CASE(multi_index_tests, TESTER) { try {
 
    BOOST_REQUIRE_EQUAL( validate(), true );
 } FC_LOG_AND_RETHROW() }
-*/
 
-/*************************************************************************************
- * memory_tests test cases
- *************************************************************************************/
-/*BOOST_FIXTURE_TEST_CASE(memory_tests, TESTER) { try {
-   produce_blocks(1000);
-   create_account(N(testapi) );
-   produce_blocks(1000);
-   set_code(N(testapi), test_api_mem_wast);
-   produce_blocks(1000);
-
-   CALL_TEST_FUNCTION( *this, "test_memory", "test_memory_allocs", {} );
-   produce_blocks(1000);
-   CALL_TEST_FUNCTION( *this, "test_memory", "test_memory_hunk", {} );
-   produce_blocks(1000);
-   CALL_TEST_FUNCTION( *this, "test_memory", "test_memory_hunks", {} );
-   produce_blocks(1000);
-   //Disabling this for now as it fails due to malloc changes for variable wasm max memory sizes
-#if 0
-   CALL_TEST_FUNCTION( *this, "test_memory", "test_memory_hunks_disjoint", {} );
-   produce_blocks(1000);
-#endif
-   CALL_TEST_FUNCTION( *this, "test_memory", "test_memset_memcpy", {} );
-   produce_blocks(1000);
-   BOOST_CHECK_THROW( CALL_TEST_FUNCTION( *this, "test_memory", "test_memcpy_overlap_start", {} ), overlapping_memory_error );
-   produce_blocks(1000);
-   BOOST_CHECK_THROW( CALL_TEST_FUNCTION( *this, "test_memory", "test_memcpy_overlap_end", {} ), overlapping_memory_error );
-   produce_blocks(1000);
-   CALL_TEST_FUNCTION( *this, "test_memory", "test_memcmp", {} );
-   produce_blocks(1000);
-
-#define test_memory_oob(func) \
-   try { \
-      CALL_TEST_FUNCTION( *this, "test_memory", func, {} ); \
-      BOOST_FAIL("assert failed in test out of bound memory in " func); \
-   } catch (...) { \
-      BOOST_REQUIRE_EQUAL(true, true); \
-   }
-
-#define test_memory_oob2(func) \
-   try { \
-      CALL_TEST_FUNCTION( *this, "test_memory", func, {} );\
-   } catch (const fc::exception& e) {\
-     if (!expect_assert_message(e, "access violation")) throw; \
-   }
-
-   test_memory_oob("test_outofbound_0");
-   test_memory_oob("test_outofbound_1");
-   test_memory_oob("test_outofbound_2");
-   test_memory_oob("test_outofbound_3");
-   test_memory_oob("test_outofbound_4");
-   test_memory_oob("test_outofbound_5");
-   test_memory_oob("test_outofbound_6");
-   test_memory_oob("test_outofbound_7");
-   test_memory_oob("test_outofbound_8");
-   test_memory_oob("test_outofbound_9");
-   test_memory_oob("test_outofbound_10");
-   test_memory_oob("test_outofbound_11");
-   test_memory_oob("test_outofbound_12");
-   test_memory_oob("test_outofbound_13");
-
-   BOOST_REQUIRE_EQUAL( validate(), true );
-} FC_LOG_AND_RETHROW() }
-*/
-
-/*************************************************************************************
- * extended_memory_tests test cases
- *************************************************************************************/
-/*BOOST_FIXTURE_TEST_CASE(extended_memory_test_initial_memory, TESTER) { try {
-   produce_blocks(1000);
-   create_account(N(testapi) );
-   produce_blocks(1000);
-   set_code(N(testapi), test_api_mem_wast);
-   produce_blocks(1000);
-   CALL_TEST_FUNCTION( *this, "test_extended_memory", "test_initial_buffer", {} );
-
-   BOOST_REQUIRE_EQUAL( validate(), true );
-} FC_LOG_AND_RETHROW() }
-
-BOOST_FIXTURE_TEST_CASE(extended_memory_test_page_memory, TESTER) { try {
-   produce_blocks(1000);
-   create_account(N(testapi) );
-   produce_blocks(1000);
-   set_code(N(testapi), test_api_mem_wast);
-   produce_blocks(1000);
-   CALL_TEST_FUNCTION( *this, "test_extended_memory", "test_page_memory", {} );
-
-   BOOST_REQUIRE_EQUAL( validate(), true );
-} FC_LOG_AND_RETHROW() }
-
-BOOST_FIXTURE_TEST_CASE(extended_memory_test_page_memory_exceeded, TESTER) { try {
-   produce_blocks(1000);
-   create_account(N(testapi) );
-   produce_blocks(1000);
-   set_code(N(testapi), test_api_mem_wast);
-   produce_blocks(1000);
-   CALL_TEST_FUNCTION( *this, "test_extended_memory", "test_page_memory_exceeded", {} );
-
-   BOOST_REQUIRE_EQUAL( validate(), true );
-} FC_LOG_AND_RETHROW() }
-
-BOOST_FIXTURE_TEST_CASE(extended_memory_test_page_memory_negative_bytes, TESTER) { try {
-   produce_blocks(1000);
-   create_account(N(testapi) );
-   produce_blocks(1000);
-   set_code(N(testapi), test_api_mem_wast);
-   produce_blocks(1000);
-   CALL_TEST_FUNCTION( *this, "test_extended_memory", "test_page_memory_negative_bytes", {} );
-
-   BOOST_REQUIRE_EQUAL( validate(), true );
-} FC_LOG_AND_RETHROW() }
-*/
 /*************************************************************************************
  * print_tests test case
  *************************************************************************************/
@@ -2231,7 +2119,7 @@ BOOST_FIXTURE_TEST_CASE(datastream_tests, TESTER) { try {
  * permission_usage_tests test cases
  *************************************************************************************/
 BOOST_FIXTURE_TEST_CASE(permission_usage_tests, TESTER) { try {
-/*   produce_block();
+   produce_block();
    create_accounts( {N(testapi), N(alice), N(bob)} );
    produce_block();
    set_code(N(testapi), contracts::test_api_wasm() );
@@ -2305,7 +2193,7 @@ BOOST_FIXTURE_TEST_CASE(permission_usage_tests, TESTER) { try {
 
    produce_block();
 
-   BOOST_REQUIRE_EQUAL( validate(), true );*/
+   BOOST_REQUIRE_EQUAL( validate(), true );
 } FC_LOG_AND_RETHROW() }
 
 /*************************************************************************************
@@ -2883,4 +2771,3 @@ BOOST_FIXTURE_TEST_CASE(action_ordinal_failtest3, TESTER) { try {
 } FC_LOG_AND_RETHROW() }
 
 BOOST_AUTO_TEST_SUITE_END()
- 

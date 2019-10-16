@@ -254,7 +254,7 @@ namespace eosio { namespace testing {
             schedule_preactivate_protocol_feature();
             produce_block();
             //set_bios_contract();
-            preactivate_all_builtin_protocol_features();
+            //preactivate_all_builtin_protocol_features(); FIXME: active all features for eosc
             produce_block();
             break;
          }

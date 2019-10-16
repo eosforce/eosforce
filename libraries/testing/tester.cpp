@@ -73,7 +73,7 @@ namespace eosio { namespace testing {
       return abi;
    }
 
-   void validating_tester::gen_eosforce_config( controller::config& cfg ) {
+   void base_tester::gen_eosforce_config( controller::config& cfg ) {
       eosio::chain::genesis_state gs;
 
       // TODO may need fix data
@@ -202,67 +202,7 @@ namespace eosio { namespace testing {
       cfg.contracts_console = true;
       cfg.read_mode = read_mode;
 
-   	  const char* genesis_string = R"=====(
-{
-  "initial_timestamp": "2018-05-28T12:00:00.000",
-  "initial_key": "EOS1111111111111111111111111111111114T1Anm",
-  "code": "",
-  "abi": "",
-  "token_code": "",
-  "token_abi": "",
-  "initial_configuration": {
-    "max_block_net_usage": 1048576,
-    "target_block_net_usage_pct": 1000,
-    "max_transaction_net_usage": 524288,
-    "base_per_transaction_net_usage": 12,
-    "net_usage_leeway": 500,
-    "context_free_discount_net_usage_num": 20,
-    "context_free_discount_net_usage_den": 100,
-    "max_block_cpu_usage": 1000000,
-    "target_block_cpu_usage_pct": 1000,
-    "max_transaction_cpu_usage": 750000,
-    "min_transaction_cpu_usage": 100,
-    "max_transaction_lifetime": 3600,
-    "deferred_trx_expiration_window": 600,
-    "max_transaction_delay": 3888000,
-    "max_inline_action_size": 4096,
-    "max_inline_action_depth": 4,
-    "max_authority_depth": 6
-  },
-  "initial_account_list": [{
-      "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
-      "asset": "1000000000.0000 EOS",
-      "name": "eosforce"
-    },{
-      "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
-      "asset": "1000000.0000 EOS",
-      "name": "b1"
-    },{
-      "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
-      "asset": "1000000.0000 EOS",
-      "name": "force.test"
-    }
-  ],
-  "initial_producer_list": [{
-      "name": "eosforce",
-      "bpkey": "EOS7pquS6bwErdwb4dpcGLFQg8ovaovXicQsuvZYogT198Jy8CjLA",
-      "commission_rate": 10,
-      "url": ""
-    }
-  ]
-}
-)=====";
-
-	  cfg.genesis = fc::json::from_string(genesis_string).as<genesis_state>();
-	  cfg.genesis.initial_account_list[0].key = get_public_key( N(eosforce), "active" );
-	  cfg.genesis.initial_account_list[2].key = get_public_key( N(force.test), "active" );
-	  cfg.genesis.initial_producer_list[0].bpkey = get_public_key( N(eosforce), "active" );
-
-      cfg.genesis.initial_key = get_public_key( config::system_account_name, "active" );
-
-
-      //cfg.genesis.initial_timestamp = fc::time_point::from_iso_string("2020-01-01T00:00:00.000");
-      //cfg.genesis.initial_key = get_public_key( config::system_account_name, "active" );
+      gen_eosforce_config( cfg );
 
       for(int i = 0; i < boost::unit_test::framework::master_test_suite().argc; ++i) {
          if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--wavm"))
@@ -270,8 +210,6 @@ namespace eosio { namespace testing {
          else if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--wabt"))
             cfg.wasm_runtime = chain::wasm_interface::vm_type::wabt;
       }
-
-      // FIXME: load system contract
 
       open(nullptr);
       execute_setup_policy(policy);
@@ -465,9 +403,7 @@ namespace eosio { namespace testing {
             produce_empty_block();
       } else {
          for( uint32_t i = 0; i < n; ++i )
-         {
             produce_block();
-          }
       }
    }
 
@@ -530,6 +466,7 @@ namespace eosio { namespace testing {
    transaction_trace_ptr base_tester::create_account( account_name a, account_name creator, bool multisig, bool include_code ) {
       signed_transaction trx;
       set_transaction_headers(trx);
+
       authority owner_auth;
       if( multisig ) {
          // multisig between account's owner key and creators active permission
@@ -568,7 +505,6 @@ namespace eosio { namespace testing {
                                 });
 
       set_transaction_headers(trx);
-      
       trx.sign( get_private_key( creator, "active" ), control->get_chain_id()  );
       auto trace = push_transaction( trx );
       

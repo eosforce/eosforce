@@ -7,7 +7,6 @@
 #include <fc/io/json.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/tuple/tuple_io.hpp>
-#include <eosio/chain/wast_to_wasm.hpp>
 
 #include <iosfwd>
 
@@ -100,6 +99,8 @@ namespace eosio { namespace testing {
          void              init(controller::config config, const snapshot_reader_ptr& snapshot = nullptr);
          void              init(controller::config config, protocol_feature_set&& pfs, const snapshot_reader_ptr& snapshot = nullptr);
          void              execute_setup_policy(const setup_policy policy);
+
+         static void gen_eosforce_config( controller::config& cfg );
 
          void              close();
          void              open( protocol_feature_set&& pfs, const snapshot_reader_ptr& snapshot);
@@ -371,8 +372,6 @@ namespace eosio { namespace testing {
          }
       }
       controller::config vcfg;
-
-      static void gen_eosforce_config( controller::config& cfg );
 
       static controller::config default_config() {
          fc::temp_directory tempdir;

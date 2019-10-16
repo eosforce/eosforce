@@ -1,0 +1,223 @@
+{
+    "____comment": "This file was generated with eosforce-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
+    "structs": [
+        {
+            "name": "actconfirmed",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "actfreezed",
+            "base": "",
+            "fields": [
+                {
+                    "name": "committer",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "activited_account",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "addfreezed",
+            "base": "",
+            "fields": [
+                {
+                    "name": "committer",
+                    "type": "account_name"
+                },
+                {
+                    "name": "freezeds",
+                    "type": "account_name[]"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "confirmact",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "delfreezed",
+            "base": "",
+            "fields": [
+                {
+                    "name": "committer",
+                    "type": "account_name"
+                },
+                {
+                    "name": "freezeds",
+                    "type": "account_name"
+                },
+                {
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "freezed",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "account_name"
+                },
+                {
+                    "name": "unfreeze_block_num",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "freezed_table_state",
+            "base": "",
+            "fields": [
+                {
+                    "name": "committer",
+                    "type": "account_name"
+                },
+                {
+                    "name": "last_commit_block_num",
+                    "type": "uint32"
+                },
+                {
+                    "name": "locked_block_num",
+                    "type": "uint32"
+                },
+                {
+                    "name": "actived_block_num",
+                    "type": "uint32"
+                },
+                {
+                    "name": "state",
+                    "type": "uint32"
+                },
+                {
+                    "name": "freezed_size",
+                    "type": "uint32"
+                },
+                {
+                    "name": "confirmed",
+                    "type": "account_name[]"
+                },
+                {
+                    "name": "ext_info",
+                    "type": "uint64[]"
+                }
+            ]
+        },
+        {
+            "name": "gfstate",
+            "base": "",
+            "fields": [
+                {
+                    "name": "committer",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "lockfreezed",
+            "base": "",
+            "fields": [
+                {
+                    "name": "committer",
+                    "type": "account_name"
+                },
+                {
+                    "name": "is_locked",
+                    "type": "bool"
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "name": "actconfirmed",
+            "type": "actconfirmed",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "actfreezed",
+            "type": "actfreezed",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "addfreezed",
+            "type": "addfreezed",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "confirmact",
+            "type": "confirmact",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "delfreezed",
+            "type": "delfreezed",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "lockfreezed",
+            "type": "lockfreezed",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "actaccounts",
+            "type": "activited_account",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "freezed",
+            "type": "freezed",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "freezedstat",
+            "type": "freezed_table_state",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        },
+        {
+            "name": "gfstate",
+            "type": "gfstate",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "variants": []
+}

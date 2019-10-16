@@ -151,7 +151,7 @@
           {"name":"accounts",  "type":"permission_level_weight[]"},
           {"name":"waits",     "type":"wait_weight[]"}
         ]
-      },{
+      }{
        "name": "newaccount",
        "base": "",
        "fields": [
@@ -225,14 +225,6 @@
          {"name":"key",  "type":"account_name"},
          {"name":"fee",  "type":"asset"}
        ]
-     },{
-       "name": "onfee",
-       "base": "",
-       "fields": [
-         {"name":"actor",  "type":"account_name"},
-         {"name":"fee",    "type":"asset"},
-         {"name":"bpname", "type":"account_name"}
-       ]
      }
   ],
   "actions": [{
@@ -294,10 +286,6 @@
      },{
        "name": "setconfig",
        "type": "setconfig",
-       "ricardian_contract": ""
-     },{
-       "name": "onfee",
-       "type": "onfee",
        "ricardian_contract": ""
      }
   ],

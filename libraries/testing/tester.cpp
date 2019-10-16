@@ -73,6 +73,11 @@ namespace eosio { namespace testing {
       return abi;
    }
 
+   chain::bytes read_abi_byte( const char* fn ) {
+      const auto abijson = fc::json::from_file(fn).as<abi_def>();
+      return fc::raw::pack(abijson);
+   }
+
    void base_tester::gen_eosforce_config( controller::config& cfg ) {
       eosio::chain::genesis_state gs;
 
@@ -117,15 +122,15 @@ namespace eosio { namespace testing {
 
       // fill genesis contracts data
       cfg.System_code   = contracts::system_wasm_byte();
-      cfg.System_abi    = contracts::system_abi();
+      cfg.System_abi    = contracts::system_abi_byte();
       cfg.token_code    = contracts::eosio_token_wasm_byte();
-      cfg.token_abi     = contracts::eosio_token_abi();
+      cfg.token_abi     = contracts::eosio_token_abi_byte();
       cfg.lock_code     = contracts::eosio_lock_wasm_byte();
-      cfg.lock_abi      = contracts::eosio_lock_abi();
+      cfg.lock_abi      = contracts::eosio_lock_abi_byte();
       cfg.msig_code     = contracts::eosio_msig_wasm_byte();
-      cfg.msig_abi      = contracts::eosio_msig_abi();
+      cfg.msig_abi      = contracts::eosio_msig_abi_byte();
       cfg.System01_code = contracts::system_1_wasm_byte();
-      cfg.System01_abi  = contracts::system_1_abi();
+      cfg.System01_abi  = contracts::system_1_abi_byte();
    }
 
    const fc::microseconds base_tester::abi_serializer_max_time{1000*1000}; // 1s for slow test machines

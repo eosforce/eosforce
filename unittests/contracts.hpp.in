@@ -24,8 +24,9 @@ struct core_sym {
 // CN -> contract C++ name, C -> contract name, D -> top level directory
 #define MAKE_READ_WASM_ABI(CN,C, D) \
    static std::vector<uint8_t> CN ## _wasm() { return read_wasm("${CMAKE_BINARY_DIR}/unittests/" #D "/" #C "/" #C ".wasm"); } \
-   static bytes CN ## _wasm_byte() { return read_wasm_byte("${CMAKE_BINARY_DIR}/unittests/" #D "/" #C "/" #C ".wasm"); } \
-   static std::vector<char> CN ## _abi() { return read_abi("${CMAKE_BINARY_DIR}/unittests/" #D "/" #C "/" #C ".abi"); }
+   static chain::bytes CN ## _wasm_byte() { return read_wasm_byte("${CMAKE_BINARY_DIR}/unittests/" #D "/" #C "/" #C ".wasm"); } \
+   static std::vector<char> CN ## _abi() { return read_abi("${CMAKE_BINARY_DIR}/unittests/" #D "/" #C "/" #C ".abi"); } \
+   static chain::bytes CN ## _abi_byte() { return read_abi_byte("${CMAKE_BINARY_DIR}/unittests/" #D "/" #C "/" #C ".abi"); }
 
 namespace eosio {
    namespace testing {

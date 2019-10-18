@@ -21,7 +21,7 @@ if( EOSIO_COMPILE_TEST_CONTRACTS )
    )
 else()
   message( STATUS "Not building contracts in directory `eos/unittests/test-contracts/`" )
-  #add_subdirectory(test-contracts)
+  add_subdirectory(test-contracts)
 endif()
 
 if( GPERFTOOLS_FOUND )

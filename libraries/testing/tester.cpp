@@ -100,6 +100,18 @@ namespace eosio { namespace testing {
       gs.initial_account_list = init_accounts;
       cfg.active_initial_account_list = init_accounts;
 
+      // lock accounts for test
+      gs.initial_account_list.push_back( eosio::chain::account_tuple { 
+            get_public_key( N(eosclock1), "active" ), eosio::chain::asset(500000000), N(eosclock1) 
+         } );
+      gs.initial_account_list.push_back( eosio::chain::account_tuple { 
+            get_public_key( N(eosclock2), "active" ), eosio::chain::asset(50), N(eosclock2) 
+         } );
+      gs.initial_account_list.push_back( eosio::chain::account_tuple { 
+            get_public_key( N(eosclock3), "active" ), eosio::chain::asset(10), N(eosclock3) 
+         } );
+
+
       const auto& biosbp_str = std::string("biosbp");
 
       for( int i = 0; i < config::max_producers; i++ ) {

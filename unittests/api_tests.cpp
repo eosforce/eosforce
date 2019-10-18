@@ -632,6 +632,9 @@ BOOST_FIXTURE_TEST_CASE(cf_action_tests, TESTER) { try {
       produce_blocks(10);
       set_code( N(testapi), contracts::test_api_wasm() );
       produce_blocks(1);
+
+      set_fee( N(testapi), N(dummyaction) );
+
       cf_action cfa;
       signed_transaction trx;
       set_transaction_headers(trx);

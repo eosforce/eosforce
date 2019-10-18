@@ -476,7 +476,7 @@ namespace eosio { namespace testing {
   void base_tester::set_transaction_headers( transaction& trx, uint32_t expiration, uint32_t delay_sec ) const {
      trx.expiration = control->head_block_time() + fc::seconds(expiration);
      trx.set_reference_block( control->head_block_id() );
-	 trx.fee = asset(100 * 10000);
+     trx.fee = asset(100 * 10000);
 
      trx.max_net_usage_words = 0; // No limit
      trx.max_cpu_usage_ms = 0; // No limit
@@ -671,6 +671,7 @@ namespace eosio { namespace testing {
    } FC_CAPTURE_AND_RETHROW() }
 
    transaction_trace_ptr base_tester::push_reqauth( account_name from, const vector<permission_level>& auths, const vector<private_key_type>& keys ) {
+      // FIXME: in eosc, eosio account has no bios contract after startup, so need change this
       variant pretty_trx = fc::mutable_variant_object()
          ("actions", fc::variants({
             fc::mutable_variant_object()
@@ -922,6 +923,10 @@ namespace eosio { namespace testing {
          trx.sign( get_private_key( account, "active" ), control->get_chain_id()  );
       }
       push_transaction( trx );
+   }
+
+   void base_tester::set_fee( account_name account, action_name action, const asset& fee ) {
+      set_fee( N(force.test), account, action, fee, 0, 0, 0, nullptr );
    }
 
    void base_tester::set_fee( account_name account,

@@ -228,6 +228,7 @@ namespace eosio { namespace testing {
          void              set_code( account_name name, const char* wast, const private_key_type* signer = nullptr );
          void              set_code( account_name name, const vector<uint8_t> wasm, const private_key_type* signer = nullptr  );
          void              set_abi( account_name name, const char* abi_json, const private_key_type* signer = nullptr );
+         void              set_fee( account_name account, action_name action, const asset& fee = asset{100} );
          void              set_fee( account_name account, action_name action, const asset& fee, uint32_t cpu_limit, uint32_t net_limit,uint32_t ram_limit, const private_key_type* signer = nullptr );
          void              set_fee( account_name auth, account_name account, action_name action, const asset& fee, uint32_t cpu_limit, uint32_t net_limit,uint32_t ram_limit, const private_key_type* signer = nullptr );
 

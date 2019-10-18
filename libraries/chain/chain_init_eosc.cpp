@@ -108,6 +108,9 @@ namespace chain {
          mdb.insert(
                  config::system_account_name, config::system_account_name, N(accounts), acc_name,
                  memory_db::account_info{acc_name, amount});
+
+         //ilog("gen genesis account info ${acc}, ${ass}", ("acc", acc_name)("ass", amount));
+
          const authority auth(public_key);
          ctl.create_native_account(acc_name, auth, auth, false);
       }

@@ -168,7 +168,7 @@ namespace eosio { namespace testing {
          {
             vector<transaction_trace_ptr> traces;
             traces.reserve(names.size());
-            for( auto n : names ) traces.emplace_back( create_account( n, N(eosforce)/*config::system_account_name*/, multisig, include_code ) );
+            for( auto n : names ) traces.emplace_back( create_account( n, N(eosforce), multisig, include_code ) );
             return traces;
          }
 

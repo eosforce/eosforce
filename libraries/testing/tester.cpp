@@ -81,23 +81,24 @@ namespace eosio { namespace testing {
    void base_tester::gen_eosforce_config( controller::config& cfg ) {
       eosio::chain::genesis_state gs;
 
-      // TODO may need fix data
       gs.initial_timestamp = fc::time_point::from_iso_string( "2019-10-15T12:00:00" );
       gs.initial_key = get_public_key( config::system_account_name, "active" );
 
-      // init accounts
-      gs.initial_account_list.push_back(
+      const std::vector<eosio::chain::account_tuple> init_accounts = {
          eosio::chain::account_tuple { 
-            get_public_key( N(eosforce), "active" ), eosio::chain::asset(1000000000 * 10000), N(eosforce) 
-         } );
-      gs.initial_account_list.push_back(
+            get_public_key( N(eosforce), "active" ), eosio::chain::asset(5000000000000), N(eosforce) 
+         },
          eosio::chain::account_tuple {
-            get_public_key( N(force.test), "active" ), eosio::chain::asset(100000 * 10000), N(force.test) 
-         } );
-      gs.initial_account_list.push_back(
+            get_public_key( N(force.test), "active" ), eosio::chain::asset(1000000000), N(force.test) 
+         },
          eosio::chain::account_tuple {
-            get_public_key( N(b1), "active" ), eosio::chain::asset(1 * 10000), N(b1)
-         } );
+            get_public_key( N(b1), "active" ), eosio::chain::asset(10000), N(b1)
+         }
+      };
+
+      // init accounts
+      gs.initial_account_list = init_accounts;
+      cfg.active_initial_account_list = init_accounts;
 
       const auto& biosbp_str = std::string("biosbp");
 
@@ -116,6 +117,7 @@ namespace eosio { namespace testing {
             eosio::chain::producer_tuple{ 
                bpname, pub_key, 100, "https://www.eosforce.io/"
             } );
+         cfg.active_initial_account_list.push_back(tu);
       }
 
       cfg.genesis = gs;
@@ -349,6 +351,8 @@ namespace eosio { namespace testing {
       auto head_block_number = control->head_block_num();
       auto producer = control->head_block_state()->get_scheduled_producer(block_time);
 
+      ilog("start_block ${num} ${producer}", ("num", head_block_number)("producer", producer));
+
       auto last_produced_block_num = control->last_irreversible_block_num();
       auto itr = last_produced_block.find(producer.producer_name);
       if (itr != last_produced_block.end()) {
@@ -511,8 +515,8 @@ namespace eosio { namespace testing {
 
       set_transaction_headers(trx);
       trx.sign( get_private_key( creator, "active" ), control->get_chain_id()  );
+
       auto trace = push_transaction( trx );
-      
       transfer( N(eosforce), a, "100000.0000 EOS", "create_account", config::system_account_name );
       
       return trace;

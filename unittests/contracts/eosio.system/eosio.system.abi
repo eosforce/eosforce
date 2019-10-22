@@ -18,6 +18,16 @@
             ]
         },
         {
+            "name": "activate",
+            "base": "",
+            "fields": [
+                {
+                    "name": "feature_digest",
+                    "type": "checksum256"
+                }
+            ]
+        },
+        {
             "name": "approvebp",
             "base": "",
             "fields": [
@@ -656,6 +666,16 @@
             ]
         },
         {
+            "name": "reqactivated",
+            "base": "",
+            "fields": [
+                {
+                    "name": "feature_digest",
+                    "type": "checksum256"
+                }
+            ]
+        },
+        {
             "name": "revote",
             "base": "",
             "fields": [
@@ -1060,6 +1080,11 @@
     ],
     "actions": [
         {
+            "name": "activate",
+            "type": "activate",
+            "ricardian_contract": ""
+        },
+        {
             "name": "approvebp",
             "type": "approvebp",
             "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Approve to punish drain block bp\nsummary: '{{approver}} approve to punish {{bpname}}.only producer can approve and when the number of approver is bigger then 16 the bp will be punished'\n---"
@@ -1143,6 +1168,11 @@
             "name": "removepunish",
             "type": "removepunish",
             "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: bp remove to be punish status\nsummary: 'when bp block out ,it can remove its bpstatus from 1 to 0.if the bpstatus is 1 ,the bp can be punished'\n---"
+        },
+        {
+            "name": "reqactivated",
+            "type": "reqactivated",
+            "ricardian_contract": ""
         },
         {
             "name": "revote",

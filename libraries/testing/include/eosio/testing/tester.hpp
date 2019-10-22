@@ -186,6 +186,8 @@ namespace eosio { namespace testing {
          void delete_authority( account_name account, permission_name perm,  const vector<permission_level>& auths, const vector<private_key_type>& keys );
          void delete_authority( account_name account, permission_name perm );
 
+         void vote_for_ram( account_name account, const asset& amounts );
+
          transaction_trace_ptr create_account( account_name name,
                                                account_name creator = N(eosforce)/*config::system_account_name*/,
                                                bool multisig = false,
@@ -231,6 +233,15 @@ namespace eosio { namespace testing {
          void              set_fee( account_name account, action_name action, const asset& fee = asset{100} );
          void              set_fee( account_name account, action_name action, const asset& fee, uint32_t cpu_limit, uint32_t net_limit,uint32_t ram_limit, const private_key_type* signer = nullptr );
          void              set_fee( account_name auth, account_name account, action_name action, const asset& fee, uint32_t cpu_limit, uint32_t net_limit,uint32_t ram_limit, const private_key_type* signer = nullptr );
+
+         // func for eosc chain config
+         void set_chain_config( const eosio::chain::setconfig& cfg, const private_key_type* signer = nullptr );
+         void set_chain_func_act_block( account_name typ, uint32_t block_num, const private_key_type* signer = nullptr );
+         bool is_func_opened( account_name typ );
+
+         // open all eosc chain config, this will wait for some blocks
+         void open_all_funcs( const private_key_type* signer = nullptr );
+
 
          bool                          chain_has_transaction( const transaction_id_type& txid ) const;
          const transaction_receipt&    get_transaction_receipt( const transaction_id_type& txid ) const;

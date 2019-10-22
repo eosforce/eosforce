@@ -1100,6 +1100,10 @@ namespace eosio { namespace testing {
       set_chain_func_act_block( chain::config::res_typ::ram_rent_b_per_eos, 51200, signer );
       produce_blocks(1);
 
+      // set free ram to 32MB, so that most set code can success
+      set_chain_func_act_block( chain::config::res_typ::free_ram_per_account, 32 * 1024 * 1024, signer );
+      produce_blocks(1);
+
       set_code( config::system_account_name, contracts::eosio_system_wasm(), signer );
       set_abi( config::system_account_name, contracts::eosio_system_abi().data(), signer );
       produce_blocks(2);

@@ -233,8 +233,8 @@ transaction_trace_ptr CallFunction(TESTER& test, T ac, const vector<char>& data,
       act.data = data;
       //act.authorization = {{N(testapi), config::active_name}};
       trx.actions.push_back(act);
-      
-      test.set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
+
+      test.set_fee(act.authorization[0].actor, act.name, asset(10000), 0, 0, 0);
 
       test.set_transaction_headers(trx, test.DEFAULT_EXPIRATION_DELTA);
       auto sigs = trx.sign(test.get_private_key(scope[0], "active"), test.control->get_chain_id());
@@ -586,7 +586,7 @@ BOOST_FIXTURE_TEST_CASE(require_notice_tests, TESTER) { try {
       action act( std::vector<permission_level>{{N( testapi ), config::active_name}}, tm );
       trx.actions.push_back( act );
 
-	  set_fee(act.authorization[0].actor, act.name, asset(1), 0, 0, 0);
+	  set_fee(act.authorization[0].actor, act.name, asset(10000), 0, 0, 0);
 
       set_transaction_headers( trx );
       trx.sign( get_private_key( N( testapi ), "active" ), control->get_chain_id() );
@@ -633,7 +633,7 @@ BOOST_FIXTURE_TEST_CASE(cf_action_tests, TESTER) { try {
       set_code( N(testapi), contracts::test_api_wasm() );
       produce_blocks(1);
 
-      set_fee( N(testapi), N(dummyaction) );
+      set_fee( N(testapi), N(dummyaction), asset{10000} );
 
       cf_action cfa;
       signed_transaction trx;
@@ -882,7 +882,7 @@ void call_test(TESTER& test, T ac, uint32_t billed_cpu_time_us , uint32_t max_cp
    action act(pl, ac);
    act.data = payload;
 
-   test.set_fee(act.authorization[0].actor, act.name, asset(1), 0, 0, 0);
+   test.set_fee(act.authorization[0].actor, act.name, asset(10000), 0, 0, 0);
 
    trx.actions.push_back(act);
    test.set_transaction_headers(trx);
@@ -1060,9 +1060,9 @@ BOOST_FIXTURE_TEST_CASE(transaction_tests, TESTER) { try {
       action act({}, tm);
       trx.actions.push_back(act);
 
-	  set_fee(N(testapi), act.name, asset(1), 0, 0, 0);
+      set_fee(N(testapi), act.name, asset{10000}, 0, 0, 0);
 
-		set_transaction_headers(trx);
+      set_transaction_headers(trx);
       BOOST_CHECK_EXCEPTION(push_transaction(trx), transaction_exception,
          [](const fc::exception& e) {
             return expect_assert_message(e, "transaction must have at least one authorization");

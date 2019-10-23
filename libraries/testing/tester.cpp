@@ -6,6 +6,8 @@
 #include <eosio/chain/generated_transaction_object.hpp>
 #include <eosio/chain/config_on_chain.hpp>
 
+#include <eosio/chain/txfee_manager.hpp>
+
 #include <fstream>
 
 #include <contracts.hpp>
@@ -1014,6 +1016,10 @@ namespace eosio { namespace testing {
          trx.sign( get_private_key( auth, "active" ), control->get_chain_id()  );
       }
       push_transaction( trx );
+   }
+
+   const asset base_tester::get_fee( account_name account, action_name action ) {
+      return control->get_txfee_manager().get_required_fee(*control, account, action);
    }
 
    // func for eosc chain config

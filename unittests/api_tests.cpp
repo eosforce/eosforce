@@ -906,6 +906,9 @@ BOOST_FIXTURE_TEST_CASE(checktime_pass_tests, TESTER) { try {
 	set_code( N(testapi), contracts::test_api_wasm() );
 	produce_blocks(1);
 
+   CALL_TEST_SET_FEE( *this, "test_checktime", "checktime_pass" );
+   produce_blocks(1);
+
    // test checktime_pass
    CALL_TEST_FUNCTION( *this, "test_checktime", "checktime_pass", {});
 

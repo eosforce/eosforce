@@ -861,8 +861,11 @@ BOOST_FIXTURE_TEST_CASE(deferred_cfa_success, TESTER)  try {
 	produce_blocks(1);
 	set_code( N(testapi), contracts::test_api_wasm() );
 
+   CALL_TEST_SET_FEE( *this, "test_transaction", "context_free_api" );
+   produce_blocks(1);
+
    account_name a = N(testapi2);
-   account_name creator = config::system_account_name;
+   account_name creator = N(eosforce); // in eosc no support eosio create account
 
    signed_transaction trx;
 
@@ -881,7 +884,7 @@ BOOST_FIXTURE_TEST_CASE(deferred_cfa_success, TESTER)  try {
    BOOST_REQUIRE(trace != nullptr);
    if (trace) {
       BOOST_REQUIRE_EQUAL(transaction_receipt_header::status_enum::delayed, trace->receipt->status);
-      BOOST_REQUIRE_EQUAL(1, trace->action_traces.size());
+      BOOST_REQUIRE_EQUAL(2, trace->action_traces.size()); // there will be a onfee action
    }
    produce_blocks(10);
 

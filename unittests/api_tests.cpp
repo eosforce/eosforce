@@ -146,8 +146,7 @@ FC_REFLECT_TEMPLATE((uint64_t T), test_api_action<T>, BOOST_PP_SEQ_NIL)
 template<uint64_t NAME>
 struct test_chain_action {
 	static account_name get_account() {
-		//return account_name(config::system_account_name);
-		return N(eosforce);
+		return account_name(config::system_account_name);
 	}
 
 	static action_name get_name() {
@@ -231,10 +230,8 @@ transaction_trace_ptr CallFunction(TESTER& test, T ac, const vector<char>& data,
 
       action act(pl, ac);
       act.data = data;
-      //act.authorization = {{N(testapi), config::active_name}};
+      act.authorization = {{N(testapi), config::active_name}};
       trx.actions.push_back(act);
-
-      test.set_fee(act.authorization[0].actor, act.name, asset(10000), 0, 0, 0);
 
       test.set_transaction_headers(trx, test.DEFAULT_EXPIRATION_DELTA);
       auto sigs = trx.sign(test.get_private_key(scope[0], "active"), test.control->get_chain_id());
@@ -251,6 +248,15 @@ transaction_trace_ptr CallFunction(TESTER& test, T ac, const vector<char>& data,
    }
 }
 
+template <typename T>
+void MakeFee(TESTER& test, T ac) {
+   const auto pl = vector<permission_level>{{N(test), config::active_name}};
+   action act(pl, ac);
+
+   test.set_fee( act.account, act.name, asset{10000} );
+   test.produce_blocks(1);
+}
+
 #define CALL_TEST_FUNCTION(_TESTER, CLS, MTH, DATA) CallFunction(_TESTER, test_api_action<TEST_METHOD(CLS, MTH)>{}, DATA)
 #define CALL_TEST_FUNCTION_SYSTEM(_TESTER, CLS, MTH, DATA) CallFunction(_TESTER, test_chain_action<TEST_METHOD(CLS, MTH)>{}, DATA, {config::system_account_name} )
 #define CALL_TEST_FUNCTION_SCOPE(_TESTER, CLS, MTH, DATA, ACCOUNT) CallFunction(_TESTER, test_api_action<TEST_METHOD(CLS, MTH)>{}, DATA, ACCOUNT)
@@ -263,6 +269,7 @@ BOOST_CHECK_EXCEPTION( \
                           return expect_assert_message(e, EXC_MESSAGE); \
                      } \
 );
+#define CALL_TEST_SET_FEE(_TESTER, CLS, MTH) MakeFee(_TESTER, test_api_action<TEST_METHOD(CLS, MTH)>{})
 
 bool is_access_violation(fc::unhandled_exception const & e) {
    try {
@@ -425,8 +432,26 @@ BOOST_FIXTURE_TEST_CASE(action_tests, TESTER) { try {
 	create_account( N(acc3) );
 	create_account( N(acc4) );
 	produce_blocks(10);
+
+   vote_for_ram( N(testapi), asset{ 80000000 } );
+   produce_blocks(1);
+
 	set_code( N(testapi), contracts::test_api_wasm() );
 	produce_blocks(1);
+
+   CALL_TEST_SET_FEE( *this, "test_action", "assert_true" );
+   CALL_TEST_SET_FEE( *this, "test_action", "assert_false" );
+   CALL_TEST_SET_FEE( *this, "test_action", "read_action_normal" );
+   CALL_TEST_SET_FEE( *this, "test_action", "read_action_to_0" );
+   CALL_TEST_SET_FEE( *this, "test_action", "read_action_to_64k" );
+   CALL_TEST_SET_FEE( *this, "test_action", "require_auth" );
+   CALL_TEST_SET_FEE( *this, "test_action", "test_current_time" );
+   CALL_TEST_SET_FEE( *this, "test_action", "test_current_receiver" );
+   CALL_TEST_SET_FEE( *this, "test_action", "test_publication_time" );
+   CALL_TEST_SET_FEE( *this, "test_action", "test_abort" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "send_action_sender" );
+
+   set_fee( N(testapi), N(dummyaction), asset{10000} );
 
    // test assert_true
 	CALL_TEST_FUNCTION( *this, "test_action", "assert_true", {});

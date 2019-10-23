@@ -28,6 +28,8 @@
 #include <eosio/chain/wasm_interface.hpp>
 #include <eosio/chain/resource_limits.hpp>
 
+#include <eosio/chain/config_on_chain.hpp>
+
 #include <fc/crypto/digest.hpp>
 #include <fc/crypto/sha256.hpp>
 #include <fc/exception/exception.hpp>
@@ -146,8 +148,7 @@ FC_REFLECT_TEMPLATE((uint64_t T), test_api_action<T>, BOOST_PP_SEQ_NIL)
 template<uint64_t NAME>
 struct test_chain_action {
 	static account_name get_account() {
-		//return account_name(config::system_account_name);
-		return N(eosforce);
+		return account_name(config::system_account_name);
 	}
 
 	static action_name get_name() {
@@ -231,10 +232,8 @@ transaction_trace_ptr CallFunction(TESTER& test, T ac, const vector<char>& data,
 
       action act(pl, ac);
       act.data = data;
-      //act.authorization = {{N(testapi), config::active_name}};
+      act.authorization = {{N(testapi), config::active_name}};
       trx.actions.push_back(act);
-      
-      test.set_fee(act.authorization[0].actor, act.name, asset(100), 0, 0, 0);
 
       test.set_transaction_headers(trx, test.DEFAULT_EXPIRATION_DELTA);
       auto sigs = trx.sign(test.get_private_key(scope[0], "active"), test.control->get_chain_id());
@@ -251,6 +250,15 @@ transaction_trace_ptr CallFunction(TESTER& test, T ac, const vector<char>& data,
    }
 }
 
+template <typename T>
+void MakeFee(TESTER& test, T ac) {
+   const auto pl = vector<permission_level>{{N(test), config::active_name}};
+   action act(pl, ac);
+
+   test.set_fee( act.account, act.name, asset{10000} );
+   test.produce_blocks(1);
+}
+
 #define CALL_TEST_FUNCTION(_TESTER, CLS, MTH, DATA) CallFunction(_TESTER, test_api_action<TEST_METHOD(CLS, MTH)>{}, DATA)
 #define CALL_TEST_FUNCTION_SYSTEM(_TESTER, CLS, MTH, DATA) CallFunction(_TESTER, test_chain_action<TEST_METHOD(CLS, MTH)>{}, DATA, {config::system_account_name} )
 #define CALL_TEST_FUNCTION_SCOPE(_TESTER, CLS, MTH, DATA, ACCOUNT) CallFunction(_TESTER, test_api_action<TEST_METHOD(CLS, MTH)>{}, DATA, ACCOUNT)
@@ -263,6 +271,7 @@ BOOST_CHECK_EXCEPTION( \
                           return expect_assert_message(e, EXC_MESSAGE); \
                      } \
 );
+#define CALL_TEST_SET_FEE(_TESTER, CLS, MTH) MakeFee(_TESTER, test_api_action<TEST_METHOD(CLS, MTH)>{})
 
 bool is_access_violation(fc::unhandled_exception const & e) {
    try {
@@ -425,8 +434,26 @@ BOOST_FIXTURE_TEST_CASE(action_tests, TESTER) { try {
 	create_account( N(acc3) );
 	create_account( N(acc4) );
 	produce_blocks(10);
+
+   vote_for_ram( N(testapi), asset{ 80000000 } );
+   produce_blocks(1);
+
 	set_code( N(testapi), contracts::test_api_wasm() );
 	produce_blocks(1);
+
+   CALL_TEST_SET_FEE( *this, "test_action", "assert_true" );
+   CALL_TEST_SET_FEE( *this, "test_action", "assert_false" );
+   CALL_TEST_SET_FEE( *this, "test_action", "read_action_normal" );
+   CALL_TEST_SET_FEE( *this, "test_action", "read_action_to_0" );
+   CALL_TEST_SET_FEE( *this, "test_action", "read_action_to_64k" );
+   CALL_TEST_SET_FEE( *this, "test_action", "require_auth" );
+   CALL_TEST_SET_FEE( *this, "test_action", "test_current_time" );
+   CALL_TEST_SET_FEE( *this, "test_action", "test_current_receiver" );
+   CALL_TEST_SET_FEE( *this, "test_action", "test_publication_time" );
+   CALL_TEST_SET_FEE( *this, "test_action", "test_abort" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "send_action_sender" );
+
+   set_fee( N(testapi), N(dummyaction), asset{10000} );
 
    // test assert_true
 	CALL_TEST_FUNCTION( *this, "test_action", "assert_true", {});
@@ -586,7 +613,7 @@ BOOST_FIXTURE_TEST_CASE(require_notice_tests, TESTER) { try {
       action act( std::vector<permission_level>{{N( testapi ), config::active_name}}, tm );
       trx.actions.push_back( act );
 
-	  set_fee(act.authorization[0].actor, act.name, asset(1), 0, 0, 0);
+	  set_fee(act.authorization[0].actor, act.name, asset(10000), 0, 0, 0);
 
       set_transaction_headers( trx );
       trx.sign( get_private_key( N( testapi ), "active" ), control->get_chain_id() );
@@ -606,6 +633,9 @@ BOOST_AUTO_TEST_CASE(ram_billing_in_notify_tests) { try {
    chain.set_code( N(testapi), contracts::test_api_wasm() );
    chain.produce_blocks(1);
    chain.set_code( N(testapi2), contracts::test_api_wasm() );
+   chain.produce_blocks(1);
+
+   CALL_TEST_SET_FEE( chain, "test_action", "test_ram_billing_in_notify" );
    chain.produce_blocks(1);
 
    BOOST_CHECK_EXCEPTION( CALL_TEST_FUNCTION( chain, "test_action", "test_ram_billing_in_notify",
@@ -632,6 +662,16 @@ BOOST_FIXTURE_TEST_CASE(cf_action_tests, TESTER) { try {
       produce_blocks(10);
       set_code( N(testapi), contracts::test_api_wasm() );
       produce_blocks(1);
+
+      set_fee( N(testapi), N(dummyaction), asset{10000} );
+      set_fee( N(testapi), N(cfaction), asset{10000} );
+      set_fee( N(dummy), N(event1), asset{10000} );
+      produce_blocks(1);
+
+      CALL_TEST_SET_FEE( *this, "test_transaction", "send_cf_action" );
+      CALL_TEST_SET_FEE( *this, "test_transaction", "send_cf_action_fail" );
+      produce_blocks(1);
+
       cf_action cfa;
       signed_transaction trx;
       set_transaction_headers(trx);
@@ -716,12 +756,12 @@ BOOST_FIXTURE_TEST_CASE(cf_action_tests, TESTER) { try {
       // test send context free action
       auto ttrace = CALL_TEST_FUNCTION( *this, "test_transaction", "send_cf_action", {} );
 
-      BOOST_REQUIRE_EQUAL(ttrace->action_traces.size(), 2);
-      BOOST_CHECK_EQUAL((int)(ttrace->action_traces[1].creator_action_ordinal), 1);
-      BOOST_CHECK_EQUAL(ttrace->action_traces[1].receiver, account_name("dummy"));
-      BOOST_CHECK_EQUAL(ttrace->action_traces[1].act.account, account_name("dummy"));
-      BOOST_CHECK_EQUAL(ttrace->action_traces[1].act.name, account_name("event1"));
-      BOOST_CHECK_EQUAL(ttrace->action_traces[1].act.authorization.size(), 0);
+      BOOST_REQUIRE_EQUAL(ttrace->action_traces.size(), 2 + 2); // in eosforce there will add two action by fee
+      BOOST_CHECK_EQUAL((int)(ttrace->action_traces[3].creator_action_ordinal), 2); // there will add fee action on first
+      BOOST_CHECK_EQUAL(ttrace->action_traces[3].receiver, account_name("dummy"));
+      BOOST_CHECK_EQUAL(ttrace->action_traces[3].act.account, account_name("dummy"));
+      BOOST_CHECK_EQUAL(ttrace->action_traces[3].act.name, account_name("event1"));
+      BOOST_CHECK_EQUAL(ttrace->action_traces[3].act.authorization.size(), 0);
 
       BOOST_CHECK_EXCEPTION( CALL_TEST_FUNCTION( *this, "test_transaction", "send_cf_action_fail", {} ),
                              eosio_assert_message_exception,
@@ -823,8 +863,11 @@ BOOST_FIXTURE_TEST_CASE(deferred_cfa_success, TESTER)  try {
 	produce_blocks(1);
 	set_code( N(testapi), contracts::test_api_wasm() );
 
+   CALL_TEST_SET_FEE( *this, "test_transaction", "context_free_api" );
+   produce_blocks(1);
+
    account_name a = N(testapi2);
-   account_name creator = config::system_account_name;
+   account_name creator = N(eosforce); // in eosc no support eosio create account
 
    signed_transaction trx;
 
@@ -843,7 +886,7 @@ BOOST_FIXTURE_TEST_CASE(deferred_cfa_success, TESTER)  try {
    BOOST_REQUIRE(trace != nullptr);
    if (trace) {
       BOOST_REQUIRE_EQUAL(transaction_receipt_header::status_enum::delayed, trace->receipt->status);
-      BOOST_REQUIRE_EQUAL(1, trace->action_traces.size());
+      BOOST_REQUIRE_EQUAL(2, trace->action_traces.size()); // there will be a onfee action
    }
    produce_blocks(10);
 
@@ -865,6 +908,9 @@ BOOST_FIXTURE_TEST_CASE(checktime_pass_tests, TESTER) { try {
 	set_code( N(testapi), contracts::test_api_wasm() );
 	produce_blocks(1);
 
+   CALL_TEST_SET_FEE( *this, "test_checktime", "checktime_pass" );
+   produce_blocks(1);
+
    // test checktime_pass
    CALL_TEST_FUNCTION( *this, "test_checktime", "checktime_pass", {});
 
@@ -878,8 +924,6 @@ void call_test(TESTER& test, T ac, uint32_t billed_cpu_time_us , uint32_t max_cp
    auto pl = vector<permission_level>{{N(testapi), config::active_name}};
    action act(pl, ac);
    act.data = payload;
-
-   test.set_fee(act.authorization[0].actor, act.name, asset(1), 0, 0, 0);
 
    trx.actions.push_back(act);
    test.set_transaction_headers(trx);
@@ -902,11 +946,16 @@ BOOST_AUTO_TEST_CASE(checktime_fail_tests) { try {
    ilog( "produce block" );
    t.produce_blocks(1);
 
+   CALL_TEST_SET_FEE( t, "test_checktime", "checktime_failure" );
+   t.produce_blocks(1);
+
    int64_t x; int64_t net; int64_t cpu;
    t.control->get_resource_limits_manager().get_account_limits( N(testapi), x, net, cpu );
    wdump((net)(cpu));
 
 #warning TODO call the contract before testing to cache it, and validate that it was cached
+
+#warning In EOSC There should be different exp for deadline
 
    BOOST_CHECK_EXCEPTION( call_test( t, test_api_action<TEST_METHOD("test_checktime", "checktime_failure")>{},
                                      5000, 200, fc::raw::pack(10000000000000000000ULL) ),
@@ -914,7 +963,7 @@ BOOST_AUTO_TEST_CASE(checktime_fail_tests) { try {
 
    BOOST_CHECK_EXCEPTION( call_test( t, test_api_action<TEST_METHOD("test_checktime", "checktime_failure")>{},
                                      0, 200, fc::raw::pack(10000000000000000000ULL) ),
-                          tx_cpu_usage_exceeded, is_tx_cpu_usage_exceeded );
+                          deadline_exception, is_deadline_exception );
 
    uint32_t time_left_in_block_us = config::default_max_block_cpu_usage - config::default_min_transaction_cpu_usage;
    std::string dummy_string = "nonce";
@@ -997,6 +1046,19 @@ BOOST_FIXTURE_TEST_CASE(checktime_hashing_fail, TESTER) { try {
 	set_code( N(testapi), contracts::test_api_wasm() );
 	produce_blocks(1);
 
+   CALL_TEST_SET_FEE( *this, "test_checktime", "checktime_sha1_failure" );
+   CALL_TEST_SET_FEE( *this, "test_checktime", "checktime_assert_sha1_failure" );
+   CALL_TEST_SET_FEE( *this, "test_checktime", "checktime_sha256_failure" );
+   CALL_TEST_SET_FEE( *this, "test_checktime", "checktime_assert_sha256_failure" );
+   produce_blocks(1);
+
+   CALL_TEST_SET_FEE( *this, "test_checktime", "checktime_sha512_failure" );
+   CALL_TEST_SET_FEE( *this, "test_checktime", "checktime_assert_sha512_failure" );
+   CALL_TEST_SET_FEE( *this, "test_checktime", "checktime_ripemd160_failure" );
+   CALL_TEST_SET_FEE( *this, "test_checktime", "checktime_assert_ripemd160_failure" );
+   produce_blocks(1);
+
+
         //hit deadline exception, but cache the contract
         BOOST_CHECK_EXCEPTION( call_test( *this, test_api_action<TEST_METHOD("test_checktime", "checktime_sha1_failure")>{},
                                           5000, 3 ),
@@ -1050,16 +1112,35 @@ BOOST_FIXTURE_TEST_CASE(transaction_tests, TESTER) { try {
    set_code( N(testapi), contracts::test_api_wasm() );
    produce_blocks(1);
 
+   CALL_TEST_SET_FEE( *this, "test_action", "require_auth" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "send_action" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "send_action_empty" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "send_action_large" );
+   produce_blocks(1);
+
+   CALL_TEST_SET_FEE( *this, "test_transaction", "send_action_inline_fail" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "send_transaction_empty" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "send_transaction_trigger_error_handler" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "test_transaction_size" );
+   produce_blocks(1);
+
+   CALL_TEST_SET_FEE( *this, "test_transaction", "test_read_transaction" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "test_tapos_block_num" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "test_tapos_block_prefix" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "send_action_recurse" );
+   produce_blocks(1);
+
    // test for zero auth
    {
+
       signed_transaction trx;
       auto tm = test_api_action<TEST_METHOD("test_action", "require_auth")>{};
       action act({}, tm);
       trx.actions.push_back(act);
 
-	  set_fee(N(testapi), act.name, asset(1), 0, 0, 0);
+      set_fee(N(testapi), act.name, asset{10000}, 0, 0, 0);
 
-		set_transaction_headers(trx);
+      set_transaction_headers(trx);
       BOOST_CHECK_EXCEPTION(push_transaction(trx), transaction_exception,
          [](const fc::exception& e) {
             return expect_assert_message(e, "transaction must have at least one authorization");
@@ -1143,6 +1224,17 @@ BOOST_FIXTURE_TEST_CASE(deferred_transaction_tests, TESTER) { try {
    set_code( N(testapi), contracts::test_api_wasm() );
    set_code( N(testapi2), contracts::test_api_wasm() );
    produce_blocks(1);
+
+   CALL_TEST_SET_FEE( *this, "test_transaction", "send_deferred_transaction" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "send_deferred_transaction_replace" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "cancel_deferred_transaction_success" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "cancel_deferred_transaction_not_found" );
+   produce_blocks(1);
+
+   CALL_TEST_SET_FEE( *this, "test_transaction", "repeat_deferred_transaction" );
+   CALL_TEST_SET_FEE( *this, "test_transaction", "send_deferred_tx_with_dtt_action" );
+   produce_blocks(1);
+
 
    //schedule
    {
@@ -1553,7 +1645,11 @@ BOOST_FIXTURE_TEST_CASE(chain_tests, TESTER) { try {
    set_producers (producers );
 
    set_code( N(testapi), contracts::test_api_wasm() );
+   produce_blocks(1);
+
+   CALL_TEST_SET_FEE( *this, "test_chain", "test_activeprods" );
    produce_blocks(100);
+
 
    vector<account_name> prods( control->active_producers().producers.size() );
    for ( uint32_t i = 0; i < prods.size(); i++ ) {

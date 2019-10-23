@@ -4,6 +4,9 @@
 #include <eosio/chain/wast_to_wasm.hpp>
 #include <eosio/chain/eosio_contract.hpp>
 #include <eosio/chain/generated_transaction_object.hpp>
+#include <eosio/chain/config_on_chain.hpp>
+
+#include <eosio/chain/txfee_manager.hpp>
 
 #include <fstream>
 
@@ -266,14 +269,14 @@ namespace eosio { namespace testing {
          case setup_policy::preactivate_feature_and_new_bios: {
             schedule_preactivate_protocol_feature();
             produce_block();
-            //set_bios_contract();
+            open_all_funcs();
             break;
          }
          case setup_policy::full: {
             schedule_preactivate_protocol_feature();
             produce_block();
-            //set_bios_contract();
-            //preactivate_all_builtin_protocol_features(); FIXME: active all features for eosc
+            open_all_funcs();
+            preactivate_all_builtin_protocol_features();
             produce_block();
             break;
          }
@@ -476,7 +479,7 @@ namespace eosio { namespace testing {
   void base_tester::set_transaction_headers( transaction& trx, uint32_t expiration, uint32_t delay_sec ) const {
      trx.expiration = control->head_block_time() + fc::seconds(expiration);
      trx.set_reference_block( control->head_block_id() );
-	 trx.fee = asset(100 * 10000);
+     trx.fee = asset(100 * 10000);
 
      trx.max_net_usage_words = 0; // No limit
      trx.max_cpu_usage_ms = 0; // No limit
@@ -671,6 +674,7 @@ namespace eosio { namespace testing {
    } FC_CAPTURE_AND_RETHROW() }
 
    transaction_trace_ptr base_tester::push_reqauth( account_name from, const vector<permission_level>& auths, const vector<private_key_type>& keys ) {
+      // FIXME: in eosc, eosio account has no bios contract after startup, so need change this
       variant pretty_trx = fc::mutable_variant_object()
          ("actions", fc::variants({
             fc::mutable_variant_object()
@@ -880,6 +884,37 @@ namespace eosio { namespace testing {
       delete_authority(account, perm, { permission_level{ account, config::owner_name } }, { get_private_key( account, "owner" ) });
    }
 
+   void base_tester::vote_for_ram( account_name account, const asset& amounts ) {
+      // in early version, no need vote for ram
+      if( !is_func_opened( chain::config::func_typ::vote_for_ram ) ) {
+         return;
+      }
+
+      variant pretty_trx = fc::mutable_variant_object()
+         ("actions", fc::variants({
+            fc::mutable_variant_object()
+               ("account", "eosio")
+               ("name", "vote4ram")
+               ("authorization", fc::variants({
+                  fc::mutable_variant_object()
+                     ("actor", account )
+                     ("permission", name(config::active_name))
+               }))
+               ("data", fc::mutable_variant_object()
+                  ("voter", account)
+                  ("bpname", "biosbpa")
+                  ("stake", amounts)
+               )
+            })
+         );
+
+      signed_transaction trx;
+      abi_serializer::from_variant(pretty_trx, trx, get_resolver(), abi_serializer_max_time);
+      set_transaction_headers(trx);
+
+      trx.sign( get_private_key( account, name(config::active_name).to_string() ), control->get_chain_id()  );
+      push_transaction( trx );
+   }
 
    void base_tester::set_code( account_name account, const char* wast, const private_key_type* signer  ) try {
       set_code(account, wast_to_wasm(wast), signer);
@@ -922,6 +957,10 @@ namespace eosio { namespace testing {
          trx.sign( get_private_key( account, "active" ), control->get_chain_id()  );
       }
       push_transaction( trx );
+   }
+
+   void base_tester::set_fee( account_name account, action_name action, const asset& fee ) {
+      set_fee( N(force.test), account, action, fee, 0, 0, 0, nullptr );
    }
 
    void base_tester::set_fee( account_name account,
@@ -977,6 +1016,111 @@ namespace eosio { namespace testing {
          trx.sign( get_private_key( auth, "active" ), control->get_chain_id()  );
       }
       push_transaction( trx );
+   }
+
+   const asset base_tester::get_fee( account_name account, action_name action ) {
+      return control->get_txfee_manager().get_required_fee(*control, account, action);
+   }
+
+   // func for eosc chain config
+   void base_tester::set_chain_config( const eosio::chain::setconfig& cfg, const private_key_type* signer ) {
+      const auto auth = config::chain_config_name;
+
+      signed_transaction trx;
+      trx.actions.emplace_back( vector<permission_level>{ {auth, config::active_name} }, cfg);
+
+      set_transaction_headers(trx);
+      if( signer ) {
+         trx.sign( *signer, control->get_chain_id()  );
+      } else {
+         trx.sign( get_private_key( auth, "active" ), control->get_chain_id()  );
+      }
+      push_transaction( trx );
+   }
+
+   void base_tester::set_chain_func_act_block( account_name func, uint32_t block_num, const private_key_type* signer ) {
+      set_chain_config(
+         eosio::chain::setconfig{ func, static_cast<int64_t>(block_num), 0, asset{} },
+         signer );
+   }
+
+   bool base_tester::is_func_opened( account_name typ ) {
+      return chain::is_func_has_open( *control, typ );
+   }
+
+   // open all eosc chain config, this will wait for some blocks
+   void base_tester::open_all_funcs( const private_key_type* signer ) {
+      // open all funcs
+      set_fee( config::system_account_name, N(setconfig), asset{100000} );
+      produce_blocks(1);
+
+      set_fee( config::system_account_name, N(vote4ram), asset{100000} );
+      produce_blocks(1);
+
+      set_fee( config::system_account_name, N(revote), asset{100000} );
+      produce_blocks(1);
+
+      create_account( config::chain_config_name );
+      produce_blocks(1);
+
+      create_account( config::msig_account_name );
+      produce_blocks(1);
+
+      const auto curr_num = control->head_block_num();
+
+      ilog("open all funcs for eosc, from ${c}", ("c", curr_num));
+
+      set_chain_func_act_block( chain::config::func_typ::use_system01,         control->head_block_num() + 1, signer );
+      produce_blocks(3);
+      set_chain_func_act_block( chain::config::func_typ::use_msig,             control->head_block_num() + 1, signer );
+      produce_blocks(3);
+      set_chain_func_act_block( chain::config::func_typ::create_eosio_account, control->head_block_num() + 1, signer );
+      produce_blocks(3);
+
+      transfer( N(eosforce), config::system_account_name, "100000.0000 EOS", "to eosio account", config::system_account_name );
+      produce_blocks(1);
+
+      // update eosio system contract to system02
+      set_code( config::system_account_name, contracts::system_2_wasm(), signer );
+      set_abi( config::system_account_name, contracts::system_2_abi().data(), signer );
+      produce_blocks(2);
+
+      // for test env, no need change eosio to eosio.prod
+      //set_chain_func_act_block( chain::config::func_typ::use_eosio_prods,      control->head_block_num() + 1, signer );
+      //produce_blocks(3);
+
+      set_chain_func_act_block( chain::config::func_typ::fee_limit,            control->head_block_num() + 1, signer );
+      produce_blocks(3);
+      set_chain_func_act_block( chain::config::func_typ::vote_for_ram,         control->head_block_num() + 1, signer );
+      produce_blocks(3);
+      set_chain_func_act_block( chain::config::func_typ::onfee_action,         control->head_block_num() + 1, signer );
+      produce_blocks(3);
+      set_chain_func_act_block( chain::config::func_typ::create_prods_account, control->head_block_num() + 1, signer );
+      produce_blocks(3);
+
+      // set trx size limit, same with eosc mainnet
+      set_chain_func_act_block( chain::config::res_typ::trx_size_limit, 2097152, signer );
+      produce_blocks(1);
+
+      // set ram rent, same with eosc mainnet
+      set_chain_func_act_block( chain::config::res_typ::ram_rent_b_per_eos, 51200, signer );
+      produce_blocks(1);
+
+      // set free ram to 32MB, so that most set code can success
+      set_chain_func_act_block( chain::config::res_typ::free_ram_per_account, 32 * 1024 * 1024, signer );
+      produce_blocks(1);
+
+      set_code( config::system_account_name, contracts::eosio_system_wasm(), signer );
+      set_abi( config::system_account_name, contracts::eosio_system_abi().data(), signer );
+      produce_blocks(2);
+
+      set_fee( config::system_account_name, N(activate), asset{10000} );
+      produce_blocks(1);
+
+      set_fee( config::system_account_name, N(reqactivated), asset{1000} );
+      produce_blocks(1);
+
+      produce_blocks(3);
    }
 
    bool base_tester::chain_has_transaction( const transaction_id_type& txid ) const {

@@ -633,6 +633,9 @@ BOOST_AUTO_TEST_CASE(ram_billing_in_notify_tests) { try {
    chain.set_code( N(testapi2), contracts::test_api_wasm() );
    chain.produce_blocks(1);
 
+   CALL_TEST_SET_FEE( chain, "test_action", "test_ram_billing_in_notify" );
+   chain.produce_blocks(1);
+
    BOOST_CHECK_EXCEPTION( CALL_TEST_FUNCTION( chain, "test_action", "test_ram_billing_in_notify",
                                               fc::raw::pack( ((unsigned __int128)N(testapi2) << 64) | N(testapi) ) ),
                           subjective_block_production_exception,

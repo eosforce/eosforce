@@ -662,6 +662,13 @@ BOOST_FIXTURE_TEST_CASE(cf_action_tests, TESTER) { try {
       produce_blocks(1);
 
       set_fee( N(testapi), N(dummyaction), asset{10000} );
+      set_fee( N(testapi), N(cfaction), asset{10000} );
+      set_fee( N(dummy), N(event1), asset{10000} );
+      produce_blocks(1);
+
+      CALL_TEST_SET_FEE( *this, "test_transaction", "send_cf_action" );
+      CALL_TEST_SET_FEE( *this, "test_transaction", "send_cf_action_fail" );
+      produce_blocks(1);
 
       cf_action cfa;
       signed_transaction trx;
@@ -747,12 +754,12 @@ BOOST_FIXTURE_TEST_CASE(cf_action_tests, TESTER) { try {
       // test send context free action
       auto ttrace = CALL_TEST_FUNCTION( *this, "test_transaction", "send_cf_action", {} );
 
-      BOOST_REQUIRE_EQUAL(ttrace->action_traces.size(), 2);
-      BOOST_CHECK_EQUAL((int)(ttrace->action_traces[1].creator_action_ordinal), 1);
-      BOOST_CHECK_EQUAL(ttrace->action_traces[1].receiver, account_name("dummy"));
-      BOOST_CHECK_EQUAL(ttrace->action_traces[1].act.account, account_name("dummy"));
-      BOOST_CHECK_EQUAL(ttrace->action_traces[1].act.name, account_name("event1"));
-      BOOST_CHECK_EQUAL(ttrace->action_traces[1].act.authorization.size(), 0);
+      BOOST_REQUIRE_EQUAL(ttrace->action_traces.size(), 2 + 2); // in eosforce there will add two action by fee
+      BOOST_CHECK_EQUAL((int)(ttrace->action_traces[3].creator_action_ordinal), 2); // there will add fee action on first
+      BOOST_CHECK_EQUAL(ttrace->action_traces[3].receiver, account_name("dummy"));
+      BOOST_CHECK_EQUAL(ttrace->action_traces[3].act.account, account_name("dummy"));
+      BOOST_CHECK_EQUAL(ttrace->action_traces[3].act.name, account_name("event1"));
+      BOOST_CHECK_EQUAL(ttrace->action_traces[3].act.authorization.size(), 0);
 
       BOOST_CHECK_EXCEPTION( CALL_TEST_FUNCTION( *this, "test_transaction", "send_cf_action_fail", {} ),
                              eosio_assert_message_exception,

@@ -269,7 +269,7 @@ namespace eosio { namespace testing {
          case setup_policy::preactivate_feature_and_new_bios: {
             schedule_preactivate_protocol_feature();
             produce_block();
-            //set_bios_contract();
+            open_all_funcs();
             break;
          }
          case setup_policy::full: {

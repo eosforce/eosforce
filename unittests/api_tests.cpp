@@ -28,6 +28,8 @@
 #include <eosio/chain/wasm_interface.hpp>
 #include <eosio/chain/resource_limits.hpp>
 
+#include <eosio/chain/config_on_chain.hpp>
+
 #include <fc/crypto/digest.hpp>
 #include <fc/crypto/sha256.hpp>
 #include <fc/exception/exception.hpp>

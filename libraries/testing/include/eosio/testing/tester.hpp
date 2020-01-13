@@ -4,6 +4,7 @@
 #include <eosio/chain/contract_table_objects.hpp>
 #include <eosio/chain/account_object.hpp>
 #include <eosio/chain/abi_serializer.hpp>
+#include <eosio/chain/unapplied_transaction_queue.hpp>
 #include <fc/io/json.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/tuple/tuple_io.hpp>
@@ -57,7 +58,7 @@ namespace boost { namespace test_tools { namespace tt_detail {
 } } }
 
 namespace eosio { namespace testing {
-  enum class setup_policy {
+   enum class setup_policy {
       none,
       old_bios_only,
       preactivate_feature_only,
@@ -68,6 +69,10 @@ namespace eosio { namespace testing {
    std::vector<uint8_t> read_wasm( const char* fn );
    std::vector<char>    read_abi( const char* fn );
    std::string          read_wast( const char* fn );
+
+   std::string          read_binary_snapshot( const char* fn );
+   fc::variant          read_json_snapshot( const char* fn );
+
    using namespace eosio::chain;
 
    fc::variant_object filter_fields(const fc::variant_object& filter, const fc::variant_object& value);
@@ -79,6 +84,59 @@ namespace eosio { namespace testing {
    using subjective_restriction_map = std::map<builtin_protocol_feature_t, protocol_feature_subjective_restrictions>;
 
    protocol_feature_set make_protocol_feature_set(const subjective_restriction_map& custom_subjective_restrictions = {});
+
+   namespace mock {
+      using namespace fc::crypto;
+      struct webauthn_private_key {
+         explicit webauthn_private_key(r1::private_key&& priv_key)
+         :priv_key(std::move(priv_key))
+         {
+         }
+
+         webauthn_private_key(webauthn_private_key&&) = default;
+         webauthn_private_key(const webauthn_private_key&) = default;
+
+         static auto regenerate(const fc::sha256& secret) {
+            return webauthn_private_key(r1::private_key::regenerate(secret));
+         }
+
+         public_key get_public_key(webauthn::public_key::user_presence_t presence = webauthn::public_key::user_presence_t::USER_PRESENCE_NONE) const {
+            return public_key_type(webauthn::public_key(priv_key.get_public_key().serialize(), presence, _origin));
+         }
+
+         signature sign( const sha256& digest, bool = true) const {
+            auto json = std::string("{\"origin\":\"https://") +
+                        _origin +
+                        "\",\"type\":\"webauthn.get\",\"challenge\":\"" +
+                        fc::base64url_encode(digest.data(), digest.data_size()) +
+                        "\"}";
+            std::vector<uint8_t> auth_data(37);
+            memcpy(auth_data.data(), _origin_hash.data(), sizeof(_origin_hash));
+
+            auto client_data_hash = fc::sha256::hash(json);
+            fc::sha256::encoder e;
+            e.write((char*)auth_data.data(), auth_data.size());
+            e.write(client_data_hash.data(), client_data_hash.data_size());
+            auto sig = priv_key.sign_compact(e.result());
+
+            char serialized_sig[4096];
+            datastream<char*> sig_ds(serialized_sig, sizeof(serialized_sig));
+            fc::raw::pack(sig_ds, (uint8_t)signature::storage_type::position<webauthn::signature>());
+            fc::raw::pack(sig_ds, sig);
+            fc::raw::pack(sig_ds, auth_data);
+            fc::raw::pack(sig_ds, json);
+            sig_ds.seekp(0);
+
+            signature ret;
+            fc::raw::unpack(sig_ds, ret);
+            return ret;
+         }
+
+         r1::private_key priv_key;
+         static const std::string _origin;
+         static const fc::sha256 _origin_hash;
+      };
+   }
 
    /**
     *  @class tester
@@ -96,13 +154,23 @@ namespace eosio { namespace testing {
          virtual ~base_tester() {};
 
          void              init(const setup_policy policy = setup_policy::full, db_read_mode read_mode = db_read_mode::SPECULATIVE);
-         void              init(controller::config config, const snapshot_reader_ptr& snapshot = nullptr);
-         void              init(controller::config config, protocol_feature_set&& pfs, const snapshot_reader_ptr& snapshot = nullptr);
+         void              init(controller::config config, const snapshot_reader_ptr& snapshot);
+         void              init(controller::config config, const genesis_state& genesis);
+         void              init(controller::config config);
+         void              init(controller::config config, protocol_feature_set&& pfs, const snapshot_reader_ptr& snapshot);
+         void              init(controller::config config, protocol_feature_set&& pfs, const genesis_state& genesis);
+         void              init(controller::config config, protocol_feature_set&& pfs);
          void              execute_setup_policy(const setup_policy policy);
 
          void              close();
-         void              open( protocol_feature_set&& pfs, const snapshot_reader_ptr& snapshot);
-         void              open( const snapshot_reader_ptr& snapshot);
+         template <typename Lambda>
+         void              open( protocol_feature_set&& pfs, fc::optional<chain_id_type> expected_chain_id, Lambda lambda );
+         void              open( protocol_feature_set&& pfs, const snapshot_reader_ptr& snapshot );
+         void              open( protocol_feature_set&& pfs, const genesis_state& genesis );
+         void              open( protocol_feature_set&& pfs, fc::optional<chain_id_type> expected_chain_id = {} );
+         void              open( const snapshot_reader_ptr& snapshot );
+         void              open( const genesis_state& genesis );
+         void              open( fc::optional<chain_id_type> expected_chain_id = {} );
          bool              is_same_chain( base_tester& other );
 
          virtual signed_block_ptr produce_block( fc::microseconds skip_time = fc::milliseconds(config::block_interval_ms) ) = 0;
@@ -113,7 +181,7 @@ namespace eosio { namespace testing {
          void                 produce_blocks_for_n_rounds(const uint32_t num_of_rounds = 1);
          // Produce minimal number of blocks as possible to spend the given time without having any producer become inactive
          void                 produce_min_num_of_blocks_to_spend_time_wo_inactive_prod(const fc::microseconds target_elapsed_time = fc::microseconds());
-         signed_block_ptr     push_block(signed_block_ptr b);
+         void                 push_block(signed_block_ptr b);
 
          /**
           * These transaction IDs represent transactions available in the head chain state as scheduled
@@ -125,9 +193,12 @@ namespace eosio { namespace testing {
           * @return
           */
          vector<transaction_id_type> get_scheduled_transactions() const;
+         unapplied_transaction_queue& get_unapplied_transaction_queue() { return unapplied_transactions; }
 
          transaction_trace_ptr    push_transaction( packed_transaction& trx, fc::time_point deadline = fc::time_point::maximum(), uint32_t billed_cpu_time_us = DEFAULT_BILLED_CPU_TIME_US );
          transaction_trace_ptr    push_transaction( signed_transaction& trx, fc::time_point deadline = fc::time_point::maximum(), uint32_t billed_cpu_time_us = DEFAULT_BILLED_CPU_TIME_US, bool no_throw = false );
+
+         [[nodiscard]]
          action_result            push_action(action&& cert_act, uint64_t authorizer); // TODO/QUESTION: Is this needed?
 
          transaction_trace_ptr    push_action( const account_name& code,
@@ -169,12 +240,16 @@ namespace eosio { namespace testing {
          }
 
          void                  set_before_preactivate_bios_contract();
+         void                  set_before_producer_authority_bios_contract();
          void                  set_bios_contract();
-         vector<producer_key>  get_producer_keys( const vector<account_name>& producer_names )const;
-         transaction_trace_ptr set_producers(const vector<account_name>& producer_names);
 
-         void link_authority( account_name account, account_name code,  permission_name req, action_name type = "" );
-         void unlink_authority( account_name account, account_name code, action_name type = "" );
+         vector<producer_authority>  get_producer_authorities( const vector<account_name>& producer_names )const;
+         transaction_trace_ptr       set_producers(const vector<account_name>& producer_names);
+         transaction_trace_ptr       set_producer_schedule(const vector<producer_authority>& schedule);
+         transaction_trace_ptr       set_producers_legacy(const vector<account_name>& producer_names);
+
+         void link_authority( account_name account, account_name code,  permission_name req, action_name type = {} );
+         void unlink_authority( account_name account, account_name code, action_name type = {} );
          void set_authority( account_name account, permission_name perm, authority auth,
                                      permission_name parent, const vector<permission_level>& auths, const vector<private_key_type>& keys );
          void set_authority( account_name account, permission_name perm, authority auth,
@@ -212,12 +287,17 @@ namespace eosio { namespace testing {
          }
 
          template< typename KeyType = fc::ecc::private_key_shim >
-         static private_key_type get_private_key( name keyname, string role = "owner" ) {
-            return private_key_type::regenerate<KeyType>(fc::sha256::hash(string(keyname)+role));
+         static auto get_private_key( name keyname, string role = "owner" ) {
+            auto secret = fc::sha256::hash(keyname.to_string() + role);
+            if constexpr (std::is_same_v<KeyType, mock::webauthn_private_key>) {
+               return mock::webauthn_private_key::regenerate(secret);
+            } else {
+               return private_key_type::regenerate<KeyType>(secret);
+            }
          }
 
          template< typename KeyType = fc::ecc::private_key_shim >
-         static public_key_type get_public_key( name keyname, string role = "owner" ) {
+         static auto get_public_key( name keyname, string role = "owner" ) {
             return get_private_key<KeyType>( keyname, role ).get_public_key();
          }
 
@@ -247,7 +327,7 @@ namespace eosio { namespace testing {
                                                              const symbol&       asset_symbol,
                                                              const account_name& account ) const;
 
-         vector<char> get_row_by_account( uint64_t code, uint64_t scope, uint64_t table, const account_name& act ) const;
+         vector<char> get_row_by_account( name code, name scope, name table, const account_name& act ) const;
 
          map<account_name, block_id_type> get_last_produced_block_map()const { return last_produced_block; };
          void set_last_produced_block_map( const map<account_name, block_id_type>& lpb ) { last_produced_block = lpb; }
@@ -316,6 +396,38 @@ namespace eosio { namespace testing {
          void preactivate_protocol_features(const vector<digest_type> feature_digests);
          void preactivate_all_builtin_protocol_features();
 
+         static genesis_state default_genesis() {
+            genesis_state genesis;
+            genesis.initial_timestamp = fc::time_point::from_iso_string("2020-01-01T00:00:00.000");
+            genesis.initial_key = get_public_key( config::system_account_name, "active" );
+
+            return genesis;
+         }
+
+         static std::pair<controller::config, genesis_state> default_config(const fc::temp_directory& tempdir) {
+            controller::config cfg;
+            cfg.blocks_dir      = tempdir.path() / config::default_blocks_dir_name;
+            cfg.state_dir  = tempdir.path() / config::default_state_dir_name;
+            cfg.state_size = 1024*1024*16;
+            cfg.state_guard_size = 0;
+            cfg.reversible_cache_size = 1024*1024*8;
+            cfg.reversible_guard_size = 0;
+            cfg.contracts_console = true;
+            cfg.eosvmoc_config.cache_size = 1024*1024*8;
+
+            for(int i = 0; i < boost::unit_test::framework::master_test_suite().argc; ++i) {
+               if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--wabt"))
+                  cfg.wasm_runtime = chain::wasm_interface::vm_type::wabt;
+               else if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--eos-vm"))
+                  cfg.wasm_runtime = chain::wasm_interface::vm_type::eos_vm;
+               else if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--eos-vm-jit"))
+                  cfg.wasm_runtime = chain::wasm_interface::vm_type::eos_vm_jit;
+               else if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--eos-vm-oc"))
+                  cfg.wasm_runtime = chain::wasm_interface::vm_type::eos_vm_oc;
+            }
+            return {cfg, default_genesis()};
+         }
+
       protected:
          signed_block_ptr _produce_block( fc::microseconds skip_time, bool skip_pending_trxs = false );
          void             _start_block(fc::time_point block_time);
@@ -332,6 +444,8 @@ namespace eosio { namespace testing {
          controller::config                            cfg;
          map<transaction_id_type, transaction_receipt> chain_transactions;
          map<account_name, block_id_type>              last_produced_block;
+         unapplied_transaction_queue                   unapplied_transactions;
+
       public:
          vector<digest_type>                           protocol_features_to_be_activated_wo_preactivation;
    };
@@ -342,12 +456,42 @@ namespace eosio { namespace testing {
          init(policy, read_mode);
       }
 
+      tester(controller::config config, const genesis_state& genesis) {
+         init(config, genesis);
+      }
+
       tester(controller::config config) {
          init(config);
       }
 
-      tester(controller::config config, protocol_feature_set&& pfs) {
-         init(config, std::move(pfs));
+      tester(controller::config config, protocol_feature_set&& pfs, const genesis_state& genesis) {
+         init(config, std::move(pfs), genesis);
+      }
+
+      tester(const fc::temp_directory& tempdir, bool use_genesis) {
+         auto def_conf = default_config(tempdir);
+         cfg = def_conf.first;
+
+         if (use_genesis) {
+            init(cfg, def_conf.second);
+         }
+         else {
+            init(cfg);
+         }
+      }
+
+      template <typename Lambda>
+      tester(const fc::temp_directory& tempdir, Lambda conf_edit, bool use_genesis) {
+         auto def_conf = default_config(tempdir);
+         cfg = def_conf.first;
+         conf_edit(cfg);
+
+         if (use_genesis) {
+            init(cfg, def_conf.second);
+         }
+         else {
+            init(cfg);
+         }
       }
 
       signed_block_ptr produce_block( fc::microseconds skip_time = fc::milliseconds(config::block_interval_ms) )override {
@@ -355,7 +499,7 @@ namespace eosio { namespace testing {
       }
 
       signed_block_ptr produce_empty_block( fc::microseconds skip_time = fc::milliseconds(config::block_interval_ms) )override {
-         control->abort_block();
+         unapplied_transactions.add_aborted( control->abort_block() );
          return _produce_block(skip_time, true);
       }
 
@@ -384,165 +528,75 @@ namespace eosio { namespace testing {
       }
       controller::config vcfg;
 
-      static controller::config default_config() {
-         fc::temp_directory tempdir;
-         controller::config vcfg;
-         vcfg.blocks_dir      = tempdir.path() / std::string("v_").append(config::default_blocks_dir_name);
-         vcfg.state_dir  = tempdir.path() /  std::string("v_").append(config::default_state_dir_name);
-         vcfg.state_size = 1024*1024*8;
-         vcfg.state_guard_size = 0;
-         vcfg.reversible_cache_size = 1024*1024*8;
-         vcfg.reversible_guard_size = 0;
-         vcfg.contracts_console = false;
-         
-   		 const char* genesis_string = R"=====(
-{
-  "initial_timestamp": "2018-05-28T12:00:00.000",
-  "initial_key": "EOS1111111111111111111111111111111114T1Anm",
-  "code": "",
-  "abi": "",
-  "token_code": "",
-  "token_abi": "",
-  "initial_configuration": {
-    "max_block_net_usage": 1048576,
-    "target_block_net_usage_pct": 1000,
-    "max_transaction_net_usage": 524288,
-    "base_per_transaction_net_usage": 12,
-    "net_usage_leeway": 500,
-    "context_free_discount_net_usage_num": 20,
-    "context_free_discount_net_usage_den": 100,
-    "max_block_cpu_usage": 1000000,
-    "target_block_cpu_usage_pct": 1000,
-    "max_transaction_cpu_usage": 750000,
-    "min_transaction_cpu_usage": 100,
-    "max_transaction_lifetime": 3600,
-    "deferred_trx_expiration_window": 600,
-    "max_transaction_delay": 3888000,
-    "max_inline_action_size": 4096,
-    "max_inline_action_depth": 4,
-    "max_authority_depth": 6
-  },
-  "initial_account_list": [{
-      "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
-      "asset": "1000000000.0000 EOS",
-      "name": "eosforce"
-    },{
-      "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
-      "asset": "1000000.0000 EOS",
-      "name": "b1"
-    },{
-      "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
-      "asset": "1000000.0000 EOS",
-      "name": "force.test"
-    }
-  ],
-  "initial_producer_list": [{
-      "name": "eosforce",
-      "bpkey": "EOS7pquS6bwErdwb4dpcGLFQg8ovaovXicQsuvZYogT198Jy8CjLA",
-      "commission_rate": 10,
-      "url": ""
-    }
-  ]
-}
-)=====";
-
-	  	 vcfg.genesis = fc::json::from_string(genesis_string).as<genesis_state>();
-	  	 vcfg.genesis.initial_account_list[0].key = get_public_key( N(eosforce), "active" );
-	  	 vcfg.genesis.initial_account_list[2].key = get_public_key( N(force.test), "active" );
-	  	 vcfg.genesis.initial_producer_list[0].bpkey = get_public_key( N(eosforce), "active" );
-
-         //vcfg.genesis.initial_timestamp = fc::time_point::from_iso_string("2020-01-01T00:00:00.000");
-         vcfg.genesis.initial_key = get_public_key( config::system_account_name, "active" );
-         	
-         // load system contract
-     	{
-#include <System/System.wast.hpp>
-#include <System/System.abi.hpp>
-#include <System01/System01.wast.hpp>
-#include <System01/System01.abi.hpp>
-#include <eosio.token/eosio.token.wast.hpp>
-#include <eosio.token/eosio.token.abi.hpp>
-#include <eosio.msig/eosio.msig.wast.hpp>
-#include <eosio.msig/eosio.msig.abi.hpp>
-#include <eosio.bios/eosio.bios.wast.hpp>
-#include <eosio.bios/eosio.bios.abi.hpp>
-
-         std::vector<uint8_t> wasm;
-         abi_def abi;
-         		
-         wasm = wast_to_wasm(System_wast);
-         vcfg.System_code.assign(wasm.begin(), wasm.end());
-         abi = fc::json::from_string(System_abi).as<abi_def>();
-         vcfg.System_abi = fc::raw::pack(abi);
-         
-         wasm = wast_to_wasm(eosio_token_wast);
-         vcfg.token_code.assign(wasm.begin(), wasm.end());
-         abi  = fc::json::from_string(eosio_token_abi).as<abi_def>();
-         vcfg.token_abi = fc::raw::pack(abi);
-         
-         wasm = wast_to_wasm(System01_wast);
-         vcfg.System01_code.assign(wasm.begin(), wasm.end());
-         abi  = fc::json::from_string(System01_abi).as<abi_def>();
-         vcfg.System01_abi = fc::raw::pack(abi);
-         
-         wasm = wast_to_wasm(eosio_msig_wast);
-         vcfg.msig_code.assign(wasm.begin(), wasm.end());
-         abi  = fc::json::from_string(eosio_msig_abi).as<abi_def>();
-         vcfg.msig_abi = fc::raw::pack(abi);
-         
-         // wasm = wast_to_wasm(eosio_bios_wast);
-         // vcfg.bios_code.assign(wasm.begin(), wasm.end());
-         // abi  = fc::json::from_string(eosio_bios_abi).as<abi_def>();
-         // vcfg.bios_abi = fc::raw::pack(abi);
-/*         
-         ./libraries/chain/controller.cpp:782:      initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi, true);
-./libraries/chain/controller.cpp:783:      initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
-./libraries/chain/controller.cpp:1345:            initialize_contract(N(eosio), conf.System01_code, conf.System01_abi, true);
-./libraries/chain/controller.cpp:1351:            initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
-
-*/
-		}
-		
-         for(int i = 0; i < boost::unit_test::framework::master_test_suite().argc; ++i) {
-            if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--wavm"))
-               vcfg.wasm_runtime = chain::wasm_interface::vm_type::wavm;
-            else if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--wabt"))
-               vcfg.wasm_runtime = chain::wasm_interface::vm_type::wabt;
-         }
-         return vcfg;
-      }
-
       validating_tester(const flat_set<account_name>& trusted_producers = flat_set<account_name>()) {
-         vcfg = default_config();
+         auto def_conf = default_config(tempdir);
 
+         vcfg = def_conf.first;
+         config_validator(vcfg);
          vcfg.trusted_producers = trusted_producers;
 
-         validating_node = std::make_unique<controller>(vcfg, make_protocol_feature_set());
-         validating_node->add_indices();
-         validating_node->startup( []() { return false; } );
+         validating_node = create_validating_node(vcfg, def_conf.second, true);
 
-         init();
+         init(def_conf.first, def_conf.second);
+         execute_setup_policy(setup_policy::full);
       }
 
-      validating_tester(controller::config config) {
-         FC_ASSERT( config.blocks_dir.filename().generic_string() != "."
-                    && config.state_dir.filename().generic_string() != ".", "invalid path names in controller::config" );
+      static void config_validator(controller::config& vcfg) {
+         FC_ASSERT( vcfg.blocks_dir.filename().generic_string() != "."
+                    && vcfg.state_dir.filename().generic_string() != ".", "invalid path names in controller::config" );
 
-         vcfg = config;
          vcfg.blocks_dir = vcfg.blocks_dir.parent_path() / std::string("v_").append( vcfg.blocks_dir.filename().generic_string() );
          vcfg.state_dir  = vcfg.state_dir.parent_path() / std::string("v_").append( vcfg.state_dir.filename().generic_string() );
 
-         validating_node = std::make_unique<controller>(vcfg, make_protocol_feature_set());
-         validating_node->add_indices();
-         validating_node->startup( []() { return false; } );
+         vcfg.contracts_console = false;
+      }
 
-         init(config);
+      static unique_ptr<controller> create_validating_node(controller::config vcfg, const genesis_state& genesis, bool use_genesis) {
+         unique_ptr<controller> validating_node = std::make_unique<controller>(vcfg, make_protocol_feature_set(), genesis.compute_chain_id());
+         validating_node->add_indices();
+         if (use_genesis) {
+            validating_node->startup( []() { return false; }, genesis );
+         }
+         else {
+            validating_node->startup( []() { return false; } );
+         }
+         return validating_node;
+      }
+
+      validating_tester(const fc::temp_directory& tempdir, bool use_genesis) {
+         auto def_conf = default_config(tempdir);
+         vcfg = def_conf.first;
+         config_validator(vcfg);
+         validating_node = create_validating_node(vcfg, def_conf.second, use_genesis);
+
+         if (use_genesis) {
+            init(def_conf.first, def_conf.second);
+         }
+         else {
+            init(def_conf.first);
+         }
+      }
+
+      template <typename Lambda>
+      validating_tester(const fc::temp_directory& tempdir, Lambda conf_edit, bool use_genesis) {
+         auto def_conf = default_config(tempdir);
+         conf_edit(def_conf.first);
+         vcfg = def_conf.first;
+         config_validator(vcfg);
+         validating_node = create_validating_node(vcfg, def_conf.second, use_genesis);
+
+         if (use_genesis) {
+            init(def_conf.first, def_conf.second);
+         }
+         else {
+            init(def_conf.first);
+         }
       }
 
       signed_block_ptr produce_block( fc::microseconds skip_time = fc::milliseconds(config::block_interval_ms) )override {
          auto sb = _produce_block(skip_time, false);
-         auto bs = validating_node->create_block_state_future( sb );
-         validating_node->push_block( bs );
+         auto bsf = validating_node->create_block_state_future( sb );
+         validating_node->push_block( bsf, forked_branch_callback{}, trx_meta_cache_lookup{} );
 
          return sb;
       }
@@ -553,14 +607,14 @@ namespace eosio { namespace testing {
 
       void validate_push_block(const signed_block_ptr& sb) {
          auto bs = validating_node->create_block_state_future( sb );
-         validating_node->push_block( bs );
+         validating_node->push_block( bs, forked_branch_callback{}, trx_meta_cache_lookup{} );
       }
 
       signed_block_ptr produce_empty_block( fc::microseconds skip_time = fc::milliseconds(config::block_interval_ms) )override {
-         control->abort_block();
+         unapplied_transactions.add_aborted( control->abort_block() );
          auto sb = _produce_block(skip_time, true);
-         auto bs = validating_node->create_block_state_future( sb );
-         validating_node->push_block( bs );
+         auto bsf = validating_node->create_block_state_future( sb );
+         validating_node->push_block( bsf, forked_branch_callback{}, trx_meta_cache_lookup{} );
 
          return sb;
       }
@@ -582,7 +636,7 @@ namespace eosio { namespace testing {
                hbh.producer == vn_hbh.producer;
 
         validating_node.reset();
-        validating_node = std::make_unique<controller>(vcfg, make_protocol_feature_set());
+        validating_node = std::make_unique<controller>(vcfg, make_protocol_feature_set(), control->get_chain_id());
         validating_node->add_indices();
         validating_node->startup( []() { return false; } );
 

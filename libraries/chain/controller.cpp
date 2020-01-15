@@ -60,7 +60,7 @@ using controller_index_set = index_set<
    table_id_multi_index,
    code_index,
    action_fee_object_index,
-   config_data_object_index
+   config_data_object_index,
    database_header_multi_index
 >;
 
@@ -350,8 +350,8 @@ struct controller_impl {
                       &BOOST_PP_CAT(apply_, BOOST_PP_CAT(contract, BOOST_PP_CAT(_,action) ) ) )
 
    // add a asset if system account is change, if it changed, next SET_APP_HANDLER need also change
-   BOOST_STATIC_ASSERT(N(eosio)       == config::system_account_name);
-   BOOST_STATIC_ASSERT(N(eosio.token) == config::token_account_name);
+   BOOST_STATIC_ASSERT(config::system_account_name == N(eosio));
+   BOOST_STATIC_ASSERT(config::token_account_name  == N(eosio.token));
 
    SET_APP_HANDLER( eosio, eosio, newaccount );
    SET_APP_HANDLER( eosio, eosio, setcode );
@@ -469,7 +469,7 @@ struct controller_impl {
     */
    void initialize_blockchain_state(const genesis_state& genesis) {
       wlog( "Initializing new blockchain with genesis state" );
-      producer_schedule_type initial_schedule{ 0, {} };
+      legacy::producer_schedule_type initial_schedule{ 0, {} };
 
       initial_schedule.producers.reserve(config::max_producers);
       for( const auto& producer : conf.genesis.initial_producer_list ) {
@@ -477,10 +477,10 @@ struct controller_impl {
       }
 
       block_header_state genheader;
-      genheader.active_schedule                = initial_schedule;
-      genheader.pending_schedule.schedule      = initial_schedule;
+      genheader.active_schedule                = producer_authority_schedule{initial_schedule};
+      genheader.pending_schedule.schedule      = producer_authority_schedule{initial_schedule};
       // NOTE: if wtmsig block signatures are enabled at genesis time this should be the hash of a producer authority schedule
-      genheader.pending_schedule.schedule_hash = fc::sha256::hash(initial_legacy_schedule);
+      genheader.pending_schedule.schedule_hash = fc::sha256::hash(initial_schedule);
       genheader.header.timestamp               = genesis.initial_timestamp;
       genheader.header.action_mroot            = genesis.compute_chain_id();
       genheader.id                             = genheader.header.id();
@@ -491,7 +491,7 @@ struct controller_impl {
       head->activated_protocol_features = std::make_shared<protocol_feature_activation_set>();
       head->block = std::make_shared<signed_block>(genheader.header);
       db.set_revision( head->block_num );
-      initialize_database(genesis);
+      initialize_database();
    }
 
    void replay(std::function<bool()> shutdown) {
@@ -1031,7 +1031,7 @@ struct controller_impl {
       }
       db.create<account_object>([&](auto& a) {
          a.name = name;
-         a.creation_date = initial_timestamp;
+         a.creation_date = conf.genesis.initial_timestamp;
 
          if( name == config::system_account_name ) {
             // The initial eosio ABI value affects consensus; see  https://github.com/EOSIO/eos/issues/7794
@@ -1046,9 +1046,9 @@ struct controller_impl {
       });
 
       const auto& owner_permission  = authorization.create_permission(name, config::owner_name, 0,
-                                                                      owner, initial_timestamp );
+                                                                      owner, conf.genesis.initial_timestamp );
       const auto& active_permission = authorization.create_permission(name, config::active_name, owner_permission.id,
-                                                                      active, initial_timestamp );
+                                                                      active, conf.genesis.initial_timestamp );
 
       resource_limits.initialize_account(name);
 
@@ -1076,7 +1076,7 @@ struct controller_impl {
                          producer.name,
                          producer.bpkey,
                          producer.commission_rate,
-                         producer.url});
+                         producer.url });
       }
    }
 
@@ -1133,7 +1133,7 @@ struct controller_impl {
    }
 
    // initialize_contract init sys contract
-   void initialize_contract( const uint64_t& contract_account_name,
+   void initialize_contract( const name& contract_account_name,
                              const bytes& code,
                              const bytes& abi,
                              const bool privileged = false ) {
@@ -1186,8 +1186,10 @@ struct controller_impl {
 
    // initialize_eos_stats init stats for eos token
    void initialize_eos_stats() {
-      const auto& sym = symbol(CORE_SYMBOL).to_symbol_code();
-      memory_db(self).insert(config::token_account_name, sym, N(stat),
+      const auto& sym = symbol(CORE_SYMBOL).to_symbol_code();;
+      memory_db(self).insert(config::token_account_name,
+                             name{sym},
+                             N(stat),
                              config::token_account_name,
                              memory_db::currency_stats{
                                    asset(10000000),
@@ -1209,6 +1211,8 @@ struct controller_impl {
       db.modify( tapos_block_summary, [&]( auto& bs ) {
          bs.block_id = head->id;
       });
+
+      const auto& genesis = conf.genesis;
 
       genesis.initial_configuration.validate();
       db.create<global_property_object>([&genesis,&chain_id=this->chain_id](auto& gpo ){
@@ -1250,8 +1254,8 @@ struct controller_impl {
       auto active_producers_authority = authority(1, {}, {});
       active_producers_authority.accounts.push_back({{config::system_account_name, config::active_name}, 1});
 
-      create_native_account( genesis.initial_timestamp, config::null_account_name, empty_authority, empty_authority );
-      create_native_account( genesis.initial_timestamp, config::producers_account_name, empty_authority, active_producers_authority );
+      create_native_account( config::null_account_name, empty_authority, empty_authority );
+      create_native_account( config::producers_account_name, empty_authority, active_producers_authority );
       const auto& active_permission       = authorization.get_permission({config::producers_account_name, config::active_name});
       const auto& majority_permission     = authorization.create_permission( config::producers_account_name,
                                                                              config::majority_producers_permission_name,
@@ -1588,7 +1592,7 @@ struct controller_impl {
       EOS_ASSERT(cstatus_tid != nullptr, fork_database_exception, "get chainstatus fatal");
 
       const auto& idx = db.get_index<key_value_index, by_scope_primary>();
-      const auto it = idx.lower_bound(boost::make_tuple(cstatus_tid->id, N(chainstatus)));
+      const auto it = idx.lower_bound(boost::make_tuple(cstatus_tid->id, N(chainstatus).to_uint64_t()));
 
       EOS_ASSERT(( it != idx.end()), fork_database_exception, "get chainstatus fatal by no stat");
 
@@ -1629,7 +1633,7 @@ struct controller_impl {
    {
       EOS_ASSERT(deadline != fc::time_point(), transaction_exception, "deadline cannot be uninitialized");
       //EOS_ASSERT(trx->trx.context_free_actions.size()==0, transaction_exception, "context free actions size should be zero!");
-      check_action(trx->packed_trx->get_transaction().actions);
+      check_action(trx->packed_trx()->get_transaction().actions);
 
       transaction_trace_ptr trace;
       try {
@@ -1680,7 +1684,7 @@ struct controller_impl {
                if( check_auth ) {
                   authorization.check_authorization(
                         trn.actions,
-                        recovered_keys,
+                        trx->recovered_keys(),
                         {},
                         trx_context.delay,
                         [&trx_context](){ trx_context.checktime(); },
@@ -1697,9 +1701,11 @@ struct controller_impl {
                // keep
                if( !is_onfee_act ) {
                   try {
-                     auto onftrx = std::make_shared<transaction_metadata>(
-                           get_on_fee_transaction(trn.fee, trn.actions[0].authorization[0].actor));
-                     onftrx->implicit = true;
+                     transaction_metadata_ptr onftrx = 
+                        transaction_metadata::create_no_recover_keys(
+                           packed_transaction( get_on_fee_transaction(trn.fee, trn.actions[0].authorization[0].actor) ),
+                           transaction_metadata::trx_type::implicit );
+
                      auto onftrace = push_transaction(onftrx, fc::time_point::maximum(),
                                                       config::default_min_transaction_cpu_usage, true);
                      if( onftrace->except ) throw *onftrace->except;
@@ -1820,7 +1826,7 @@ struct controller_impl {
          auto db = memory_db(self);
          memory_db::account_info acc;
          if (!db.get(config::system_account_name, config::system_account_name, N(accounts),
-                     config::system_account_name, acc)) {
+                     config::system_account_name.to_uint64_t(), acc)) {
             db.insert(config::system_account_name, config::system_account_name, N(accounts),
                       config::system_account_name,
                       memory_db::account_info{config::system_account_name, eosio::chain::asset(0)});
@@ -1833,7 +1839,7 @@ struct controller_impl {
          memory_db::account_info acc;
          if (!db.get(config::system_account_name, 
                      config::system_account_name, N(accounts), 
-                     config::producers_account_name, acc)) {
+                     config::producers_account_name.to_uint64_t(), acc)) {
             db.insert(config::system_account_name, config::system_account_name, N(accounts),
                       config::producers_account_name, memory_db::account_info{
                          config::producers_account_name, 

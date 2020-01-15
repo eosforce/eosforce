@@ -39,7 +39,7 @@ read_only::get_vote_rewards_result read_only::get_vote_rewards( const read_only:
 
    // 1. Need BP total voteage and reward_pool info
    chain::memory_db::bp_info bp_data;
-   EOS_ASSERT( get_table_row_by_primary_key( sys_account, sys_account, N(bps), p.bp_name, bp_data ), 
+   EOS_ASSERT( get_table_row_by_primary_key( sys_account, sys_account, N(bps), p.bp_name.to_uint64_t(), bp_data ), 
                chain::contract_table_query_exception,
                "cannot find bp info by name ${n}", ("n", p.bp_name) );
 
@@ -57,7 +57,7 @@ read_only::get_vote_rewards_result read_only::get_vote_rewards( const read_only:
    // 2. Need calc voter current vote voteage
    chain::memory_db::vote_info curr_vote_data;
    const auto is_has_curr_vote = get_table_row_by_primary_key(
-         sys_account, p.voter, N(votes), p.bp_name, curr_vote_data );
+         sys_account, p.voter, N(votes), p.bp_name.to_uint64_t(), curr_vote_data );
    if( is_has_curr_vote ) {
       //ilog( "get current vote data : ${d}", ("d", curr_vote_data) );
       const auto curr_vote_assetage = 
@@ -71,7 +71,7 @@ read_only::get_vote_rewards_result read_only::get_vote_rewards( const read_only:
 
    // 3. Need calc the sum of voter 's fix-time vote voteage
    walk_table_by_seckey<chain::memory_db::votefix_info>( 
-      sys_account, p.voter, N(fixvotes), p.bp_name, 
+      sys_account, p.voter, N(fixvotes), p.bp_name.to_uint64_t(), 
       [&]( unsigned int c, const chain::memory_db::votefix_info& v ) -> bool{
          //ilog("walk fix ${n} : ${data}", ("n", c)("data", v));
          const auto fix_votepower_age =

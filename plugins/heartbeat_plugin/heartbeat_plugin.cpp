@@ -131,8 +131,8 @@ T dejsonify(const string& s) {
 
 #define LOAD_VALUE_SET(options, name, container) \
 if( options.count(name) ) { \
-   const std::vector<std::string>& ops = options[name].as<std::vector<std::string>>(); \
-   std::copy(ops.begin(), ops.end(), std::inserter(container, container.end())); \
+   const auto& ops = options[name].as<std::vector<std::string>>(); \
+   std::transform(ops.begin(), ops.end(), std::inserter(container, container.end()), [](const std::string& n){ return string_to_name(n); }); \
 }
 
 void heartbeat_plugin::plugin_initialize(const boost::program_options::variables_map& options)
@@ -187,20 +187,20 @@ void heartbeat_plugin::plugin_initialize(const boost::program_options::variables
          try {
             auto delim = key_spec_pair.find("=");
             EOS_ASSERT(delim != std::string::npos, plugin_config_exception, "Missing \"=\" in the key spec pair");
-            auto pub_key_str = key_spec_pair.substr(0, delim);
+            auto pub_key = string_to_name(key_spec_pair.substr(0, delim).c_str());
             auto spec_str = key_spec_pair.substr(delim + 1);
 
             auto spec_delim = spec_str.find(":");
             EOS_ASSERT(spec_delim != std::string::npos, plugin_config_exception, "Missing \":\" in the key spec pair");
             auto spec_type_str = spec_str.substr(0, spec_delim);
-            auto spec_data = spec_str.substr(spec_delim + 1);
+            auto spec_data = eosio::chain::name{spec_str.substr(spec_delim + 1)};
 
             //auto pubkey = public_key_type(pub_key_str);
 
             if (spec_type_str == "KEY") {
-               my->_bp_mappings[pub_key_str] = spec_data;
+               my->_bp_mappings[pub_key] = spec_data;
             } else if (spec_type_str == "KEOSD") {
-               my->_bp_mappings[pub_key_str] = spec_data;
+               my->_bp_mappings[pub_key] = spec_data;
             }
          } catch (...) {
             elog("Malformed signature provider: \"${val}\", ignoring!", ("val", key_spec_pair));
@@ -241,7 +241,7 @@ void heartbeat_plugin_impl::schedule_heartbeat_loop() {
    auto deadline = get_num_config_on_chain( chain.db(), config::heartbeat_typ::hb_intval, 600 );
    _timer.expires_from_now( boost::posix_time::seconds( deadline ));
 
-   _timer.async_wait([&chain,weak_this,cid=++_timer_corelation_id](const boost::system::error_code& ec) {
+   _timer.async_wait([weak_this,cid=++_timer_corelation_id](const boost::system::error_code& ec) {
       auto self = weak_this.lock();
       if (self && ec != boost::asio::error::operation_aborted && cid == self->_timer_corelation_id) {
          // pending_block_state expected, but can't assert inside async_wait
@@ -312,9 +312,9 @@ void heartbeat_plugin_impl::heartbeat() {
       auto hbtrace = chain.push_transaction(hb_trx, fc::time_point::maximum(),
                                        config::default_min_transaction_cpu_usage);*/
       next_function<chain_apis::read_write::push_transaction_results> next = {};
-      auto hb_trx = std::make_shared<transaction_metadata>(get_heartbeat_transaction());
-      app().get_method<incoming::methods::transaction_async>()(hb_trx, true, 
-        [this, next](const fc::static_variant<fc::exception_ptr, transaction_trace_ptr>& result) -> void{ });
+      auto hb_trx = get_heartbeat_transaction();
+      app().get_method<incoming::methods::transaction_async>()(std::make_shared<packed_transaction>(hb_trx), true,
+         [](const fc::static_variant<fc::exception_ptr, transaction_trace_ptr>& result) -> void {});
    } catch( const fc::exception& e ) {
       //EOS_ASSERT(false, transaction_exception, "heartbeart transaction failed, exception: ${e}", ( "e", e ));
       elog("heartbeart transaction failed, exception: ${e}", ( "e", e ));

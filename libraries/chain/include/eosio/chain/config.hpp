@@ -21,14 +21,14 @@ const static auto default_trx_size           = 100*1024ll;
 const static auto default_state_guard_size      =    128*1024*1024ll;
 
 
-const static uint64_t system_account_name    = N(eosio);
-const static uint64_t null_account_name      = N(eosio.null);
-const static uint64_t producers_account_name = N(eosio.prods);
-const static uint64_t chain_config_name      = N(force.config);
-const static uint64_t token_account_name     = N(eosio.token);
-const static uint64_t msig_account_name      = N(eosio.msig);
-const static uint64_t bios_account_name      = N(eosio.bios);
-const static uint64_t eoslock_account_name   = N(eosio.lock);
+constexpr static name system_account_name    { N(eosio) };
+constexpr static name null_account_name      { N(eosio.null) };
+constexpr static name producers_account_name { N(eosio.prods) };
+constexpr static name chain_config_name      { N(force.config) };
+constexpr static name token_account_name     { N(eosio.token) };
+constexpr static name msig_account_name      { N(eosio.msig) };
+constexpr static name bios_account_name      { N(eosio.bios) };
+constexpr static name eoslock_account_name   { N(eosio.lock) };
 
 // Active permission of producers account requires greater than 2/3 of the producers to authorize
 const static name majority_producers_permission_name { N(prod.major) }; // greater than 1/2 of producers needed to authorize

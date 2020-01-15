@@ -34,7 +34,7 @@ namespace eosio {
 namespace chain_apis {
 
 std::vector<fc::variant> read_only::get_table_rows_by_primary_to_json( const name& code,
-                                                                       const uint64_t& scope,
+                                                                       const name& scope,
                                                                        const name& table,
                                                                        const abi_serializer& abis,
                                                                        const std::size_t max_size ) const {

@@ -65,9 +65,9 @@ class producer_heartbeat_plugin_impl {
       int interval;
       int retry_max = 0;
       uint8_t curr_retry = 0;
-      account_name heartbeat_contract = "";
-      account_name heartbeat_blacklist_contract = "";
-      std::string heartbeat_permission = "";
+      account_name heartbeat_contract;
+      account_name heartbeat_blacklist_contract;
+      permission_name heartbeat_permission;
       std::string oncall = "telegram:nobody";
       account_name producer_name;
       std::string actor_blacklist_hash = "";
@@ -146,7 +146,7 @@ class producer_heartbeat_plugin_impl {
             action act;
             act.account = heartbeat_contract;
             act.name = N(heartbeat);
-            act.authorization = vector<permission_level>{{producer_name,heartbeat_permission}};
+            act.authorization = vector<permission_level>{{producer_name, heartbeat_permission}};
 
             auto action_type = eosio_serializer.get_action_type( name{"heartbeat"} );
 
@@ -161,7 +161,7 @@ class producer_heartbeat_plugin_impl {
             trx.set_reference_block(cc.head_block_id());
             trx.sign(_heartbeat_private_key, chainid);
             curr_retry = retry;
-            plugin.accept_transaction( packed_transaction(trx),[=](const fc::static_variant<fc::exception_ptr, transaction_trace_ptr>& result){
+            plugin.accept_transaction( std::make_shared<packed_transaction>(trx),[=](const fc::static_variant<fc::exception_ptr, transaction_trace_ptr>& result){
                    if (result.contains<fc::exception_ptr>()) {
                      if(curr_retry < retry_max - 1){
                         elog("heartbeat failed - retry: ${err}", ("err", result.get<fc::exception_ptr>()->to_detail_string()));
@@ -315,14 +315,14 @@ void producer_heartbeat_plugin::plugin_initialize(const variables_map& options) 
          my->retry_max = options.at( "heartbeat-retry-max" ).as<int>();
       }
       if( options.count( "heartbeat-contract" )) {
-         my->heartbeat_contract = options.at( "heartbeat-contract" ).as<string>();
+         my->heartbeat_contract = string_to_name( options.at( "heartbeat-contract" ).as<string>().c_str() );
       }
       if( options.count( "heartbeat-permission" )) {
-         my->heartbeat_permission = options.at( "heartbeat-permission" ).as<string>();
+         my->heartbeat_permission = string_to_name( options.at( "heartbeat-permission" ).as<string>().c_str() );
       }
       if(options.count("heartbeat-user")){
-         const std::string ops = options["heartbeat-user"].as<std::string>();
-         my->producer_name = ops;
+         const auto ops = options["heartbeat-user"].as<std::string>();
+         my->producer_name = string_to_name( ops.c_str() );
       }
       if(options.count("chain-state-db-size-mb")){
          my->state_db_size = options["chain-state-db-size-mb"].as<uint64_t>();

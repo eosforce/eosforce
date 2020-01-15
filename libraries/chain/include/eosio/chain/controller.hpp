@@ -83,7 +83,7 @@ namespace eosio { namespace chain {
             bool                     allow_ram_billing_in_notify = false;
             uint32_t                 maximum_variable_signature_length = chain::config::default_max_variable_signature_length;
             bool                     disable_all_subjective_mitigations = false; //< for testing purposes only
-
+            genesis_state            genesis;
             wasm_interface::vm_type  wasm_runtime = chain::config::default_wasm_runtime;
             eosvmoc::config          eosvmoc_config;
             bool                     eosvmoc_tierup         = false;

@@ -529,26 +529,26 @@ void apply_eosio_onfee( apply_context& context ) {
    // context.require_authorization(data.actor);
 
    // accounts_table
-   auto acnts_tbl = native_multi_index<N(accounts), memory_db::account_info>{
+   auto acnts_tbl = native_multi_index<N(accounts).to_uint64_t(), memory_db::account_info>{
          context, config::system_account_name, config::system_account_name
    };
    memory_db::account_info account_info_data;
-   acnts_tbl.get(data.actor, account_info_data, "account is not found in accounts table");
+   acnts_tbl.get(data.actor.to_uint64_t(), account_info_data, "account is not found in accounts table");
    eosio_contract_assert(fee <= account_info_data.available, "overdrawn available balance");
 
-   acnts_tbl.modify(acnts_tbl.find_itr(data.actor), account_info_data, 0,
+   acnts_tbl.modify(acnts_tbl.find_itr(data.actor.to_uint64_t()), account_info_data, name{},
                     [fee]( memory_db::account_info& a ) {
                        a.available -= fee;
                     });
 
    if( data.bpname != name{} ) {
       // bps_table
-      auto bps_tbl = native_multi_index<N(bps), memory_db::bp_info>{
+      auto bps_tbl = native_multi_index<N(bps).to_uint64_t(), memory_db::bp_info>{
             context, config::system_account_name, config::system_account_name
       };
       memory_db::bp_info bp_info_data;
       bps_tbl.get(data.bpname, bp_info_data, "bpname is not registered");
-      bps_tbl.modify(bps_tbl.find_itr(data.bpname), bp_info_data, 0, [fee](memory_db::bp_info& a) {
+      bps_tbl.modify(bps_tbl.find_itr(data.bpname.to_uint64_t()), bp_info_data, name{}, [fee](memory_db::bp_info& a) {
          a.rewards_pool += fee;
       });
    }
@@ -563,14 +563,14 @@ void apply_eosio_voteagefee( apply_context& context ) {
    // context.require_authorization(data.actor);
 
    // accounts_table
-   auto acnts_tbl = native_multi_index<N(accounts), memory_db::account_info>{
+   auto acnts_tbl = native_multi_index<N(accounts).to_uint64_t(), memory_db::account_info>{
          context, config::system_account_name, config::system_account_name
    };
    memory_db::account_info account_info_data;
    acnts_tbl.get(data.actor, account_info_data, "account is not found in accounts table");
 
    // bps_table
-   auto bps_tbl = native_multi_index<N(bps), memory_db::bp_info>{
+   auto bps_tbl = native_multi_index<N(bps).to_uint64_t(), memory_db::bp_info>{
          context, config::system_account_name, config::system_account_name
    };
    memory_db::bp_info bp_info_data;
@@ -589,7 +589,7 @@ void apply_eosio_voteagefee( apply_context& context ) {
          ("voteage_update_height", bp_info_data.voteage_update_height) 
          ("newest_total_voteage", newest_total_voteage));*/
    
-   auto votes_tbl = native_multi_index<N(votes), memory_db::vote_info>{
+   auto votes_tbl = native_multi_index<N(votes).to_uint64_t(), memory_db::vote_info>{
          context, config::system_account_name, data.actor
    };
    memory_db::vote_info vote_info_data;
@@ -604,12 +604,12 @@ void apply_eosio_voteagefee( apply_context& context ) {
       ("newest_voteage", newest_voteage));*/
    eosio_contract_assert(voteage > 0 && voteage <= newest_voteage, "voteage must be greater than zero and have sufficient voteage!");
    
-   votes_tbl.modify(votes_tbl.find_itr(data.bpname), vote_info_data, 0, [&]( memory_db::vote_info& v ) {
+   votes_tbl.modify(votes_tbl.find_itr(data.bpname.to_uint64_t()), vote_info_data, name{}, [&]( memory_db::vote_info& v ) {
       v.voteage = newest_voteage - voteage;
       v.voteage_update_height = curr_block_num;
    });
    
-   bps_tbl.modify(bps_tbl.find_itr(data.bpname), bp_info_data, 0, [&]( memory_db::bp_info& b ) {
+   bps_tbl.modify(bps_tbl.find_itr(data.bpname.to_uint64_t()), bp_info_data, name{}, [&]( memory_db::bp_info& b ) {
       b.total_voteage = static_cast<int64_t>(newest_total_voteage - voteage);
       b.voteage_update_height = curr_block_num;
    });

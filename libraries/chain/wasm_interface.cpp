@@ -1121,7 +1121,7 @@ public:
    }
    
    int64_t get_num_config_on_chain( uint64_t typ ) {
-      return context.get_num_config_on_chain(typ);
+      return context.get_num_config_on_chain( name{typ} );
    }
 
    void eosio_exit(int32_t code) {

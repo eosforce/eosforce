@@ -293,8 +293,9 @@ inline int64_t get_account_ram_limit( database& db, const account_name& name ) {
    const auto ok = memory_db{db}.get(
          config::system_account_name,
          config::system_account_name,
-         N(vote4ramsum),
-         name, vote_info);
+         { N(vote4ramsum) },
+         name.to_uint64_t(),
+         vote_info );
 
    if(!ok) {
       return init_ram_size;

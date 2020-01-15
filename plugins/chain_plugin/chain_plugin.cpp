@@ -2417,7 +2417,7 @@ read_only::get_account_results read_only::get_account( const get_account_params&
             boost::make_tuple( config::system_account_name, config::system_account_name, N(accounts) ));
       if( t_id != nullptr ) {
          const auto &idx = d.get_index<key_value_index, by_scope_primary>();
-         auto it = idx.find(boost::make_tuple( t_id->id, params.account_name ));
+         auto it = idx.find(boost::make_tuple( t_id->id, params.account_name.to_uint64_t() ));
          if( it != idx.end() && it->value.size() >= sizeof(memory_db::account_info) ) {
             memory_db::account_info acc_info;
             fc::datastream<const char *> ds(it->value.data(), it->value.size());

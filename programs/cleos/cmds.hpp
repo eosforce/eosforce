@@ -28,7 +28,7 @@ fc::variant call( const std::string& path, const T& v );
 template<>
 fc::variant call( const std::string& url, const std::string& path);
 
-void send_actions(std::vector<chain::action>&& actions, packed_transaction::compression_type compression = packed_transaction::none );
+void send_actions(std::vector<chain::action>&& actions, packed_transaction::compression_type compression = packed_transaction::compression_type::none );
 void add_standard_transaction_options(CLI::App* cmd, string default_permission = "");
 chain::action create_action(const vector<permission_level>& authorization, const account_name& code, const action_name& act, const fc::variant& args);
 fc::variant regproducer_variant(const account_name& producer, const public_key_type& key, const string& url, uint32_t location);
@@ -69,12 +69,13 @@ struct update_bp_subcommand {
 
 
       register_producer->set_callback([this] {
+         const auto producer_name = string_to_name(producer_str);
          public_key_type producer_key;
          try {
             producer_key = public_key_type(producer_key_str);
          } EOS_RETHROW_EXCEPTIONS(public_key_type_exception, "Invalid producer public key: ${public_key}", ("public_key", producer_key_str))
-         auto regprod_var = regproducer_variant(producer_str, producer_key, url, loc );
-         send_actions({create_action({permission_level{producer_str,config::active_name}}, config::system_account_name, N(updatebp), regprod_var)});
+         auto regprod_var = regproducer_variant(producer_name, producer_key, url, loc );
+         send_actions({create_action({permission_level{producer_name,config::active_name}}, config::system_account_name, N(updatebp), regprod_var)});
       });
    }
 };
@@ -92,11 +93,12 @@ struct vote_producer_claim_subcommand {
 
 
       vote_proxy->set_callback([this] {
+         const auto voter_name = string_to_name( voter_str );
          fc::variant act_payload = fc::mutable_variant_object()
-               ("voter", voter_str)
-               ("bpname", bpname_str)
+               ("voter", voter_name)
+               ("bpname", string_to_name(bpname_str))
          ;
-         send_actions({create_action({permission_level{voter_str,config::active_name}}, config::system_account_name, N(claim), act_payload)});
+         send_actions({create_action({permission_level{voter_name, config::active_name}}, config::system_account_name, N(claim), act_payload)});
       });
    }
 };
@@ -112,11 +114,12 @@ struct vote_producer_unfreeze_subcommand {
       add_standard_transaction_options(vote_proxy);
 
       vote_proxy->set_callback([this] {
+         const auto voter_name = string_to_name( voter_str );
          fc::variant act_payload = fc::mutable_variant_object()
-               ("voter", voter_str)
-               ("bpname", bpname_str)
+               ("voter", voter_name)
+               ("bpname", string_to_name(bpname_str))
          ;
-         send_actions({create_action({permission_level{voter_str,config::active_name}}, config::system_account_name, N(unfreeze), act_payload)});
+         send_actions({create_action({permission_level{voter_name,config::active_name}}, config::system_account_name, N(unfreeze), act_payload)});
       });
    }
 };
@@ -134,14 +137,15 @@ struct vote_producer_vote_subcommand {
       add_standard_transaction_options(vote_proxy);
 
       vote_proxy->set_callback([this] {
+         const auto voter_name = string_to_name( voter_str );
          char doubleamount[20] = {0};
          sprintf(doubleamount,"%.4f",amount);
          auto vote_amount = string(doubleamount) + " EOS";
          fc::variant act_payload = fc::mutable_variant_object()
-               ("voter", voter_str)
-               ("bpname", bpname_str)
+               ("voter", voter_name)
+               ("bpname", string_to_name(bpname_str))
                ("stake", asset::from_string( vote_amount ));
-         send_actions({create_action({permission_level{voter_str,config::active_name}}, config::system_account_name, N(vote), act_payload)});
+         send_actions({create_action({permission_level{voter_name,config::active_name}}, config::system_account_name, N(vote), act_payload)});
       });
    }
 };
@@ -188,11 +192,11 @@ struct set_fee_subcommand {
 
          const auto permission_account =
                ((cpu_limit_by_contract == 0) && (net_limit_by_contract == 0) && (ram_limit_by_contract == 0))
-               ? account             // if no set res limit, just need account permission
-               : name("force.test"); // if set res limit, need force.test
+               ? string_to_name( account )  // if no set res limit, just need account permission
+               : name("force.test");        // if set res limit, need force.test
 
          fc::variant setfee_data = fc::mutable_variant_object()
-               ("account", account)
+               ("account", string_to_name( account ))
                ("action", action_to_set_fee)
                ("fee", a)
                ("cpu_limit", cpu_limit_by_contract)

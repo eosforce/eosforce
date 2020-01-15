@@ -193,9 +193,9 @@ namespace eosio {
                    filter_on.find({ act.receiver, {}, a.actor}) != filter_on.end() ||
                    filter_on.find({ act.receiver, act.act.name, {}}) != filter_on.end() ||
                    filter_on.find({ act.receiver, act.act.name, a.actor }) != filter_on.end() ) {
-                 if ((filter_out.find({ act.receiver, 0, 0 }) == filter_out.end()) &&
-                     (filter_out.find({ act.receiver, 0, a.actor }) == filter_out.end()) &&
-                     (filter_out.find({ act.receiver, act.act.name, 0 }) == filter_out.end()) &&
+                 if ((filter_out.find({ act.receiver, {}, {} }) == filter_out.end()) &&
+                     (filter_out.find({ act.receiver, {}, a.actor }) == filter_out.end()) &&
+                     (filter_out.find({ act.receiver, act.act.name, {} }) == filter_out.end()) &&
                      (filter_out.find({ act.receiver, act.act.name, a.actor }) == filter_out.end()) &&
                      (act.act.name != N(onfee))) {
                    result.insert( a.actor );
@@ -369,8 +369,8 @@ namespace eosio {
          gs = fc::json::from_file(genesis_file).as<genesis_state>();
 
          const auto spec_acc_in_gene = N(a);
-         const auto owner_pm_lv = vector<permission_level_weight>{{{1, config::owner_name}, 1}};
-         const auto active_pm_lv = vector<permission_level_weight>{{{1, config::active_name}, 1}};
+         const auto owner_pm_lv = vector<permission_level_weight>{{{eosio::chain::name{1}, config::owner_name}, 1}};
+         const auto active_pm_lv = vector<permission_level_weight>{{{eosio::chain::name{1}, config::active_name}, 1}};
 
          for( const auto& account : gs.initial_account_list ) {
             const auto& public_key = account.key;

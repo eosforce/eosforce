@@ -535,7 +535,7 @@ void print_result( const fc::variant& result ) { try {
 } FC_CAPTURE_AND_RETHROW( (result) ) }
 
 using std::cout;
-void send_actions(std::vector<chain::action>&& actions, packed_transaction::compression_type compression = packed_transaction::compression_type::none ) {
+void send_actions(std::vector<chain::action>&& actions, packed_transaction::compression_type compression /*= packed_transaction::compression_type::none*/ ) {
    std::ofstream out;
    if (tx_json_save_file.length()) {
       out.open(tx_json_save_file);
@@ -1113,7 +1113,7 @@ struct create_account_subcommand {
                } EOS_RETHROW_EXCEPTIONS( public_key_type_exception, "Invalid active public key: ${public_key}", ("public_key", active_key_str) );
             }
 
-            send_actions( { create_newaccount(creator, account_name, owner, active) } );
+            send_actions( { create_newaccount(string_to_name(creator), string_to_name(account_name), owner, active) } );
       });
    }
 };
@@ -2423,7 +2423,7 @@ int main( int argc, char** argv ) {
          tx_force_unique = false;
       }
 
-      send_actions({create_transfer(con, sender, recipient, to_asset(/*con, */amount), memo)});
+      send_actions({create_transfer(con, string_to_name(sender), string_to_name(recipient), to_asset(/*con, */amount), memo)});
    });
 
    // Net subcommand
@@ -3187,24 +3187,25 @@ int main( int argc, char** argv ) {
    auto claim = vote_producer_claim_subcommand(voteProducer);
    auto unfreeze = vote_producer_unfreeze_subcommand(voteProducer);
 
-   string bp_name;
+   string bp_name_str;
    auto set_or_cancle_emergency = [&](const bool bSet) {
+      const auto bpname = string_to_name( bp_name_str );
       auto args = fc::mutable_variant_object()
-         ("bpname", bp_name)
+         ("bpname", bpname)
          ("emergency", bSet);
 
-      auto accountPermissions = vector<permission_level>{{bp_name, config::active_name}};
-      send_actions({chain::action{accountPermissions, "eosio", "setemergency", variant_to_bin( N(eosio), N(setemergency), args ) }});
+      auto accountPermissions = vector<permission_level>{{bpname, config::active_name}};
+      send_actions({chain::action{accountPermissions, N(eosio), N(setemergency), variant_to_bin( N(eosio), N(setemergency), args ) }});
    };
 
    auto setemergency = system->add_subcommand("setemergency", localized("Setting the status of the chain is an emergency"));
    add_standard_transaction_options(setemergency);
-   setemergency->add_option("bp_name", bp_name, localized("bp name (string)"))->required();
+   setemergency->add_option("bp_name", bp_name_str, localized("bp name (string)"))->required();
    setemergency->set_callback([&] { set_or_cancle_emergency(true); });
 
    auto cancleemergency = system->add_subcommand("cancleemergency", localized("Setting the status of the chain is an emergency"));
    add_standard_transaction_options(cancleemergency);
-   cancleemergency->add_option("bp_name", bp_name, localized("bp name (string)"))->required();
+   cancleemergency->add_option("bp_name", bp_name_str, localized("bp name (string)"))->required();
    cancleemergency->set_callback([&] { set_or_cancle_emergency(false); });
 
    auto listbps = list_bp_subcommand(system);

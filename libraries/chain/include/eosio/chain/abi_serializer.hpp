@@ -452,7 +452,7 @@ namespace impl {
       template<typename Resolver>
       static void add( mutable_variant_object &out, const char* name, const transaction& trx, Resolver resolver, abi_traverse_context& ctx )
       {
-         static_assert(fc::reflector<transaction>::total_member_count == 9);
+         static_assert(fc::reflector<transaction>::total_member_count == 10);
          auto h = ctx.enter_scope();
          mutable_variant_object mvo;
          mvo("expiration", trx.expiration);
@@ -463,6 +463,7 @@ namespace impl {
          mvo("delay_sec", trx.delay_sec);
          add(mvo, "context_free_actions", trx.context_free_actions, resolver, ctx);
          add(mvo, "actions", trx.actions, resolver, ctx);
+         add(mvo, "fee", trx.fee, resolver, ctx);
 
          // process contents of block.transaction_extensions
          auto exts = trx.validate_and_extract_extensions();

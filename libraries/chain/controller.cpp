@@ -1640,6 +1640,27 @@ struct controller_impl {
          auto start = fc::time_point::now();
          const bool check_auth = !self.skip_auth_check() && !trx->implicit;
          const fc::microseconds sig_cpu_usage = trx->signature_cpu_usage();
+         const auto is_onfee_act = is_func_has_open(self, config::func_typ::onfee_action);
+         const signed_transaction& trn = trx->packed_trx()->get_signed_transaction();
+
+
+         // keep
+         if( !trx->implicit && !is_onfee_act ) {
+            try {
+               transaction_metadata_ptr onftrx = 
+                  transaction_metadata::create_no_recover_keys(
+                     packed_transaction( get_on_fee_transaction(trn.fee, trn.actions[0].authorization[0].actor) ),
+                     transaction_metadata::trx_type::implicit );
+
+               auto onftrace = push_transaction(onftrx, fc::time_point::maximum(),
+                  config::default_min_transaction_cpu_usage, true);
+               if( onftrace->except ) throw *onftrace->except;
+            } catch( const fc::exception& e ) {
+               EOS_ASSERT(false, transaction_exception, "on fee transaction failed, exception: ${e}", ( "e", e ));
+            } catch( ... ) {
+               EOS_ASSERT(false, transaction_exception,"on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
+            }
+         }
 
          if( !explicit_billed_cpu_time ) {
             fc::microseconds already_consumed_time( EOS_PERCENT(sig_cpu_usage.count(), conf.sig_cpu_bill_pct) );
@@ -1651,7 +1672,6 @@ struct controller_impl {
             }
          }
 
-         const signed_transaction& trn = trx->packed_trx()->get_signed_transaction();
          transaction_checktime_timer trx_timer(timer);
          transaction_context trx_context(self, trn, trx->id(), std::move(trx_timer), start);
          if ((bool)subjective_cpu_leeway && pending->_block_status == controller::block_status::incomplete) {
@@ -1676,7 +1696,7 @@ struct controller_impl {
             // is_onfee_act on early version eosforce we use a trx contain onfee act before do trx
             // new version use a onfee act in the trx, when exec trx, a onfee action will do first
 
-            const auto is_onfee_act = is_func_has_open(self, config::func_typ::onfee_action);
+            
             const auto is_fee_limit = is_onfee_act && is_func_has_open(self, config::func_typ::fee_limit);
 
             asset fee_ext(0); // fee ext to get more res
@@ -1699,23 +1719,7 @@ struct controller_impl {
                }
 
                // keep
-               if( !is_onfee_act ) {
-                  try {
-                     transaction_metadata_ptr onftrx = 
-                        transaction_metadata::create_no_recover_keys(
-                           packed_transaction( get_on_fee_transaction(trn.fee, trn.actions[0].authorization[0].actor) ),
-                           transaction_metadata::trx_type::implicit );
-
-                     auto onftrace = push_transaction(onftrx, fc::time_point::maximum(),
-                                                      config::default_min_transaction_cpu_usage, true);
-                     if( onftrace->except ) throw *onftrace->except;
-                  } catch( const fc::exception& e ) {
-                     EOS_ASSERT(false, transaction_exception, "on fee transaction failed, exception: ${e}", ( "e", e ));
-                  } catch( ... ) {
-                     EOS_ASSERT(false, transaction_exception,
-                                "on fee transaction failed, but shouldn't enough asset to pay for transaction fee");
-                  }
-               } else {
+               if( is_onfee_act ) {
                   asset fee_limit{ 0 };
                   get_from_extensions(trn.transaction_extensions, transaction::fee_limit, fee_limit);
                   trx_context.make_fee_act(fee_limit);
@@ -2747,8 +2751,15 @@ struct controller_impl {
 
       signed_transaction trx;
       trx.actions.emplace_back(std::move(on_fee_act));
-      trx.set_reference_block(self.head_block_id());
-      trx.expiration = self.pending_block_time() + fc::microseconds(999'999); // Round up to nearest second to avoid appearing expired
+      if( self.is_builtin_activated( builtin_protocol_feature_t::no_duplicate_deferred_id ) ) {
+         trx.expiration = time_point_sec();
+         trx.ref_block_num = 0;
+         trx.ref_block_prefix = 0;
+      } else {
+         trx.expiration = self.pending_block_time() + fc::microseconds(999'999); // Round up to nearest second to avoid appearing expired
+         trx.set_reference_block( self.head_block_id() );
+      }
+
       return trx;
    }
 }; /// controller_impl

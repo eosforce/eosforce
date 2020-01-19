@@ -258,9 +258,9 @@ void apply_context::require_recipient( account_name recipient ) {
  *   can better understand the security risk.
  */
 void apply_context::execute_inline( action&& a ) {
-   auto *code = control.db().find<account_object, by_name>(a.account);
-   EOS_ASSERT(code != nullptr, action_validate_exception,
-              "inline action's code account ${account} does not exist", ( "account", a.account ));
+   auto* code = control.db().find<account_object, by_name>(a.account);
+   EOS_ASSERT( code != nullptr, action_validate_exception,
+               "inline action's code account ${account} does not exist", ("account", a.account) );
    if( control.head_block_num() > 4470000 ) {
       EOS_ASSERT(       ( (a.name != N(onfee))      || ( a.account != config::system_account_name))
                      && ( (a.name != N(voteagefee)) || ( a.account != config::system_account_name))
@@ -477,7 +477,7 @@ void apply_context::schedule_deferred_transaction( const uint128_t& sender_id, a
       } catch( const fc::exception& e ) {
          if( disallow_send_to_self_bypass || !is_sending_only_to_self(receiver) ) {
             throw;
-         } else {
+         } else if( control.is_producing_block() ) {
             subjective_block_production_exception new_exception(FC_LOG_MESSAGE( error, "Authorization failure with sent deferred transaction consisting only of actions to self"));
             for (const auto& log: e.get_log()) {
                new_exception.append_log(log);
@@ -487,7 +487,7 @@ void apply_context::schedule_deferred_transaction( const uint128_t& sender_id, a
       } catch( ... ) {
          if( disallow_send_to_self_bypass || !is_sending_only_to_self(receiver) ) {
             throw;
-         } else {
+         } else if( control.is_producing_block() ) {
             EOS_THROW(subjective_block_production_exception, "Unexpected exception occurred validating sent deferred transaction consisting only of actions to self");
          }
       }

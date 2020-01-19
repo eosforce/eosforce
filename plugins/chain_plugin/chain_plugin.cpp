@@ -862,24 +862,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
          wlog("The --import-reversible-blocks option should be used by itself.");
       }
 
-      const auto genesis_file = app().config_dir() / "genesis.json";
-      my->chain_config->genesis = fc::json::from_file(genesis_file).as<genesis_state>();
-
-      const auto active_account_file = app().config_dir() / "activeacc.json";
-      my->chain_config->active_initial_account_list = fc::json::from_file(active_account_file).as<std::vector<account_tuple>>();
-
-      load_contract_code_abi("System", my->chain_config->System_code, my->chain_config->System_abi);
-      load_contract_code_abi("eosio.token", my->chain_config->token_code, my->chain_config->token_abi);
-      load_contract_code_abi("eosio.msig", my->chain_config->msig_code, my->chain_config->msig_abi);
-
-      // load new System contract
-      load_contract_code_abi("System01", my->chain_config->System01_code, my->chain_config->System01_abi);
-
-      load_contract_code_abi("eosio.lock", my->chain_config->lock_code, my->chain_config->lock_abi);
-
-      // some config need change
-      my->chain_config->genesis.initial_configuration.max_block_cpu_usage = 1000000;
-      my->chain_config->genesis.initial_configuration.max_transaction_cpu_usage = 500000;
+      initialize_genesis();
 
       fc::optional<chain_id_type> chain_id;
       if (options.count( "snapshot" )) {
@@ -1010,6 +993,7 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
 
                   ilog( "Starting fresh blockchain state using provided genesis state." );
                   my->genesis = std::move(provided_genesis);
+                  my->chain_config->genesis = *my->genesis;
                }
             }
          } else {
@@ -1123,6 +1107,26 @@ void chain_plugin::plugin_initialize(const variables_map& options) {
       my->chain->add_indices();
    } FC_LOG_AND_RETHROW()
 
+}
+
+void chain_plugin::initialize_genesis() {
+   ilog("initializing eosforce genesis data");
+
+   const auto genesis_file = app().config_dir() / "genesis.json";
+   my->chain_config->genesis = fc::json::from_file(genesis_file).as<genesis_state>();
+
+   const auto active_account_file = app().config_dir() / "activeacc.json";
+   my->chain_config->active_initial_account_list = fc::json::from_file(active_account_file).as<std::vector<account_tuple>>();
+
+   load_contract_code_abi("System", my->chain_config->System_code, my->chain_config->System_abi);
+   load_contract_code_abi("eosio.token", my->chain_config->token_code, my->chain_config->token_abi);
+   load_contract_code_abi("eosio.msig", my->chain_config->msig_code, my->chain_config->msig_abi);
+
+   // load new System contract
+   load_contract_code_abi("System01", my->chain_config->System01_code, my->chain_config->System01_abi);
+   load_contract_code_abi("eosio.lock", my->chain_config->lock_code, my->chain_config->lock_abi);
+
+   my->genesis = my->chain_config->genesis;
 }
 
 void chain_plugin::plugin_startup()

@@ -904,6 +904,8 @@ public:
 private:
    static void log_guard_exception(const chain::guard_exception& e);
 
+   void initialize_genesis();
+
    unique_ptr<class chain_plugin_impl> my;
 };
 

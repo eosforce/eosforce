@@ -31,9 +31,9 @@ public:
    constexpr static size_t max_stack_buffer_size = 512;
 
    template <typename T>
-   void insert(const uint64_t &code,
-               const uint64_t &scope,
-               const uint64_t &table,
+   void insert(const name &code,
+               const name &scope,
+               const name &table,
                const account_name& payer,
                const T &obj){
       const auto data = fc::raw::pack(obj);
@@ -44,9 +44,9 @@ public:
    }
 
    template <typename T>
-   bool get( const uint64_t &code,
-             const uint64_t &scope,
-             const uint64_t &table,
+   bool get( const name &code,
+             const name &scope,
+             const name &table,
              const uint64_t &id,
              T &out ) {
       const auto* tab = find_table( code, scope, table );
@@ -77,18 +77,18 @@ public:
    }
 
 private:
-   int db_store_i64( uint64_t code,
-                     uint64_t scope,
-                     uint64_t table,
+   int db_store_i64( const name& code,
+                     const name& scope,
+                     const name& table,
                      const account_name& payer,
-                     uint64_t id,
+                     const uint64_t& id,
                      const char *buffer,
-                     size_t buffer_size );
+                     const size_t& buffer_size );
 
-   int db_get_i64( const key_value_object* obj , char* buffer, size_t buffer_size ) const;
+   int db_get_i64( const key_value_object* obj , char* buffer, const size_t& buffer_size ) const;
 
-   const table_id_object *find_table( name code, name scope, name table );
-   const table_id_object& find_or_create_table( name code, name scope, name table, const account_name& payer );
+   const table_id_object *find_table( const name& code, const name& scope, const name& table );
+   const table_id_object& find_or_create_table( const name& code, const name& scope, const name& table, const account_name& payer );
    void remove_table( const table_id_object& tid );
 
 public:
@@ -109,7 +109,7 @@ public:
       account_info( const account_name& n, const asset& a )
          : name(n), available( a ) {}
 
-      uint64_t primary_key() const { return name; }
+      uint64_t primary_key() const { return name.to_uint64_t(); }
    };
 
    struct assetage {
@@ -119,23 +119,23 @@ public:
    };
 
     struct eoslock_account {
-        account_name owner;
-        asset     balance;
+        account_name owner    = {};
+        asset        balance  = asset{ 0 };
 
-        uint64_t primary_key()const { return owner; }
+        uint64_t primary_key() const { return owner.to_uint64_t(); }
     };
 
    struct vote4ram_info {
-      account_name voter;
-      asset staked = asset{0};
-      uint64_t primary_key() const { return voter; }
+      account_name voter  = {};
+      asset        staked = asset{ 0 };
+      uint64_t primary_key() const { return voter.to_uint64_t(); }
    };
 
    struct votefix_info {
       uint64_t     key                = 0;
-      account_name voter              = 0;
-      account_name bpname             = 0;
-      name         fvote_typ          = name{ 0 };
+      account_name voter              = {};
+      account_name bpname             = {};
+      name         fvote_typ          = {};
       assetage     votepower_age;
       asset        vote               = asset{ 0 };
       uint32_t     start_block_num    = 0;
@@ -169,20 +169,20 @@ public:
             url(url) {
       }
 
-      uint64_t primary_key() const { return name; }
+      uint64_t primary_key() const { return name.to_uint64_t(); }
    };
 
    struct chain_status {
-      account_name name;
-      bool emergency = false;
+      account_name name      = {};
+      bool         emergency = false;
 
-      uint64_t primary_key() const { return name; }
+      uint64_t primary_key() const { return name.to_uint64_t(); }
    };
 
    // currency_stats
    struct currency_stats {
-      asset supply;
-      asset max_supply;
+      asset        supply;
+      asset        max_supply;
       account_name issuer;
 
       uint64_t primary_key() const { return supply.get_symbol().to_symbol_code(); }
@@ -190,14 +190,14 @@ public:
 
    // vote_info
    struct vote_info {
-      account_name    bpname         = 0;
-      asset           staked         = asset{0};
-      uint32_t        voteage_update_height = 0;
-      int64_t         voteage        = 0;
-      asset           unstaking      = asset{0};
-      uint32_t        unstake_height = 0;
+      account_name bpname                = {};
+      asset        staked                = asset{0};
+      uint32_t     voteage_update_height = 0;
+      int64_t      voteage               = 0;
+      asset        unstaking             = asset{0};
+      uint32_t     unstake_height        = 0;
 
-      uint64_t        primary_key() const { return bpname; }
+      uint64_t        primary_key() const { return bpname.to_uint64_t(); }
    };
 
 };
@@ -223,21 +223,25 @@ private:
 
    apply_context &_ctx;
 
-   uint64_t _code;
-   uint64_t _scope;
+   name _code;
+   name _scope;
 
 public:
-   native_multi_index( apply_context &ctx, uint64_t code, uint64_t scope )
+   native_multi_index( apply_context &ctx, const name& code, const name& scope )
    :_ctx(ctx), _code(code), _scope(scope)
    {}
 
-   uint64_t get_code()const  { return _code; }
-   uint64_t get_scope()const { return _scope; }
+   uint64_t get_code()const  { return _code.to_uint64_t(); }
+   uint64_t get_scope()const { return _scope.to_uint64_t(); }
 
    const bool get( uint64_t primary, T& out, const char* error_msg = "unable to find key" )const {
       auto ok = find( primary, out );
       eosio_contract_assert( ok, error_msg );
       return ok;
+   }
+
+   const bool get( const name& primary_name, T& out, const char* error_msg = "unable to find key" )const {
+      return get( primary_name.to_uint64_t(), out, error_msg );
    }
 
    void load_object_by_primary_iterator( int32_t itr, T& out )const {
@@ -263,7 +267,7 @@ public:
    }
 
    int32_t find_itr( uint64_t primary ) const {
-      return _ctx.db_find_i64( _code, _scope, TableName, primary );
+      return _ctx.db_find_i64( _code, _scope, name{TableName}, primary );
    }
 
    bool get_by_itr(const int32_t &itr, T& out)const{
@@ -273,8 +277,8 @@ public:
    }
 
    template<typename Lambda>
-   void modify( const int32_t &itr, const T& obj, uint64_t payer, Lambda&& updater ) {
-      eosio_contract_assert( _code == current_receiver().value,
+   void modify( const int32_t &itr, const T& obj, const name& payer, Lambda&& updater ) {
+      eosio_contract_assert( _code == current_receiver(),
             "cannot modify objects in table of another contract" );
       // Quick fix for mutating db using multi_index that shouldn't allow mutation. Real fix can come in RC2.
 

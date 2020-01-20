@@ -36,7 +36,7 @@ namespace eosio {
 namespace chain {
 
    void initialize_contract( chainbase::database& db,
-                             const uint64_t&      contract_account_name,
+                             const name&          contract_account_name,
                              const bytes&         code,
                              const bytes&         abi,
                              const time_point&    update_time_point,
@@ -118,7 +118,7 @@ namespace chain {
 
    // initialize_eos_stats init stats for eos token
    void initialize_eos_stats( chainbase::database& db ) {
-      const auto& sym = symbol(CORE_SYMBOL).to_symbol_code();
+      const auto& sym = name{ symbol(CORE_SYMBOL).to_symbol_code() };
       memory_db( db ).insert( config::token_account_name, sym, N(stat),
                               config::token_account_name,
                               memory_db::currency_stats{

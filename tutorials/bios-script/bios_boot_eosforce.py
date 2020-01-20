@@ -88,7 +88,6 @@ def createNodeDir(nodeIndex, bpaccount, key):
         'access-control-allow-origin = *\n' +
         'access-control-allow-headers = Content-Type\n' +
         'p2p-max-nodes-per-host = 10\n' +
-        'allowed-connection = any\n' +
         'max-transaction-time = 16000\n' +
         'max-irreversible-block-age = 36000\n' +
         'enable-stale-production = true\n' +
@@ -113,6 +112,7 @@ def startNode(nodeIndex, bpaccount, key):
         args.nodeos +
         '    --config-dir ' + os.path.abspath(dir) + '/config'
         '    --data-dir ' + os.path.abspath(dir) + '/datas'
+        '    -l ' + os.path.abspath(dir) + '/config/logging.json'
     )
     with open(dir + '../' + bpaccount['name'] + '.log', mode='w') as f:
         f.write(cmd + '\n\n')
@@ -189,6 +189,8 @@ def stepMakeGenesis():
     run('cp ' + args.contracts_dir + '/System02.abi ' + os.path.abspath(args.config_dir) + "/System.abi")
     run('cp ' + args.contracts_dir + '/System02.wasm ' + os.path.abspath(args.config_dir) + "/System.wasm")
 
+    run('cp ' + args.contracts_dir + '/logging.json ' + os.path.abspath(args.config_dir) + "/logging.json")
+
     run(args.root + 'build/programs/genesis/genesis')
     run('mv ./genesis.json ' + os.path.abspath(args.config_dir))
 
@@ -222,16 +224,17 @@ def setFee(account, act, fee, cpu, net, ram):
            ('"%s EOS" %d %d %d' % (fee, cpu, net, ram)))
 
 def stepSetFuncs():
+    sleep(30)
     # we need set some func start block num
     setFee('eosio', 'setconfig', '0.0100', 100000, 1000000, 1000)
-    setFuncStartBlock('f.system1',  10)
-    setFuncStartBlock('f.msig',     11)
-    setFuncStartBlock('f.prods',    12)
-    setFuncStartBlock('f.eosio',    13)
-    setFuncStartBlock('f.feelimit', 14)
-    setFuncStartBlock('f.ram4vote', 15)
-    setFuncStartBlock('f.onfeeact', 16)
-    setFuncStartBlock('f.cprod',    17)
+    setFuncStartBlock('f.system1',  20)
+    setFuncStartBlock('f.msig',     21)
+    setFuncStartBlock('f.prods',    22)
+    setFuncStartBlock('f.eosio',    23)
+    setFuncStartBlock('f.feelimit', 24)
+    setFuncStartBlock('f.ram4vote', 25)
+    setFuncStartBlock('f.onfeeact', 26)
+    setFuncStartBlock('f.cprod',    27)
 
     setNumConfig('res.trxsize', 10240000) # should add trx size limit in new version
 

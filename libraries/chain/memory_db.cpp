@@ -10,11 +10,11 @@ using boost::container::flat_set;
 
 namespace eosio { namespace chain {
 
-const table_id_object *memory_db::find_table( name code, name scope, name table ) {
+const table_id_object *memory_db::find_table( const name& code, const name& scope, const name& table ) {
    return db.find<table_id_object, by_code_scope_table>(boost::make_tuple(code, scope, table));
 }
 
-const table_id_object& memory_db::find_or_create_table( name code, name scope, name table, const account_name& payer ) {
+const table_id_object& memory_db::find_or_create_table( const name& code, const name& scope, const name& table, const account_name& payer ) {
    const auto *existing_tid = db.find<table_id_object, by_code_scope_table>(boost::make_tuple(code, scope, table));
    if( existing_tid != nullptr ) {
       return *existing_tid;
@@ -34,13 +34,13 @@ void memory_db::remove_table( const table_id_object& tid ) {
 
 // db_store_i64 store data to db, WARNNING!!! this can not change RAM use
 int memory_db::db_store_i64(
-      uint64_t code,
-      uint64_t scope,
-      uint64_t table,
+      const name& code,
+      const name& scope,
+      const name& table,
       const account_name& payer,
-      uint64_t id,
+      const uint64_t& id,
       const char *buffer,
-      size_t buffer_size ) {
+      const size_t& buffer_size ) {
 //   require_write_lock( scope );
    const auto& tab = find_or_create_table(code, scope, table, payer);
    auto tableid = tab.id;
@@ -73,7 +73,7 @@ void eosio_contract_assert( bool condition, const char* msg ) {
 }
 
 
-int memory_db::db_get_i64( const key_value_object* obj , char* buffer, size_t buffer_size ) const {
+int memory_db::db_get_i64( const key_value_object* obj , char* buffer, const size_t& buffer_size ) const {
    auto s = obj->value.size();
    if( buffer_size == 0 ) return s;
 

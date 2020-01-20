@@ -1565,6 +1565,9 @@ struct controller_impl {
                   EOS_ASSERT(trn.fee >= fee_required, transaction_exception, "set tx fee failed: no enough fee in trx");
                   const auto fee_ext = trn.fee - fee_required;
 
+                  // old onfee trx
+                  trx_context.make_limit_by_contract( fee_ext );
+               } else {
                   // from the `onfee_action` block num, the fee will cost by fee action for each action in trx
                   asset fee_limit{ 0 };
                   get_from_extensions(trn.transaction_extensions, transaction::fee_limit, fee_limit);

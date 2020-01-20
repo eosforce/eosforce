@@ -99,7 +99,7 @@ class currency_tester : public TESTER {
       static const name eosio_token;
 };
 
-const std::string currency_tester::eosio_token = name(N(eosforce)).to_string();
+const name currency_tester::eosio_token = name(N(eosforce));
 
 BOOST_AUTO_TEST_SUITE(currency_tests)
 

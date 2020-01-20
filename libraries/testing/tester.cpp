@@ -249,15 +249,7 @@ namespace eosio { namespace testing {
       cfg = def_conf.first;
 
       gen_eosforce_config( cfg );
-
-      for(int i = 0; i < boost::unit_test::framework::master_test_suite().argc; ++i) {
-         if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--wavm"))
-            cfg.wasm_runtime = chain::wasm_interface::vm_type::wavm;
-         else if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--wabt"))
-            cfg.wasm_runtime = chain::wasm_interface::vm_type::wabt;
-      }
-
-      open(nullptr);
+      open(def_conf.second);
       execute_setup_policy(policy);
    }
 
@@ -454,8 +446,6 @@ namespace eosio { namespace testing {
    void base_tester::_start_block(fc::time_point block_time) {
       auto head_block_number = control->head_block_num();
       auto producer = control->head_block_state()->get_scheduled_producer(block_time);
-
-      ilog("start_block ${num} ${producer}", ("num", head_block_number)("producer", producer));
 
       auto last_produced_block_num = control->last_irreversible_block_num();
       auto itr = last_produced_block.find(producer.producer_name);
@@ -1136,7 +1126,7 @@ namespace eosio { namespace testing {
 
    void base_tester::set_chain_func_act_block( account_name func, uint32_t block_num, const private_key_type* signer ) {
       set_chain_config(
-         eosio::chain::setconfig{ func, static_cast<int64_t>(block_num), 0, asset{} },
+         eosio::chain::setconfig{ func, static_cast<int64_t>(block_num), {}, asset{} },
          signer );
    }
 

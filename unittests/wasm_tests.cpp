@@ -560,7 +560,7 @@ BOOST_FIXTURE_TEST_CASE(weighted_cpu_limit_tests, tester ) try {
       for (int i = 0; i < 2; ++i) {
          action act;
          act.account = N(f_tests);
-         act.name = N() + (i * 16);
+         act.name = name{ N().to_uint64_t() + (i * 16) };
          act.authorization = vector<permission_level>{{N(f_tests),config::active_name}};
          trx.actions.push_back(act);
          if (!fee_set)

@@ -59,7 +59,7 @@ namespace chain {
       memory_db::account_info acc;
       if (!mdb.get( config::system_account_name,
                     config::system_account_name,
-                    N(accounts), acc_name, acc )) {
+                    N(accounts), acc_name.to_uint64_t(), acc )) {
          mdb.insert( config::system_account_name,
                      config::system_account_name,
                      N(accounts), acc_name, memory_db::account_info{ acc_name } );
@@ -67,7 +67,7 @@ namespace chain {
    }
 
    void initialize_contract( chainbase::database& db,
-                             const uint64_t&      contract_account_name,
+                             const name&          contract_account_name,
                              const bytes&         code,
                              const bytes&         abi,
                              const time_point&    update_time_point,

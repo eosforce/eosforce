@@ -73,20 +73,20 @@ class currency_tester : public TESTER {
       currency_tester()
          :TESTER(),abi_ser(json::from_string(contracts::eosio_token_abi().data()).as<abi_def>(), abi_serializer_max_time)
       {
-      	 produce_block();
+         produce_blocks(1);
          //create_account( N(eosio.token));
-         //set_code( N(eosio.token), eosio_token_wast );
+         //set_code( N(eosio.token), contracts::eosio_token_wasm() );
 
-         auto result = push_action(N(eosforce)/*N(eosio.token)*/, N(create), mutable_variant_object()
+         auto result = push_action(N(eosforce), N(create), mutable_variant_object()
                  ("issuer",       eosio_token)
                  ("maximum_supply", "1000000000.0000 CUR")
-                 ("can_freeze", 0)
-                 ("can_recall", 0)
-                 ("can_whitelist", 0)
+                 //("can_freeze", 0)
+                 //("can_recall", 0)
+                 //("can_whitelist", 0)
          );
          wdump((result));
 
-         result = push_action(N(eosforce)/*N(eosio.token)*/, N(issue), mutable_variant_object()
+         result = push_action(N(eosforce), N(issue), mutable_variant_object()
                  ("to",       eosio_token)
                  ("quantity", "1000000.0000 CUR")
                  ("memo", "gggggggggggg")
@@ -99,14 +99,14 @@ class currency_tester : public TESTER {
       static const name eosio_token;
 };
 
-const std::string currency_tester::eosio_token = name(N(eosforce)/*N(eosio.token)*/).to_string();
+const std::string currency_tester::eosio_token = name(N(eosforce)).to_string();
 
 BOOST_AUTO_TEST_SUITE(currency_tests)
 
 BOOST_AUTO_TEST_CASE( bootstrap ) try {
    auto expected = asset::from_string( "1000000.0000 CUR" );
    currency_tester t;
-   auto actual = t.get_currency_balance(N(eosio.token), expected.get_symbol(), N(eosforce)/*N(eosio.token)*/);
+   auto actual = t.get_currency_balance(N(eosio.token), expected.get_symbol(), N(eosforce));
    BOOST_REQUIRE_EQUAL(expected, actual);
 } FC_LOG_AND_RETHROW() /// test_api_bootstrap
 
@@ -115,7 +115,9 @@ BOOST_FIXTURE_TEST_CASE( test_transfer, currency_tester ) try {
 
    // make a transfer from the contract to a user
    {
-      auto trace = push_action(N(eosforce)/*N(eosio.token)*/, N(transfer), mutable_variant_object()
+      ilog("asdasdsad");
+
+      auto trace = push_action(N(eosforce), N(transfer), mutable_variant_object()
          ("from", eosio_token)
          ("to",   "alice")
          ("quantity", "100.0000 CUR")
@@ -192,7 +194,7 @@ BOOST_FIXTURE_TEST_CASE( test_overspend, currency_tester ) try {
 
    // make a transfer from the contract to a user
    {
-      auto trace = push_action(N(eosforce)/*N(eosio.token)*/, N(transfer), mutable_variant_object()
+      auto trace = push_action( N(eosforce), N(transfer), mutable_variant_object()
          ("from", eosio_token)
          ("to",   "alice")
          ("quantity", "100.0000 CUR")
@@ -214,7 +216,7 @@ BOOST_FIXTURE_TEST_CASE( test_overspend, currency_tester ) try {
          ("memo", "overspend! Alice");
 
       BOOST_CHECK_EXCEPTION( push_action(N(alice), N(transfer), data),
-                             eosio_assert_message_exception, eosio_assert_message_is("overdrawn balance") );
+                             eosio_assert_message_exception, eosio_assert_message_is("overdrawn available balance") );
       produce_block();
 
       BOOST_REQUIRE_EQUAL(get_balance(N(alice)), asset::from_string( "100.0000 CUR" ));

@@ -259,10 +259,13 @@ namespace eosio { namespace chain {
 
    // make_fee_act insert onfee act in trx
    void transaction_context::make_fee_act( const asset& fee_limit ) {
+      // now in eosc payer is just as the first authorization actor
+      // in next version, action fee can pay by other account
       EOS_ASSERT(!trx.actions[0].authorization.empty(), transaction_exception, "authorization empty");
-      fee_payer = trx.actions[0].authorization[0].actor;
+      fee_payer      = trx.actions[0].authorization[0].actor;
       max_fee_to_pay = fee_limit;
-      //ilog("fee limit ${f}", ("f", max_fee_to_pay));
+      fee_costed     = asset{ 0 };
+      // TODO: need use a general struct for fee data
       EOS_ASSERT(fee_payer != name{}, transaction_exception, "fee_payer nil");
    }
 
@@ -384,12 +387,17 @@ namespace eosio { namespace chain {
       if( is_need_fee_action() ) {
          const auto fee = control.get_txfee_manager().get_required_fee(control, act);
          const auto& fee_act = mk_fee_action(act, fee);
+
          // for lock developer 's EOSC before lock genesis user 's EOSC
          EOS_ASSERT(get_num_config_on_chain(control.db(), name{fee_payer}, -1) != 1, transaction_exception, "locked developer EOSC account");
-         if(max_fee_to_pay != asset{0}) {
-            fee_costed += fee;
+
+         fee_costed += fee;
+
+         // check if has max_fee limit
+         if( max_fee_to_pay != asset{0} ) {
             EOS_ASSERT(fee_costed <= max_fee_to_pay, transaction_exception, "fee costed more then limit");
          }
+
          add_limit_by_fee(act);
          return schedule_action(mk_fee_action(act, fee), receiver, false, 0, 0);
       }

@@ -99,6 +99,16 @@ public:
       account_name name;
       asset available;
 
+      account_info() {}
+      account_info( const account_info& ) = default;
+      ~account_info() = default;
+
+      explicit account_info( const account_name& n )
+         : name(n), available( asset{ 0 } ) {}
+
+      account_info( const account_name& n, const asset& a )
+         : name(n), available( a ) {}
+
       uint64_t primary_key() const { return name.to_uint64_t(); }
    };
 

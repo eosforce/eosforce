@@ -5,9 +5,13 @@
 #include <eosio/chain/wast_to_wasm.hpp>
 #include <eosio/chain/eosio_contract.hpp>
 #include <eosio/chain/generated_transaction_object.hpp>
+
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+
+#include <eosio/chain/config_on_chain.hpp>
+#include <eosio/chain/txfee_manager.hpp>
 
 #include <fstream>
 
@@ -20,6 +24,7 @@ eosio::chain::asset core_from_string(const std::string& s) {
 }
 
 namespace eosio { namespace testing {
+
    std::string read_wast( const char* fn ) {
       std::ifstream wast_file(fn);
       FC_ASSERT( wast_file.is_open(), "wast file cannot be found" );
@@ -40,6 +45,20 @@ namespace eosio { namespace testing {
       FC_ASSERT( wasm_file.is_open(), "wasm file cannot be found" );
       wasm_file.seekg(0, std::ios::end);
       std::vector<uint8_t> wasm;
+      int len = wasm_file.tellg();
+      FC_ASSERT( len >= 0, "wasm file length is -1" );
+      wasm.resize(len);
+      wasm_file.seekg(0, std::ios::beg);
+      wasm_file.read((char*)wasm.data(), wasm.size());
+      wasm_file.close();
+      return wasm;
+   }
+
+   chain::bytes read_wasm_byte( const char* fn ) {
+      std::ifstream wasm_file(fn, std::ios::binary);
+      FC_ASSERT( wasm_file.is_open(), "wasm file cannot be found" );
+      wasm_file.seekg(0, std::ios::end);
+      bytes wasm;
       int len = wasm_file.tellg();
       FC_ASSERT( len >= 0, "wasm file length is -1" );
       wasm.resize(len);
@@ -84,6 +103,80 @@ namespace eosio { namespace testing {
 
    fc::variant read_json_snapshot( const char* fn ) {
       return fc::json::from_string( read_gzipped_snapshot(fn) );
+   }
+
+   chain::bytes read_abi_byte( const char* fn ) {
+      const auto abijson = fc::json::from_file(fn).as<abi_def>();
+      return fc::raw::pack(abijson);
+   }
+
+   void base_tester::gen_eosforce_config( controller::config& cfg ) {
+      eosio::chain::genesis_state gs;
+
+      gs.initial_timestamp = fc::time_point::from_iso_string( "2019-10-15T12:00:00" );
+      gs.initial_key = get_public_key( config::system_account_name, "active" );
+
+      const std::vector<eosio::chain::account_tuple> init_accounts = {
+         eosio::chain::account_tuple { 
+            get_public_key( N(eosforce), "active" ), eosio::chain::asset(5000000000000), N(eosforce) 
+         },
+         eosio::chain::account_tuple {
+            get_public_key( N(force.test), "active" ), eosio::chain::asset(1000000000), N(force.test) 
+         },
+         eosio::chain::account_tuple {
+            get_public_key( N(b1), "active" ), eosio::chain::asset(10000), N(b1)
+         }
+      };
+
+      // init accounts
+      gs.initial_account_list = init_accounts;
+      cfg.active_initial_account_list = init_accounts;
+
+      // lock accounts for test
+      gs.initial_account_list.push_back( eosio::chain::account_tuple { 
+            get_public_key( N(eosclock1), "active" ), eosio::chain::asset(500000000), N(eosclock1) 
+         } );
+      gs.initial_account_list.push_back( eosio::chain::account_tuple { 
+            get_public_key( N(eosclock2), "active" ), eosio::chain::asset(50), N(eosclock2) 
+         } );
+      gs.initial_account_list.push_back( eosio::chain::account_tuple { 
+            get_public_key( N(eosclock3), "active" ), eosio::chain::asset(10), N(eosclock3) 
+         } );
+
+
+      const auto& biosbp_str = std::string("biosbp");
+
+      for( int i = 0; i < config::max_producers; i++ ) {
+         const auto name_str = biosbp_str + static_cast<char>('a' + i);
+         const auto bpname = string_to_name( name_str.c_str() );
+         const auto pub_key = get_public_key( bpname, "active" );
+
+         const auto tu = eosio::chain::account_tuple {
+            pub_key,
+            eosio::chain::asset(1000 * 10000),
+            bpname
+         };
+         gs.initial_account_list.push_back(tu);
+         gs.initial_producer_list.push_back(
+            eosio::chain::producer_tuple{ 
+               bpname, pub_key, 100, "https://www.eosforce.io/"
+            } );
+         cfg.active_initial_account_list.push_back(tu);
+      }
+
+      cfg.genesis = gs;
+
+      // fill genesis contracts data
+      cfg.System_code   = contracts::system_wasm_byte();
+      cfg.System_abi    = contracts::system_abi_byte();
+      cfg.token_code    = contracts::eosio_token_wasm_byte();
+      cfg.token_abi     = contracts::eosio_token_abi_byte();
+      cfg.lock_code     = contracts::eosio_lock_wasm_byte();
+      cfg.lock_abi      = contracts::eosio_lock_abi_byte();
+      cfg.msig_code     = contracts::eosio_msig_wasm_byte();
+      cfg.msig_abi      = contracts::eosio_msig_abi_byte();
+      cfg.System01_code = contracts::system_1_wasm_byte();
+      cfg.System01_abi  = contracts::system_1_abi_byte();
    }
 
    const fc::microseconds base_tester::abi_serializer_max_time{1000*1000}; // 1s for slow test machines
@@ -155,67 +248,7 @@ namespace eosio { namespace testing {
       def_conf.first.read_mode = read_mode;
       cfg = def_conf.first;
 
-   	  const char* genesis_string = R"=====(
-{
-  "initial_timestamp": "2018-05-28T12:00:00.000",
-  "initial_key": "EOS1111111111111111111111111111111114T1Anm",
-  "code": "",
-  "abi": "",
-  "token_code": "",
-  "token_abi": "",
-  "initial_configuration": {
-    "max_block_net_usage": 1048576,
-    "target_block_net_usage_pct": 1000,
-    "max_transaction_net_usage": 524288,
-    "base_per_transaction_net_usage": 12,
-    "net_usage_leeway": 500,
-    "context_free_discount_net_usage_num": 20,
-    "context_free_discount_net_usage_den": 100,
-    "max_block_cpu_usage": 1000000,
-    "target_block_cpu_usage_pct": 1000,
-    "max_transaction_cpu_usage": 750000,
-    "min_transaction_cpu_usage": 100,
-    "max_transaction_lifetime": 3600,
-    "deferred_trx_expiration_window": 600,
-    "max_transaction_delay": 3888000,
-    "max_inline_action_size": 4096,
-    "max_inline_action_depth": 4,
-    "max_authority_depth": 6
-  },
-  "initial_account_list": [{
-      "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
-      "asset": "1000000000.0000 EOS",
-      "name": "eosforce"
-    },{
-      "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
-      "asset": "1000000.0000 EOS",
-      "name": "b1"
-    },{
-      "key": "EOS842ZDGXdExMNiMhLmevmKA3vapRWWfWsskXzRripTsAG8hUk2R",
-      "asset": "1000000.0000 EOS",
-      "name": "force.test"
-    }
-  ],
-  "initial_producer_list": [{
-      "name": "eosforce",
-      "bpkey": "EOS7pquS6bwErdwb4dpcGLFQg8ovaovXicQsuvZYogT198Jy8CjLA",
-      "commission_rate": 10,
-      "url": ""
-    }
-  ]
-}
-)=====";
-
-	  cfg.genesis = fc::json::from_string(genesis_string).as<genesis_state>();
-	  cfg.genesis.initial_account_list[0].key = get_public_key( N(eosforce), "active" );
-	  cfg.genesis.initial_account_list[2].key = get_public_key( N(force.test), "active" );
-	  cfg.genesis.initial_producer_list[0].bpkey = get_public_key( N(eosforce), "active" );
-
-      cfg.genesis.initial_key = get_public_key( config::system_account_name, "active" );
-
-
-      //cfg.genesis.initial_timestamp = fc::time_point::from_iso_string("2020-01-01T00:00:00.000");
-      //cfg.genesis.initial_key = get_public_key( config::system_account_name, "active" );
+      gen_eosforce_config( cfg );
 
       for(int i = 0; i < boost::unit_test::framework::master_test_suite().argc; ++i) {
          if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--wavm"))
@@ -224,56 +257,7 @@ namespace eosio { namespace testing {
             cfg.wasm_runtime = chain::wasm_interface::vm_type::wabt;
       }
 
-// load system contract
-     	{
-#include <System/System.wast.hpp>
-#include <System/System.abi.hpp>
-#include <System01/System01.wast.hpp>
-#include <System01/System01.abi.hpp>
-#include <eosio.token/eosio.token.wast.hpp>
-#include <eosio.token/eosio.token.abi.hpp>
-#include <eosio.msig/eosio.msig.wast.hpp>
-#include <eosio.msig/eosio.msig.abi.hpp>
-#include <eosio.bios/eosio.bios.wast.hpp>
-#include <eosio.bios/eosio.bios.abi.hpp>
-
-         std::vector<uint8_t> wasm;
-         abi_def abi;
-         		
-         wasm = wast_to_wasm(System_wast);
-         cfg.System_code.assign(wasm.begin(), wasm.end());
-         abi = fc::json::from_string(System_abi).as<abi_def>();
-         cfg.System_abi = fc::raw::pack(abi);
-         
-         wasm = wast_to_wasm(eosio_token_wast);
-         cfg.token_code.assign(wasm.begin(), wasm.end());
-         abi  = fc::json::from_string(eosio_token_abi).as<abi_def>();
-         cfg.token_abi = fc::raw::pack(abi);
-         
-         wasm = wast_to_wasm(System01_wast);
-         cfg.System01_code.assign(wasm.begin(), wasm.end());
-         abi  = fc::json::from_string(System01_abi).as<abi_def>();
-         cfg.System01_abi = fc::raw::pack(abi);
-         
-         wasm = wast_to_wasm(eosio_msig_wast);
-         cfg.msig_code.assign(wasm.begin(), wasm.end());
-         abi  = fc::json::from_string(eosio_msig_abi).as<abi_def>();
-         cfg.msig_abi = fc::raw::pack(abi);
-
-        //  wasm = wast_to_wasm(eosio_bios_wast);
-        //  cfg.bios_code.assign(wasm.begin(), wasm.end());
-        //  abi  = fc::json::from_string(eosio_bios_abi).as<abi_def>();
-        //  cfg.bios_abi = fc::raw::pack(abi);
-/*         
-         ./libraries/chain/controller.cpp:782:      initialize_contract(N(eosio), conf.genesis.code, conf.genesis.abi, true);
-./libraries/chain/controller.cpp:783:      initialize_contract(N(eosio.token), conf.genesis.token_code, conf.genesis.token_abi);
-./libraries/chain/controller.cpp:1345:            initialize_contract(N(eosio), conf.System01_code, conf.System01_abi, true);
-./libraries/chain/controller.cpp:1351:            initialize_contract(N(eosio.msig), conf.msig_code, conf.msig_abi, true);
-
-*/
-		}
-
-      open(def_conf.second);
+      open(nullptr);
       execute_setup_policy(policy);
    }
 
@@ -330,12 +314,14 @@ namespace eosio { namespace testing {
             schedule_preactivate_protocol_feature();
             produce_block();
             set_before_producer_authority_bios_contract();
+            open_all_funcs();
             break;
          }
          case setup_policy::full: {
             schedule_preactivate_protocol_feature();
             produce_block();
             set_before_producer_authority_bios_contract();
+            open_all_funcs();
             preactivate_all_builtin_protocol_features();
             produce_block();
             set_bios_contract();
@@ -469,6 +455,8 @@ namespace eosio { namespace testing {
       auto head_block_number = control->head_block_num();
       auto producer = control->head_block_state()->get_scheduled_producer(block_time);
 
+      ilog("start_block ${num} ${producer}", ("num", head_block_number)("producer", producer));
+
       auto last_produced_block_num = control->last_irreversible_block_num();
       auto itr = last_produced_block.find(producer.producer_name);
       if (itr != last_produced_block.end()) {
@@ -535,9 +523,7 @@ namespace eosio { namespace testing {
             produce_empty_block();
       } else {
          for( uint32_t i = 0; i < n; ++i )
-         {
             produce_block();
-          }
       }
    }
 
@@ -589,7 +575,7 @@ namespace eosio { namespace testing {
   void base_tester::set_transaction_headers( transaction& trx, uint32_t expiration, uint32_t delay_sec ) const {
      trx.expiration = control->head_block_time() + fc::seconds(expiration);
      trx.set_reference_block( control->head_block_id() );
-	 trx.fee = asset(100 * 10000);
+     trx.fee = asset(100 * 10000);
 
      trx.max_net_usage_words = 0; // No limit
      trx.max_cpu_usage_ms = 0; // No limit
@@ -600,6 +586,7 @@ namespace eosio { namespace testing {
    transaction_trace_ptr base_tester::create_account( account_name a, account_name creator, bool multisig, bool include_code ) {
       signed_transaction trx;
       set_transaction_headers(trx);
+
       authority owner_auth;
       if( multisig ) {
          // multisig between account's owner key and creators active permission
@@ -638,10 +625,9 @@ namespace eosio { namespace testing {
                                 });
 
       set_transaction_headers(trx);
-      
       trx.sign( get_private_key( creator, "active" ), control->get_chain_id()  );
+
       auto trace = push_transaction( trx );
-      
       transfer( N(eosforce), a, "100000.0000 EOS", "create_account", config::system_account_name );
       
       return trace;
@@ -784,6 +770,7 @@ namespace eosio { namespace testing {
    } FC_CAPTURE_AND_RETHROW() }
 
    transaction_trace_ptr base_tester::push_reqauth( account_name from, const vector<permission_level>& auths, const vector<private_key_type>& keys ) {
+      // FIXME: in eosc, eosio account has no bios contract after startup, so need change this
       variant pretty_trx = fc::mutable_variant_object()
          ("actions", fc::variants({
             fc::mutable_variant_object()
@@ -993,6 +980,37 @@ namespace eosio { namespace testing {
       delete_authority(account, perm, { permission_level{ account, config::owner_name } }, { get_private_key( account, "owner" ) });
    }
 
+   void base_tester::vote_for_ram( account_name account, const asset& amounts ) {
+      // in early version, no need vote for ram
+      if( !is_func_opened( chain::config::func_typ::vote_for_ram ) ) {
+         return;
+      }
+
+      variant pretty_trx = fc::mutable_variant_object()
+         ("actions", fc::variants({
+            fc::mutable_variant_object()
+               ("account", "eosio")
+               ("name", "vote4ram")
+               ("authorization", fc::variants({
+                  fc::mutable_variant_object()
+                     ("actor", account )
+                     ("permission", name(config::active_name))
+               }))
+               ("data", fc::mutable_variant_object()
+                  ("voter", account)
+                  ("bpname", "biosbpa")
+                  ("stake", amounts)
+               )
+            })
+         );
+
+      signed_transaction trx;
+      abi_serializer::from_variant(pretty_trx, trx, get_resolver(), abi_serializer_max_time);
+      set_transaction_headers(trx);
+
+      trx.sign( get_private_key( account, name(config::active_name).to_string() ), control->get_chain_id()  );
+      push_transaction( trx );
+   }
 
    void base_tester::set_code( account_name account, const char* wast, const private_key_type* signer  ) try {
       set_code(account, wast_to_wasm(wast), signer);
@@ -1037,17 +1055,19 @@ namespace eosio { namespace testing {
       push_transaction( trx );
    }
 
-   void base_tester::set_fee( account_name account, 
-     			 action_name action, 
-   				 asset fee, 
-   				 uint32_t cpu_limit, 
-   				 uint32_t net_limit,
-   				 uint32_t ram_limit,
-   				 const private_key_type* signer) {
-   	//   if(fee_map[action] == account) return ;
-      //   fee_map[action] = account;
-   	  signed_transaction trx;
-      trx.actions.emplace_back( vector<permission_level>{{account,config::active_name}},
+   void base_tester::set_fee( account_name account, action_name action, const asset& fee ) {
+      set_fee( N(force.test), account, action, fee, 0, 0, 0, nullptr );
+   }
+
+   void base_tester::set_fee( account_name account,
+                              action_name action, 
+                              const asset& fee, 
+                              uint32_t cpu_limit, 
+                              uint32_t net_limit, 
+                              uint32_t ram_limit,
+                              const private_key_type* signer) {
+      signed_transaction trx;
+      trx.actions.emplace_back( vector<permission_level>{ {account, config::active_name} },
                                 setfee{
                                    .account    = account,
                                    .action     = action,
@@ -1067,17 +1087,15 @@ namespace eosio { namespace testing {
    }
 
    void base_tester::set_fee( account_name auth, 
-   				 account_name account,
-     			 action_name action, 
-   				 asset fee, 
-   				 uint32_t cpu_limit, 
-   				 uint32_t net_limit,
-   				 uint32_t ram_limit,
-   				 const private_key_type* signer) {
-   	//   if(fee_map[action] == account) return ;
-      //   fee_map[action] = account;
-   	  signed_transaction trx;
-      trx.actions.emplace_back( vector<permission_level>{{auth,config::active_name}},
+                              account_name account,
+                              action_name action, 
+                              const asset& fee, 
+                              uint32_t cpu_limit, 
+                              uint32_t net_limit,
+                              uint32_t ram_limit,
+                              const private_key_type* signer) {
+      signed_transaction trx;
+      trx.actions.emplace_back( vector<permission_level>{ {auth, config::active_name} },
                                 setfee{
                                    .account    = account,
                                    .action     = action,
@@ -1094,6 +1112,111 @@ namespace eosio { namespace testing {
          trx.sign( get_private_key( auth, "active" ), control->get_chain_id()  );
       }
       push_transaction( trx );
+   }
+
+   const asset base_tester::get_fee( account_name account, action_name action ) {
+      return control->get_txfee_manager().get_required_fee(*control, account, action);
+   }
+
+   // func for eosc chain config
+   void base_tester::set_chain_config( const eosio::chain::setconfig& cfg, const private_key_type* signer ) {
+      const auto auth = config::chain_config_name;
+
+      signed_transaction trx;
+      trx.actions.emplace_back( vector<permission_level>{ {auth, config::active_name} }, cfg);
+
+      set_transaction_headers(trx);
+      if( signer ) {
+         trx.sign( *signer, control->get_chain_id()  );
+      } else {
+         trx.sign( get_private_key( auth, "active" ), control->get_chain_id()  );
+      }
+      push_transaction( trx );
+   }
+
+   void base_tester::set_chain_func_act_block( account_name func, uint32_t block_num, const private_key_type* signer ) {
+      set_chain_config(
+         eosio::chain::setconfig{ func, static_cast<int64_t>(block_num), 0, asset{} },
+         signer );
+   }
+
+   bool base_tester::is_func_opened( account_name typ ) {
+      return chain::is_func_has_open( *control, typ );
+   }
+
+   // open all eosc chain config, this will wait for some blocks
+   void base_tester::open_all_funcs( const private_key_type* signer ) {
+      // open all funcs
+      set_fee( config::system_account_name, N(setconfig), asset{100000} );
+      produce_blocks(1);
+
+      set_fee( config::system_account_name, N(vote4ram), asset{100000} );
+      produce_blocks(1);
+
+      set_fee( config::system_account_name, N(revote), asset{100000} );
+      produce_blocks(1);
+
+      create_account( config::chain_config_name );
+      produce_blocks(1);
+
+      create_account( config::msig_account_name );
+      produce_blocks(1);
+
+      const auto curr_num = control->head_block_num();
+
+      ilog("open all funcs for eosc, from ${c}", ("c", curr_num));
+
+      set_chain_func_act_block( chain::config::func_typ::use_system01,         control->head_block_num() + 1, signer );
+      produce_blocks(3);
+      set_chain_func_act_block( chain::config::func_typ::use_msig,             control->head_block_num() + 1, signer );
+      produce_blocks(3);
+      set_chain_func_act_block( chain::config::func_typ::create_eosio_account, control->head_block_num() + 1, signer );
+      produce_blocks(3);
+
+      transfer( N(eosforce), config::system_account_name, "100000.0000 EOS", "to eosio account", config::system_account_name );
+      produce_blocks(1);
+
+      // update eosio system contract to system02
+      set_code( config::system_account_name, contracts::system_2_wasm(), signer );
+      set_abi( config::system_account_name, contracts::system_2_abi().data(), signer );
+      produce_blocks(2);
+
+      // for test env, no need change eosio to eosio.prod
+      //set_chain_func_act_block( chain::config::func_typ::use_eosio_prods,      control->head_block_num() + 1, signer );
+      //produce_blocks(3);
+
+      set_chain_func_act_block( chain::config::func_typ::fee_limit,            control->head_block_num() + 1, signer );
+      produce_blocks(3);
+      set_chain_func_act_block( chain::config::func_typ::vote_for_ram,         control->head_block_num() + 1, signer );
+      produce_blocks(3);
+      set_chain_func_act_block( chain::config::func_typ::onfee_action,         control->head_block_num() + 1, signer );
+      produce_blocks(3);
+      set_chain_func_act_block( chain::config::func_typ::create_prods_account, control->head_block_num() + 1, signer );
+      produce_blocks(3);
+
+      // set trx size limit, same with eosc mainnet
+      set_chain_func_act_block( chain::config::res_typ::trx_size_limit, 2097152, signer );
+      produce_blocks(1);
+
+      // set ram rent, same with eosc mainnet
+      set_chain_func_act_block( chain::config::res_typ::ram_rent_b_per_eos, 51200, signer );
+      produce_blocks(1);
+
+      // set free ram to 32MB, so that most set code can success
+      set_chain_func_act_block( chain::config::res_typ::free_ram_per_account, 32 * 1024 * 1024, signer );
+      produce_blocks(1);
+
+      set_code( config::system_account_name, contracts::eosio_system_wasm(), signer );
+      set_abi( config::system_account_name, contracts::eosio_system_abi().data(), signer );
+      produce_blocks(2);
+
+      set_fee( config::system_account_name, N(activate), asset{10000} );
+      produce_blocks(1);
+
+      set_fee( config::system_account_name, N(reqactivated), asset{1000} );
+      produce_blocks(1);
+
+      produce_blocks(3);
    }
 
    bool base_tester::chain_has_transaction( const transaction_id_type& txid ) const {

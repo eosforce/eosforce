@@ -6,7 +6,6 @@
 #include <eosio/chain/apply_context.hpp>
 #include <eosio/chain/transaction.hpp>
 #include <eosio/chain/exceptions.hpp>
-#include <eosio/chain/memory_db.hpp>
 
 #include <eosio/chain/account_object.hpp>
 #include <eosio/chain/code_object.hpp>
@@ -18,11 +17,11 @@
 #include <eosio/chain/wasm_interface.hpp>
 #include <eosio/chain/abi_serializer.hpp>
 
-#include <eosio/chain/config_on_chain.hpp>
-
 #include <eosio/chain/authorization_manager.hpp>
 #include <eosio/chain/resource_limits.hpp>
-// #include <eosio/chain/contract_table_objects.hpp>
+
+#include <eosio/chain/memory_db.hpp>
+#include <eosio/chain/config_on_chain.hpp>
 #include <eosio/chain/config.hpp>
 #include <eosio/chain/txfee_manager.hpp>
 

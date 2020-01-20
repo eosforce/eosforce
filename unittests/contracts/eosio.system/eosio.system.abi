@@ -1,18 +1,61 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Thu Dec 13 12:22:07 2018",
-    "version": "eosio::abi/1.0",
+    "____comment": "This file was generated with eosforce-abigen. DO NOT EDIT ",
+    "version": "eosio::abi/1.1",
+    "types": [],
     "structs": [
         {
-            "name": "abi_hash",
+            "name": "account_info",
             "base": "",
             "fields": [
                 {
-                    "name": "owner",
-                    "type": "name"
+                    "name": "name",
+                    "type": "account_name"
                 },
                 {
-                    "name": "hash",
+                    "name": "available",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "activate",
+            "base": "",
+            "fields": [
+                {
+                    "name": "feature_digest",
                     "type": "checksum256"
+                }
+            ]
+        },
+        {
+            "name": "approvebp",
+            "base": "",
+            "fields": [
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                },
+                {
+                    "name": "approver",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "assetage",
+            "base": "",
+            "fields": [
+                {
+                    "name": "staked",
+                    "type": "asset"
+                },
+                {
+                    "name": "age",
+                    "type": "int64"
+                },
+                {
+                    "name": "update_height",
+                    "type": "uint32"
                 }
             ]
         },
@@ -39,62 +82,408 @@
             ]
         },
         {
-            "name": "bid_refund",
+            "name": "bailpunish",
             "base": "",
             "fields": [
                 {
-                    "name": "bidder",
-                    "type": "name"
+                    "name": "bpname",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "block_reward",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "account_name"
                 },
                 {
-                    "name": "amount",
+                    "name": "last_standard_bp",
+                    "type": "account_name"
+                },
+                {
+                    "name": "reward_block_out",
+                    "type": "asset"
+                },
+                {
+                    "name": "reward_budget",
+                    "type": "asset"
+                },
+                {
+                    "name": "total_block_age",
+                    "type": "uint64"
+                },
+                {
+                    "name": "last_reward_block_num",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "bp_info",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "account_name"
+                },
+                {
+                    "name": "block_signing_key",
+                    "type": "public_key"
+                },
+                {
+                    "name": "commission_rate",
+                    "type": "uint32"
+                },
+                {
+                    "name": "total_staked",
+                    "type": "int64"
+                },
+                {
+                    "name": "rewards_pool",
+                    "type": "asset"
+                },
+                {
+                    "name": "total_voteage",
+                    "type": "int64"
+                },
+                {
+                    "name": "voteage_update_height",
+                    "type": "uint32"
+                },
+                {
+                    "name": "url",
+                    "type": "string"
+                },
+                {
+                    "name": "emergency",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "bp_monitor",
+            "base": "",
+            "fields": [
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                },
+                {
+                    "name": "last_block_num",
+                    "type": "uint32"
+                },
+                {
+                    "name": "consecutive_drain_block",
+                    "type": "uint32"
+                },
+                {
+                    "name": "consecutive_produce_block",
+                    "type": "uint32"
+                },
+                {
+                    "name": "total_drain_block",
+                    "type": "uint32"
+                },
+                {
+                    "name": "stability",
+                    "type": "uint32"
+                },
+                {
+                    "name": "bock_age",
+                    "type": "uint64"
+                },
+                {
+                    "name": "bp_status",
+                    "type": "uint32"
+                },
+                {
+                    "name": "end_punish_block",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "bpclaim",
+            "base": "",
+            "fields": [
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "bps_reward",
+            "base": "",
+            "fields": [
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                },
+                {
+                    "name": "reward",
                     "type": "asset"
                 }
             ]
         },
         {
-            "name": "bidname",
+            "name": "canceldelay",
             "base": "",
             "fields": [
                 {
-                    "name": "bidder",
+                    "name": "canceling_auth",
+                    "type": "permission_level"
+                },
+                {
+                    "name": "trx_id",
+                    "type": "checksum256"
+                }
+            ]
+        },
+        {
+            "name": "chain_status",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "account_name"
+                },
+                {
+                    "name": "emergency",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "claim",
+            "base": "",
+            "fields": [
+                {
+                    "name": "voter",
+                    "type": "account_name"
+                },
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "deleteauth",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "account_name"
+                },
+                {
+                    "name": "permission",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "drain_block_info",
+            "base": "",
+            "fields": [
+                {
+                    "name": "current_block_num",
+                    "type": "uint64"
+                },
+                {
+                    "name": "drain_block_num",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "fix_time_vote_info",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "uint64"
+                },
+                {
+                    "name": "voter",
+                    "type": "account_name"
+                },
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                },
+                {
+                    "name": "fvote_typ",
                     "type": "name"
                 },
                 {
-                    "name": "newname",
-                    "type": "name"
+                    "name": "votepower_age",
+                    "type": "assetage"
                 },
                 {
-                    "name": "bid",
+                    "name": "vote",
                     "type": "asset"
+                },
+                {
+                    "name": "start_block_num",
+                    "type": "uint32"
+                },
+                {
+                    "name": "withdraw_block_num",
+                    "type": "uint32"
+                },
+                {
+                    "name": "is_withdraw",
+                    "type": "bool"
                 }
             ]
         },
         {
-            "name": "bidrefund",
+            "name": "global_votestate_info",
             "base": "",
             "fields": [
                 {
-                    "name": "bidder",
+                    "name": "stat_name",
                     "type": "name"
                 },
                 {
-                    "name": "newname",
+                    "name": "total_staked",
+                    "type": "int64"
+                }
+            ]
+        },
+        {
+            "name": "heartbeat",
+            "base": "",
+            "fields": [
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                },
+                {
+                    "name": "timestamp",
+                    "type": "time_point_sec"
+                }
+            ]
+        },
+        {
+            "name": "heartbeat_info",
+            "base": "",
+            "fields": [
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                },
+                {
+                    "name": "timestamp",
+                    "type": "time_point_sec"
+                }
+            ]
+        },
+        {
+            "name": "key_weight",
+            "base": "",
+            "fields": [
+                {
+                    "name": "key",
+                    "type": "public_key"
+                },
+                {
+                    "name": "weight",
+                    "type": "uint16"
+                }
+            ]
+        },
+        {
+            "name": "last_producer",
+            "base": "",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "account_name"
+                },
+                {
+                    "name": "next_index",
+                    "type": "uint32"
+                },
+                {
+                    "name": "max_size",
+                    "type": "uint32"
+                },
+                {
+                    "name": "producers",
+                    "type": "account_name[]"
+                }
+            ]
+        },
+        {
+            "name": "linkauth",
+            "base": "",
+            "fields": [
+                {
+                    "name": "account",
+                    "type": "account_name"
+                },
+                {
+                    "name": "code",
+                    "type": "account_name"
+                },
+                {
+                    "name": "type",
+                    "type": "account_name"
+                },
+                {
+                    "name": "requirement",
                     "type": "name"
                 }
             ]
         },
         {
-            "name": "block_header",
+            "name": "monitorevise",
+            "base": "",
+            "fields": [
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "newaccount",
+            "base": "",
+            "fields": [
+                {
+                    "name": "creator",
+                    "type": "account_name"
+                },
+                {
+                    "name": "name",
+                    "type": "account_name"
+                },
+                {
+                    "name": "owner",
+                    "type": "authority"
+                },
+                {
+                    "name": "active",
+                    "type": "authority"
+                }
+            ]
+        },
+        {
+            "name": "onblock",
             "base": "",
             "fields": [
                 {
                     "name": "timestamp",
-                    "type": "uint32"
+                    "type": "block_timestamp_type"
                 },
                 {
-                    "name": "producer",
-                    "type": "name"
+                    "name": "bpname",
+                    "type": "account_name"
                 },
                 {
                     "name": "confirmed",
@@ -115,570 +504,6 @@
                 {
                     "name": "schedule_version",
                     "type": "uint32"
-                },
-                {
-                    "name": "new_producers",
-                    "type": "producer_schedule?"
-                }
-            ]
-        },
-        {
-            "name": "blockchain_parameters",
-            "base": "",
-            "fields": [
-                {
-                    "name": "max_block_net_usage",
-                    "type": "uint64"
-                },
-                {
-                    "name": "target_block_net_usage_pct",
-                    "type": "uint32"
-                },
-                {
-                    "name": "max_transaction_net_usage",
-                    "type": "uint32"
-                },
-                {
-                    "name": "base_per_transaction_net_usage",
-                    "type": "uint32"
-                },
-                {
-                    "name": "net_usage_leeway",
-                    "type": "uint32"
-                },
-                {
-                    "name": "context_free_discount_net_usage_num",
-                    "type": "uint32"
-                },
-                {
-                    "name": "context_free_discount_net_usage_den",
-                    "type": "uint32"
-                },
-                {
-                    "name": "max_block_cpu_usage",
-                    "type": "uint32"
-                },
-                {
-                    "name": "target_block_cpu_usage_pct",
-                    "type": "uint32"
-                },
-                {
-                    "name": "max_transaction_cpu_usage",
-                    "type": "uint32"
-                },
-                {
-                    "name": "min_transaction_cpu_usage",
-                    "type": "uint32"
-                },
-                {
-                    "name": "max_transaction_lifetime",
-                    "type": "uint32"
-                },
-                {
-                    "name": "deferred_trx_expiration_window",
-                    "type": "uint32"
-                },
-                {
-                    "name": "max_transaction_delay",
-                    "type": "uint32"
-                },
-                {
-                    "name": "max_inline_action_size",
-                    "type": "uint32"
-                },
-                {
-                    "name": "max_inline_action_depth",
-                    "type": "uint16"
-                },
-                {
-                    "name": "max_authority_depth",
-                    "type": "uint16"
-                }
-            ]
-        },
-        {
-            "name": "buyram",
-            "base": "",
-            "fields": [
-                {
-                    "name": "payer",
-                    "type": "name"
-                },
-                {
-                    "name": "receiver",
-                    "type": "name"
-                },
-                {
-                    "name": "quant",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "buyrambytes",
-            "base": "",
-            "fields": [
-                {
-                    "name": "payer",
-                    "type": "name"
-                },
-                {
-                    "name": "receiver",
-                    "type": "name"
-                },
-                {
-                    "name": "bytes",
-                    "type": "uint32"
-                }
-            ]
-        },
-        {
-            "name": "buyrex",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "amount",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "canceldelay",
-            "base": "",
-            "fields": [
-                {
-                    "name": "canceling_auth",
-                    "type": "permission_level"
-                },
-                {
-                    "name": "trx_id",
-                    "type": "checksum256"
-                }
-            ]
-        },
-        {
-            "name": "claimrewards",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "closerex",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "cnclrexorder",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "connector",
-            "base": "",
-            "fields": [
-                {
-                    "name": "balance",
-                    "type": "asset"
-                },
-                {
-                    "name": "weight",
-                    "type": "float64"
-                }
-            ]
-        },
-        {
-            "name": "consolidate",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "defcpuloan",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "loan_num",
-                    "type": "uint64"
-                },
-                {
-                    "name": "amount",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "defnetloan",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "loan_num",
-                    "type": "uint64"
-                },
-                {
-                    "name": "amount",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "delegatebw",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "receiver",
-                    "type": "name"
-                },
-                {
-                    "name": "stake_net_quantity",
-                    "type": "asset"
-                },
-                {
-                    "name": "stake_cpu_quantity",
-                    "type": "asset"
-                },
-                {
-                    "name": "transfer",
-                    "type": "bool"
-                }
-            ]
-        },
-        {
-            "name": "delegated_bandwidth",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "to",
-                    "type": "name"
-                },
-                {
-                    "name": "net_weight",
-                    "type": "asset"
-                },
-                {
-                    "name": "cpu_weight",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "deleteauth",
-            "base": "",
-            "fields": [
-                {
-                    "name": "account",
-                    "type": "name"
-                },
-                {
-                    "name": "permission",
-                    "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "deposit",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                },
-                {
-                    "name": "amount",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "eosio_global_state",
-            "base": "blockchain_parameters",
-            "fields": [
-                {
-                    "name": "max_ram_size",
-                    "type": "uint64"
-                },
-                {
-                    "name": "total_ram_bytes_reserved",
-                    "type": "uint64"
-                },
-                {
-                    "name": "total_ram_stake",
-                    "type": "int64"
-                },
-                {
-                    "name": "last_producer_schedule_update",
-                    "type": "block_timestamp_type"
-                },
-                {
-                    "name": "last_pervote_bucket_fill",
-                    "type": "time_point"
-                },
-                {
-                    "name": "pervote_bucket",
-                    "type": "int64"
-                },
-                {
-                    "name": "perblock_bucket",
-                    "type": "int64"
-                },
-                {
-                    "name": "total_unpaid_blocks",
-                    "type": "uint32"
-                },
-                {
-                    "name": "total_activated_stake",
-                    "type": "int64"
-                },
-                {
-                    "name": "thresh_activated_stake_time",
-                    "type": "time_point"
-                },
-                {
-                    "name": "last_producer_schedule_size",
-                    "type": "uint16"
-                },
-                {
-                    "name": "total_producer_vote_weight",
-                    "type": "float64"
-                },
-                {
-                    "name": "last_name_close",
-                    "type": "block_timestamp_type"
-                }
-            ]
-        },
-        {
-            "name": "eosio_global_state2",
-            "base": "",
-            "fields": [
-                {
-                    "name": "new_ram_per_block",
-                    "type": "uint16"
-                },
-                {
-                    "name": "last_ram_increase",
-                    "type": "block_timestamp_type"
-                },
-                {
-                    "name": "last_block_num",
-                    "type": "block_timestamp_type"
-                },
-                {
-                    "name": "total_producer_votepay_share",
-                    "type": "float64"
-                },
-                {
-                    "name": "revision",
-                    "type": "uint8"
-                }
-            ]
-        },
-        {
-            "name": "eosio_global_state3",
-            "base": "",
-            "fields": [
-                {
-                    "name": "last_vpay_state_update",
-                    "type": "time_point"
-                },
-                {
-                    "name": "total_vpay_share_change_rate",
-                    "type": "float64"
-                }
-            ]
-        },
-        {
-            "name": "exchange_state",
-            "base": "",
-            "fields": [
-                {
-                    "name": "supply",
-                    "type": "asset"
-                },
-                {
-                    "name": "base",
-                    "type": "connector"
-                },
-                {
-                    "name": "quote",
-                    "type": "connector"
-                }
-            ]
-        },
-        {
-            "name": "fundcpuloan",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "loan_num",
-                    "type": "uint64"
-                },
-                {
-                    "name": "payment",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "fundnetloan",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "loan_num",
-                    "type": "uint64"
-                },
-                {
-                    "name": "payment",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "init",
-            "base": "",
-            "fields": [
-                {
-                    "name": "version",
-                    "type": "varuint32"
-                },
-                {
-                    "name": "core",
-                    "type": "symbol"
-                }
-            ]
-        },
-        {
-            "name": "key_weight",
-            "base": "",
-            "fields": [
-                {
-                    "name": "key",
-                    "type": "public_key"
-                },
-                {
-                    "name": "weight",
-                    "type": "uint16"
-                }
-            ]
-        },
-        {
-            "name": "linkauth",
-            "base": "",
-            "fields": [
-                {
-                    "name": "account",
-                    "type": "name"
-                },
-                {
-                    "name": "code",
-                    "type": "name"
-                },
-                {
-                    "name": "type",
-                    "type": "name"
-                },
-                {
-                    "name": "requirement",
-                    "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "name_bid",
-            "base": "",
-            "fields": [
-                {
-                    "name": "newname",
-                    "type": "name"
-                },
-                {
-                    "name": "high_bidder",
-                    "type": "name"
-                },
-                {
-                    "name": "high_bid",
-                    "type": "int64"
-                },
-                {
-                    "name": "last_bid_time",
-                    "type": "time_point"
-                }
-            ]
-        },
-        {
-            "name": "newaccount",
-            "base": "",
-            "fields": [
-                {
-                    "name": "creator",
-                    "type": "name"
-                },
-                {
-                    "name": "name",
-                    "type": "name"
-                },
-                {
-                    "name": "owner",
-                    "type": "authority"
-                },
-                {
-                    "name": "active",
-                    "type": "authority"
-                }
-            ]
-        },
-        {
-            "name": "onblock",
-            "base": "",
-            "fields": [
-                {
-                    "name": "header",
-                    "type": "block_header"
                 }
             ]
         },
@@ -697,16 +522,34 @@
             ]
         },
         {
-            "name": "pair_time_point_sec_int64",
+            "name": "onfee",
             "base": "",
             "fields": [
                 {
-                    "name": "first",
-                    "type": "time_point_sec"
+                    "name": "actor",
+                    "type": "account_name"
                 },
                 {
-                    "name": "second",
-                    "type": "int64"
+                    "name": "fee",
+                    "type": "asset"
+                },
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "outfixvote",
+            "base": "",
+            "fields": [
+                {
+                    "name": "voter",
+                    "type": "account_name"
+                },
+                {
+                    "name": "key",
+                    "type": "uint64"
                 }
             ]
         },
@@ -739,388 +582,154 @@
             ]
         },
         {
-            "name": "producer_info",
+            "name": "producer",
             "base": "",
             "fields": [
                 {
-                    "name": "owner",
-                    "type": "name"
+                    "name": "bpname",
+                    "type": "account_name"
                 },
                 {
-                    "name": "total_votes",
-                    "type": "float64"
-                },
-                {
-                    "name": "producer_key",
-                    "type": "public_key"
-                },
-                {
-                    "name": "is_active",
-                    "type": "bool"
-                },
-                {
-                    "name": "url",
-                    "type": "string"
-                },
-                {
-                    "name": "unpaid_blocks",
+                    "name": "amount",
                     "type": "uint32"
-                },
-                {
-                    "name": "last_claim_time",
-                    "type": "time_point"
-                },
-                {
-                    "name": "location",
-                    "type": "uint16"
                 }
             ]
         },
         {
-            "name": "producer_info2",
+            "name": "producer_blacklist",
             "base": "",
             "fields": [
                 {
-                    "name": "owner",
-                    "type": "name"
+                    "name": "bpname",
+                    "type": "account_name"
                 },
                 {
-                    "name": "votepay_share",
-                    "type": "float64"
-                },
-                {
-                    "name": "last_votepay_share_update",
-                    "type": "time_point"
+                    "name": "isactive",
+                    "type": "bool"
                 }
             ]
         },
         {
-            "name": "producer_key",
+            "name": "punish_bp_info",
             "base": "",
             "fields": [
                 {
-                    "name": "producer_name",
-                    "type": "name"
+                    "name": "punish_bp_name",
+                    "type": "account_name"
                 },
                 {
-                    "name": "block_signing_key",
-                    "type": "public_key"
+                    "name": "proposaler",
+                    "type": "account_name"
+                },
+                {
+                    "name": "approve_bp",
+                    "type": "account_name[]"
+                },
+                {
+                    "name": "effective_block_num",
+                    "type": "uint32"
                 }
             ]
         },
         {
-            "name": "producer_schedule",
+            "name": "punishbp",
+            "base": "",
+            "fields": [
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                },
+                {
+                    "name": "proposaler",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "removebp",
+            "base": "",
+            "fields": [
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "removepunish",
+            "base": "",
+            "fields": [
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "reqactivated",
+            "base": "",
+            "fields": [
+                {
+                    "name": "feature_digest",
+                    "type": "checksum256"
+                }
+            ]
+        },
+        {
+            "name": "revote",
+            "base": "",
+            "fields": [
+                {
+                    "name": "voter",
+                    "type": "account_name"
+                },
+                {
+                    "name": "frombp",
+                    "type": "account_name"
+                },
+                {
+                    "name": "tobp",
+                    "type": "account_name"
+                },
+                {
+                    "name": "restake",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "revotefix",
+            "base": "",
+            "fields": [
+                {
+                    "name": "voter",
+                    "type": "account_name"
+                },
+                {
+                    "name": "key",
+                    "type": "uint64"
+                },
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "schedule_info",
             "base": "",
             "fields": [
                 {
                     "name": "version",
+                    "type": "uint64"
+                },
+                {
+                    "name": "block_height",
                     "type": "uint32"
                 },
                 {
                     "name": "producers",
-                    "type": "producer_key[]"
-                }
-            ]
-        },
-        {
-            "name": "refund",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "refund_request",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                },
-                {
-                    "name": "request_time",
-                    "type": "time_point_sec"
-                },
-                {
-                    "name": "net_amount",
-                    "type": "asset"
-                },
-                {
-                    "name": "cpu_amount",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "regproducer",
-            "base": "",
-            "fields": [
-                {
-                    "name": "producer",
-                    "type": "name"
-                },
-                {
-                    "name": "producer_key",
-                    "type": "public_key"
-                },
-                {
-                    "name": "url",
-                    "type": "string"
-                },
-                {
-                    "name": "location",
-                    "type": "uint16"
-                }
-            ]
-        },
-        {
-            "name": "regproxy",
-            "base": "",
-            "fields": [
-                {
-                    "name": "proxy",
-                    "type": "name"
-                },
-                {
-                    "name": "isproxy",
-                    "type": "bool"
-                }
-            ]
-        },
-        {
-            "name": "rentcpu",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "receiver",
-                    "type": "name"
-                },
-                {
-                    "name": "loan_payment",
-                    "type": "asset"
-                },
-                {
-                    "name": "loan_fund",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "rentnet",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "receiver",
-                    "type": "name"
-                },
-                {
-                    "name": "loan_payment",
-                    "type": "asset"
-                },
-                {
-                    "name": "loan_fund",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "rex_balance",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                },
-                {
-                    "name": "vote_stake",
-                    "type": "asset"
-                },
-                {
-                    "name": "rex_balance",
-                    "type": "asset"
-                },
-                {
-                    "name": "matured_rex",
-                    "type": "int64"
-                },
-                {
-                    "name": "rex_maturities",
-                    "type": "pair_time_point_sec_int64[]"
-                }
-            ]
-        },
-        {
-            "name": "rex_fund",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                },
-                {
-                    "name": "balance",
-                    "type": "asset"
-                }
-            ]
-        },
-        {
-            "name": "rex_loan",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "receiver",
-                    "type": "name"
-                },
-                {
-                    "name": "payment",
-                    "type": "asset"
-                },
-                {
-                    "name": "balance",
-                    "type": "asset"
-                },
-                {
-                    "name": "total_staked",
-                    "type": "asset"
-                },
-                {
-                    "name": "loan_num",
-                    "type": "uint64"
-                },
-                {
-                    "name": "expiration",
-                    "type": "time_point"
-                }
-            ]
-        },
-        {
-            "name": "rex_order",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                },
-                {
-                    "name": "rex_requested",
-                    "type": "asset"
-                },
-                {
-                    "name": "proceeds",
-                    "type": "asset"
-                },
-                {
-                    "name": "stake_change",
-                    "type": "asset"
-                },
-                {
-                    "name": "order_time",
-                    "type": "time_point"
-                },
-                {
-                    "name": "is_open",
-                    "type": "bool"
-                }
-            ]
-        },
-        {
-            "name": "rex_pool",
-            "base": "",
-            "fields": [
-                {
-                    "name": "total_lent",
-                    "type": "asset"
-                },
-                {
-                    "name": "total_unlent",
-                    "type": "asset"
-                },
-                {
-                    "name": "total_rent",
-                    "type": "asset"
-                },
-                {
-                    "name": "total_lendable",
-                    "type": "asset"
-                },
-                {
-                    "name": "total_rex",
-                    "type": "asset"
-                },
-                {
-                    "name": "namebid_proceeds",
-                    "type": "asset"
-                },
-                {
-                    "name": "loan_num",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
-            "name": "rexexec",
-            "base": "",
-            "fields": [
-                {
-                    "name": "user",
-                    "type": "name"
-                },
-                {
-                    "name": "max",
-                    "type": "uint16"
-                }
-            ]
-        },
-        {
-            "name": "rmvproducer",
-            "base": "",
-            "fields": [
-                {
-                    "name": "producer",
-                    "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "sellram",
-            "base": "",
-            "fields": [
-                {
-                    "name": "account",
-                    "type": "name"
-                },
-                {
-                    "name": "bytes",
-                    "type": "int64"
-                }
-            ]
-        },
-        {
-            "name": "sellrex",
-            "base": "",
-            "fields": [
-                {
-                    "name": "from",
-                    "type": "name"
-                },
-                {
-                    "name": "rex",
-                    "type": "asset"
+                    "type": "producer[]"
                 }
             ]
         },
@@ -1135,28 +744,6 @@
                 {
                     "name": "abi",
                     "type": "bytes"
-                }
-            ]
-        },
-        {
-            "name": "setalimits",
-            "base": "",
-            "fields": [
-                {
-                    "name": "account",
-                    "type": "name"
-                },
-                {
-                    "name": "ram_bytes",
-                    "type": "int64"
-                },
-                {
-                    "name": "net_weight",
-                    "type": "int64"
-                },
-                {
-                    "name": "cpu_weight",
-                    "type": "int64"
                 }
             ]
         },
@@ -1183,17 +770,43 @@
             ]
         },
         {
-            "name": "setparams",
+            "name": "setconfig",
             "base": "",
             "fields": [
                 {
-                    "name": "params",
-                    "type": "blockchain_parameters"
+                    "name": "typ",
+                    "type": "account_name"
+                },
+                {
+                    "name": "num",
+                    "type": "int64"
+                },
+                {
+                    "name": "key",
+                    "type": "account_name"
+                },
+                {
+                    "name": "fee",
+                    "type": "asset"
                 }
             ]
         },
         {
-            "name": "setpriv",
+            "name": "setemergency",
+            "base": "",
+            "fields": [
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                },
+                {
+                    "name": "emergency",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "setfee",
             "base": "",
             "fields": [
                 {
@@ -1201,50 +814,74 @@
                     "type": "name"
                 },
                 {
-                    "name": "is_priv",
-                    "type": "uint8"
-                }
-            ]
-        },
-        {
-            "name": "setram",
-            "base": "",
-            "fields": [
+                    "name": "action",
+                    "type": "name"
+                },
                 {
-                    "name": "max_ram_size",
-                    "type": "uint64"
-                }
-            ]
-        },
-        {
-            "name": "setramrate",
-            "base": "",
-            "fields": [
+                    "name": "fee",
+                    "type": "asset"
+                },
                 {
-                    "name": "bytes_per_block",
-                    "type": "uint16"
+                    "name": "cpu_limit",
+                    "type": "uint32"
+                },
+                {
+                    "name": "net_limit",
+                    "type": "uint32"
+                },
+                {
+                    "name": "ram_limit",
+                    "type": "uint32"
                 }
             ]
         },
         {
-            "name": "undelegatebw",
+            "name": "transfer",
             "base": "",
             "fields": [
                 {
                     "name": "from",
-                    "type": "name"
+                    "type": "account_name"
                 },
                 {
-                    "name": "receiver",
-                    "type": "name"
+                    "name": "to",
+                    "type": "account_name"
                 },
                 {
-                    "name": "unstake_net_quantity",
+                    "name": "quantity",
                     "type": "asset"
                 },
                 {
-                    "name": "unstake_cpu_quantity",
-                    "type": "asset"
+                    "name": "memo",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "unfreeze",
+            "base": "",
+            "fields": [
+                {
+                    "name": "voter",
+                    "type": "account_name"
+                },
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "unfreezeram",
+            "base": "",
+            "fields": [
+                {
+                    "name": "voter",
+                    "type": "account_name"
+                },
+                {
+                    "name": "bpname",
+                    "type": "account_name"
                 }
             ]
         },
@@ -1254,47 +891,15 @@
             "fields": [
                 {
                     "name": "account",
-                    "type": "name"
+                    "type": "account_name"
                 },
                 {
                     "name": "code",
-                    "type": "name"
+                    "type": "account_name"
                 },
                 {
                     "name": "type",
                     "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "unregprod",
-            "base": "",
-            "fields": [
-                {
-                    "name": "producer",
-                    "type": "name"
-                }
-            ]
-        },
-        {
-            "name": "unstaketorex",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                },
-                {
-                    "name": "receiver",
-                    "type": "name"
-                },
-                {
-                    "name": "from_net",
-                    "type": "asset"
-                },
-                {
-                    "name": "from_cpu",
-                    "type": "asset"
                 }
             ]
         },
@@ -1321,108 +926,140 @@
             ]
         },
         {
-            "name": "updaterex",
+            "name": "updatebp",
             "base": "",
             "fields": [
                 {
-                    "name": "owner",
-                    "type": "name"
+                    "name": "bpname",
+                    "type": "account_name"
+                },
+                {
+                    "name": "block_signing_key",
+                    "type": "public_key"
+                },
+                {
+                    "name": "commission_rate",
+                    "type": "uint32"
+                },
+                {
+                    "name": "url",
+                    "type": "string"
                 }
             ]
         },
         {
-            "name": "updtrevision",
-            "base": "",
-            "fields": [
-                {
-                    "name": "revision",
-                    "type": "uint8"
-                }
-            ]
-        },
-        {
-            "name": "user_resources",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                },
-                {
-                    "name": "net_weight",
-                    "type": "asset"
-                },
-                {
-                    "name": "cpu_weight",
-                    "type": "asset"
-                },
-                {
-                    "name": "ram_bytes",
-                    "type": "int64"
-                }
-            ]
-        },
-        {
-            "name": "voteproducer",
+            "name": "vote",
             "base": "",
             "fields": [
                 {
                     "name": "voter",
-                    "type": "name"
+                    "type": "account_name"
                 },
                 {
-                    "name": "proxy",
-                    "type": "name"
+                    "name": "bpname",
+                    "type": "account_name"
                 },
                 {
-                    "name": "producers",
-                    "type": "name[]"
+                    "name": "stake",
+                    "type": "asset"
                 }
             ]
         },
         {
-            "name": "voter_info",
+            "name": "vote4ram",
             "base": "",
             "fields": [
                 {
-                    "name": "owner",
-                    "type": "name"
+                    "name": "voter",
+                    "type": "account_name"
                 },
                 {
-                    "name": "proxy",
-                    "type": "name"
+                    "name": "bpname",
+                    "type": "account_name"
                 },
                 {
-                    "name": "producers",
-                    "type": "name[]"
+                    "name": "stake",
+                    "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "vote4ram_info",
+            "base": "",
+            "fields": [
+                {
+                    "name": "voter",
+                    "type": "account_name"
                 },
                 {
                     "name": "staked",
-                    "type": "int64"
-                },
-                {
-                    "name": "last_vote_weight",
-                    "type": "float64"
-                },
-                {
-                    "name": "proxied_vote_weight",
-                    "type": "float64"
-                },
-                {
-                    "name": "is_proxy",
-                    "type": "bool"
-                },
-                {
-                    "name": "reserved1",
-                    "type": "uint32"
-                },
-                {
-                    "name": "reserved2",
-                    "type": "uint32"
-                },
-                {
-                    "name": "reserved3",
                     "type": "asset"
+                }
+            ]
+        },
+        {
+            "name": "vote_info",
+            "base": "",
+            "fields": [
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                },
+                {
+                    "name": "voteage",
+                    "type": "assetage"
+                },
+                {
+                    "name": "unstaking",
+                    "type": "asset"
+                },
+                {
+                    "name": "unstake_height",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "voteagefee",
+            "base": "",
+            "fields": [
+                {
+                    "name": "actor",
+                    "type": "account_name"
+                },
+                {
+                    "name": "fee",
+                    "type": "asset"
+                },
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                }
+            ]
+        },
+        {
+            "name": "votefix",
+            "base": "",
+            "fields": [
+                {
+                    "name": "voter",
+                    "type": "account_name"
+                },
+                {
+                    "name": "bpname",
+                    "type": "account_name"
+                },
+                {
+                    "name": "type",
+                    "type": "name"
+                },
+                {
+                    "name": "stake",
+                    "type": "asset"
+                },
+                {
+                    "name": "stake_typ",
+                    "type": "uint32"
                 }
             ]
         },
@@ -1439,395 +1076,320 @@
                     "type": "uint16"
                 }
             ]
-        },
-        {
-            "name": "withdraw",
-            "base": "",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "name"
-                },
-                {
-                    "name": "amount",
-                    "type": "asset"
-                }
-            ]
         }
     ],
-    "types": [],
     "actions": [
         {
-            "name": "bidname",
-            "type": "bidname",
+            "name": "activate",
+            "type": "activate",
             "ricardian_contract": ""
         },
         {
-            "name": "bidrefund",
-            "type": "bidrefund",
-            "ricardian_contract": ""
+            "name": "approvebp",
+            "type": "approvebp",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Approve to punish drain block bp\nsummary: '{{approver}} approve to punish {{bpname}}.only producer can approve and when the number of approver is bigger then 16 the bp will be punished'\n---"
         },
         {
-            "name": "buyram",
-            "type": "buyram",
-            "ricardian_contract": ""
+            "name": "bailpunish",
+            "type": "bailpunish",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: The punished bp bail to normal\nsummary: 'When the punish is over,{{bpname}} can bail to normal'\n---"
         },
         {
-            "name": "buyrambytes",
-            "type": "buyrambytes",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "buyrex",
-            "type": "buyrex",
-            "ricardian_contract": ""
+            "name": "bpclaim",
+            "type": "bpclaim",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: bp claim reward\nsummary: 'when bp reward and block reward was bigger then 100.0000 EOSC,the bp can use this action to claim reward'\n---"
         },
         {
             "name": "canceldelay",
             "type": "canceldelay",
-            "ricardian_contract": ""
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Cancel Delayed Transaction\nsummary: '{{nowrap canceling_auth.actor}} cancels a delayed transaction'\nicon: /\n---\n\n{{canceling_auth.actor}} cancels the delayed transaction with id {{trx_id}}."
         },
         {
-            "name": "claimrewards",
-            "type": "claimrewards",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "closerex",
-            "type": "closerex",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "cnclrexorder",
-            "type": "cnclrexorder",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "consolidate",
-            "type": "consolidate",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "defcpuloan",
-            "type": "defcpuloan",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "defnetloan",
-            "type": "defnetloan",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "delegatebw",
-            "type": "delegatebw",
-            "ricardian_contract": ""
+            "name": "claim",
+            "type": "claim",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Claim Voter 's Reward\nsummary: '{{nowrap voter}} claim their reward by vote to {{nowrap bpname}}.'\n---"
         },
         {
             "name": "deleteauth",
             "type": "deleteauth",
-            "ricardian_contract": ""
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Delete Account Permission\nsummary: 'Delete the {{nowrap permission}} permission of {{nowrap account}}'\nicon: /\n---\n\nDelete the {{permission}} permission of {{account}}."
         },
         {
-            "name": "deposit",
-            "type": "deposit",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "fundcpuloan",
-            "type": "fundcpuloan",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "fundnetloan",
-            "type": "fundnetloan",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "init",
-            "type": "init",
-            "ricardian_contract": ""
+            "name": "heartbeat",
+            "type": "heartbeat",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Block Producer Heartbeat\nsummary: '{{nowrap bpname}} send heartbeat to chain by time {{nowrap timestamp}}'\n---"
         },
         {
             "name": "linkauth",
             "type": "linkauth",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Link Action to Permission\nsummary: '{{nowrap account}} sets the minimum required permission for the {{#if type}}{{nowrap type}} action of the{{/if}} {{nowrap code}} contract to {{nowrap requirement}}'\nicon: /\n---\n\n{{account}} sets the minimum required permission for the {{#if type}}{{type}} action of the{{/if}} {{code}} contract to {{requirement}}.\n\n{{#if type}}{{else}}Any links explicitly associated to specific actions of {{code}} will take precedence.{{/if}}"
+        },
+        {
+            "name": "monitorevise",
+            "type": "monitorevise",
             "ricardian_contract": ""
         },
         {
             "name": "newaccount",
             "type": "newaccount",
-            "ricardian_contract": ""
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Create New Account\nsummary: '{{nowrap creator}} creates a new account with the name {{nowrap name}}'\n---\n\n{{creator}} creates a new account with the name {{name}} and the following permissions:\n\nowner permission with authority:\n{{to_json owner}}\n\nactive permission with authority:\n{{to_json active}}"
         },
         {
             "name": "onblock",
             "type": "onblock",
-            "ricardian_contract": ""
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: On Block\nsummary: 'each block produced by {{nowrap bpname}} will exec a onblock action by header'\n---"
         },
         {
             "name": "onerror",
             "type": "onerror",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: On Error\nsummary: 'on error'\n---"
+        },
+        {
+            "name": "onfee",
+            "type": "onfee",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: On Fee\nsummary: 'each action by {{nowrap actor}} will cost fee by {{nowrap fee}}'\n---"
+        },
+        {
+            "name": "outfixvote",
+            "type": "outfixvote",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Take out Fix Time Vote\nsummary: 'When {{nowrap voter}} fix-time voting is timeout, {{nowrap voter}} can take out stake form {{nowrap key}} voting'\n---"
+        },
+        {
+            "name": "punishbp",
+            "type": "punishbp",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Proposed to punish drain block bp\nsummary: '{{proposaler}} proposed to punish {{bpname}}'\n---"
+        },
+        {
+            "name": "removebp",
+            "type": "removebp",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Remove Block Producer\nsummary: 'unreg the {{nowrap bpname}} block producer'\n---"
+        },
+        {
+            "name": "removepunish",
+            "type": "removepunish",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: bp remove to be punish status\nsummary: 'when bp block out ,it can remove its bpstatus from 1 to 0.if the bpstatus is 1 ,the bp can be punished'\n---"
+        },
+        {
+            "name": "reqactivated",
+            "type": "reqactivated",
             "ricardian_contract": ""
         },
         {
-            "name": "refund",
-            "type": "refund",
-            "ricardian_contract": ""
+            "name": "revote",
+            "type": "revote",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: ReVote To Another Block Producer\nsummary: '{{nowrap voter}} change vote from {{nowrap frombp}} to {{nowrap tobp}} with {{nowrap restake}} asset'\n---\n\n{{voter}} change vote from {{frombp}} to {{tobp}} with {{restake}} asset,\n\nIf {{voter}} have not vote to {{tobp}}, {{voter}} will be as the RAM payer of the {{vote_info}}."
         },
         {
-            "name": "regproducer",
-            "type": "regproducer",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "regproxy",
-            "type": "regproxy",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "rentcpu",
-            "type": "rentcpu",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "rentnet",
-            "type": "rentnet",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "rexexec",
-            "type": "rexexec",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "rmvproducer",
-            "type": "rmvproducer",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "sellram",
-            "type": "sellram",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "sellrex",
-            "type": "sellrex",
-            "ricardian_contract": ""
+            "name": "revotefix",
+            "type": "revotefix",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Fix Time Revote\nsummary: '{{nowrap voter}} revote {{nowrap key}} fix-time voting to {{nowrap bpname}}'\n---"
         },
         {
             "name": "setabi",
             "type": "setabi",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "setalimits",
-            "type": "setalimits",
-            "ricardian_contract": ""
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Deploy Contract ABI\nsummary: 'Deploy contract ABI on account {{nowrap account}}'\nicon: /\n---\n\nDeploy the ABI file associated with the contract on account {{account}}."
         },
         {
             "name": "setcode",
             "type": "setcode",
-            "ricardian_contract": ""
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Deploy Contract Code\nsummary: 'Deploy contract code on account {{nowrap account}}'\nicon: /\n---\n\nDeploy compiled contract code to the account {{account}}."
         },
         {
-            "name": "setparams",
-            "type": "setparams",
-            "ricardian_contract": ""
+            "name": "setconfig",
+            "type": "setconfig",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Set Chain Config\nsummary: 'Set {{nowrap typ}} chain config by {{nowrap num}}, {{nowrap key}} and {{nowrap fee}}'\n---"
         },
         {
-            "name": "setpriv",
-            "type": "setpriv",
-            "ricardian_contract": ""
+            "name": "setemergency",
+            "type": "setemergency",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Set Emergency State\nsummary: '{{nowrap bpname}} set if current state is {{nowrap emergency}}'\n---"
         },
         {
-            "name": "setram",
-            "type": "setram",
-            "ricardian_contract": ""
+            "name": "setfee",
+            "type": "setfee",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Set Action Fee\nsummary: '{{account}} Set {{nowrap action}} in {{account}} 's contracts Fee {{nowrap fee}}'\n---"
         },
         {
-            "name": "setramrate",
-            "type": "setramrate",
-            "ricardian_contract": ""
+            "name": "transfer",
+            "type": "transfer",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Transfer EOS Token\nsummary: 'Send {{nowrap quantity}} EOS Token from {{nowrap from}} to {{nowrap to}}'\n---\n\n{{from}} agrees to send {{quantity}} to {{to}}.\n\n{{#if memo}}There is a memo attached to the transfer stating:\n{{memo}}\n{{/if}}\n\nIf {{from}} is not already the RAM payer of their {{asset_to_symbol_code quantity}} token balance, {{from}} will be designated as such. As a result, RAM will be deducted from {{from}}’s resources to refund the original RAM payer.\n\nIf {{to}} does not have a balance for {{asset_to_symbol_code quantity}}, {{from}} will be designated as the RAM payer of the {{asset_to_symbol_code quantity}} token balance for {{to}}. As a result, RAM will be deducted from {{from}}’s resources to create the necessary records."
         },
         {
-            "name": "undelegatebw",
-            "type": "undelegatebw",
-            "ricardian_contract": ""
+            "name": "unfreeze",
+            "type": "unfreeze",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Unfreeze Voter's Stake Token\nsummary: '{{nowrap voter}} unfree their stake tokens from {{nowrap bpname}}.'\n---\n\n{{voter}} unfree their stake tokens from {{nowrap bpname}} to it's account."
+        },
+        {
+            "name": "unfreezeram",
+            "type": "unfreezeram",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Unfreeze Voter's Stake Token For RAM\nsummary: '{{nowrap voter}} unfree their stake tokens from {{nowrap bpname}} for RAM.'\n---"
         },
         {
             "name": "unlinkauth",
             "type": "unlinkauth",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "unregprod",
-            "type": "unregprod",
-            "ricardian_contract": ""
-        },
-        {
-            "name": "unstaketorex",
-            "type": "unstaketorex",
-            "ricardian_contract": ""
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Unlink Action from Permission\nsummary: '{{nowrap account}} unsets the minimum required permission for the {{#if type}}{{nowrap type}} action of the{{/if}} {{nowrap code}} contract'\nicon: /\n---\n\n{{account}} removes the association between the {{#if type}}{{type}} action of the{{/if}} {{code}} contract and its minimum required permission.\n\n{{#if type}}{{else}}This will not remove any links explicitly associated to specific actions of {{code}}.{{/if}}"
         },
         {
             "name": "updateauth",
             "type": "updateauth",
-            "ricardian_contract": ""
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Modify Account Permission\nsummary: 'Add or update the {{nowrap permission}} permission of {{nowrap account}}'\nicon: /\n---\n\nModify, and create if necessary, the {{permission}} permission of {{account}} to have a parent permission of {{parent}} and the following authority:\n{{to_json auth}}"
         },
         {
-            "name": "updaterex",
-            "type": "updaterex",
-            "ricardian_contract": ""
+            "name": "updatebp",
+            "type": "updatebp",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Update Block Producer Info\nsummary: '{{nowrap bpname}} reg or update their block producer info'\n---\n\nIf {{bpname}} is not a block producer, {{bpname}} will reg to a block producer for eosforce mainnet, and {{bpname}} will be as the RAM payer of the {{bp_info}}.\n\nIf {{bpname}} is a block producer, {{bpname}} update their block producer info with {{block_signing_key}}, {{commission_rate}} and {{url}}."
         },
         {
-            "name": "updtrevision",
-            "type": "updtrevision",
-            "ricardian_contract": ""
+            "name": "vote",
+            "type": "vote",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Vote To Block Producer\nsummary: '{{nowrap voter}} vote to {{nowrap bpname}} by {{nowrap stake}}'\n---\n\n{{voter}} vote to {{bpname}} by {{stake}}, {{bpname}} is a block producer.\n\nIf {{voter}} have not vote to {{bpname}}, {{voter}} will be as the RAM payer of the {{vote_info}}."
         },
         {
-            "name": "voteproducer",
-            "type": "voteproducer",
-            "ricardian_contract": ""
+            "name": "vote4ram",
+            "type": "vote4ram",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Vote Block Producer For RAM\nsummary: '{{nowrap voter}} vote {{nowrap bpname}} by {{nowrap stake}} asset for use reward to get RAM.'\n---\n\n{{voter}} vote {{bpname}} by {{stake}} asset for use reward to get RAM."
         },
         {
-            "name": "withdraw",
-            "type": "withdraw",
-            "ricardian_contract": ""
+            "name": "voteagefee",
+            "type": "voteagefee",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Fee By Voteage\nsummary: 'each action by {{nowrap actor}} will cost fee by use vote age to {{nowrap fee}}'\n---"
+        },
+        {
+            "name": "votefix",
+            "type": "votefix",
+            "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Fix Time Vote\nsummary: '{{nowrap voter}} vote {{nowrap bpname}} by fix-time in {{nowrap type}} way with {{nowrap stake}} token'\n---"
         }
     ],
     "tables": [
         {
-            "name": "abihash",
-            "type": "abi_hash",
+            "name": "accounts",
+            "type": "account_info",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "bidrefunds",
-            "type": "bid_refund",
+            "name": "blackpro",
+            "type": "producer_blacklist",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "cpuloan",
-            "type": "rex_loan",
+            "name": "blockreward",
+            "type": "block_reward",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "delband",
-            "type": "delegated_bandwidth",
+            "name": "bpmonitor",
+            "type": "bp_monitor",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "global",
-            "type": "eosio_global_state",
+            "name": "bps",
+            "type": "bp_info",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "global2",
-            "type": "eosio_global_state2",
+            "name": "bpsreward",
+            "type": "bps_reward",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "global3",
-            "type": "eosio_global_state3",
+            "name": "chainstatus",
+            "type": "chain_status",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "namebids",
-            "type": "name_bid",
+            "name": "drainblocks",
+            "type": "drain_block_info",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "netloan",
-            "type": "rex_loan",
+            "name": "fixvotes",
+            "type": "fix_time_vote_info",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "producers",
-            "type": "producer_info",
+            "name": "gvotestat",
+            "type": "global_votestate_info",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "producers2",
-            "type": "producer_info2",
+            "name": "heartbeat",
+            "type": "heartbeat_info",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "rammarket",
-            "type": "exchange_state",
+            "name": "lastproducer",
+            "type": "last_producer",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "refunds",
-            "type": "refund_request",
+            "name": "punishbps",
+            "type": "punish_bp_info",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "rexbal",
-            "type": "rex_balance",
+            "name": "schedules",
+            "type": "schedule_info",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "rexfund",
-            "type": "rex_fund",
+            "name": "vote4ramsum",
+            "type": "vote4ram_info",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "rexpool",
-            "type": "rex_pool",
+            "name": "votes",
+            "type": "vote_info",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         },
         {
-            "name": "rexqueue",
-            "type": "rex_order",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "userres",
-            "type": "user_resources",
-            "index_type": "i64",
-            "key_names": [],
-            "key_types": []
-        },
-        {
-            "name": "voters",
-            "type": "voter_info",
+            "name": "votes4ram",
+            "type": "vote_info",
             "index_type": "i64",
             "key_names": [],
             "key_types": []
         }
     ],
-    "ricardian_clauses": [],
-    "abi_extensions": []
+    "ricardian_clauses": [
+        {
+            "id": "UserAgreement",
+            "body": "User agreement for the chain can go here."
+        },
+        {
+            "id": "BlockProducerAgreement",
+            "body": "I, {{producer}}, hereby nominate myself for consideration as an elected block producer.\n\nIf {{producer}} is selected to produce blocks by the system contract, I will sign blocks with {{producer_key}} and I hereby attest that I will keep this key secret and secure.\n\nIf {{producer}} is unable to perform obligations under this contract I will resign my position by resubmitting this contract with the null producer key.\n\nI acknowledge that a block is 'objectively valid' if it conforms to the deterministic blockchain rules in force at the time of its creation, and is 'objectively invalid' if it fails to conform to those rules.\n\n{{producer}} hereby agrees to only use {{producer_key}} to sign messages under the following scenarios:\n\n* proposing an objectively valid block at the time appointed by the block scheduling algorithm;\n* pre-confirming a block produced by another producer in the schedule when I find said block objectively valid;\n* and, confirming a block for which {{producer}} has received pre-confirmation messages from more than two-thirds of the active block producers.\n\nI hereby accept liability for any and all provable damages that result from my:\n\n* signing two different block proposals with the same timestamp with {{producer_key}};\n* signing two different block proposals with the same block number with {{producer_key}};\n* signing any block proposal which builds off of an objectively invalid block;\n* signing a pre-confirmation for an objectively invalid block;\n* or, signing a confirmation for a block for which I do not possess pre-confirmation messages from more than two-thirds of the active block producers.\n\nI hereby agree that double-signing for a timestamp or block number in concert with two or more other block producers shall automatically be deemed malicious and cause {{producer}} to be subject to:\n\n* a fine equal to the past year of compensation received,\n* immediate disqualification from being a producer,\n* and/or other damages.\n\nAn exception may be made if {{producer}} can demonstrate that the double-signing occurred due to a bug in the reference software; the burden of proof is on {{producer}}.\n\nI hereby agree not to interfere with the producer election process. I agree to process all producer election transactions that occur in blocks I create, to sign all objectively valid blocks I create that contain election transactions, and to sign all pre-confirmations and confirmations necessary to facilitate transfer of control to the next set of producers as determined by the system contract.\n\nI hereby acknowledge that more than two-thirds of the active block producers may vote to disqualify {{producer}} in the event {{producer}} is unable to produce blocks or is unable to be reached, according to criteria agreed to among block producers.\n\nIf {{producer}} qualifies for and chooses to collect compensation due to votes received, {{producer}} will provide a public endpoint allowing at least 100 peers to maintain synchronization with the blockchain and/or submit transactions to be included. {{producer}} shall maintain at least one validating node with full state and signature checking and shall report any objectively invalid blocks produced by the active block producers. Reporting shall be via a method to be agreed to among block producers, said method and reports to be made public.\n\nThe community agrees to allow {{producer}} to authenticate peers as necessary to prevent abuse and denial of service attacks; however, {{producer}} agrees not to discriminate against non-abusive peers.\n\nI agree to process transactions on a FIFO (first in, first out) best-effort basis and to honestly bill transactions for measured execution time.\n\nI {{producer}} agree not to manipulate the contents of blocks in order to derive profit from: the order in which transactions are included, or the hash of the block that is produced.\n\nI, {{producer}}, hereby agree to disclose and attest under penalty of perjury all ultimate beneficial owners of my business entity who own more than 10% and all direct shareholders.\n\nI, {{producer}}, hereby agree to cooperate with other block producers to carry out our respective and mutual obligations under this agreement, including but not limited to maintaining network stability and a valid blockchain.\n\nI, {{producer}}, agree to maintain a website hosted at {{url}} which contains up-to-date information on all disclosures required by this contract.\n\nI, {{producer}}, agree to set the location value of {{location}} such that {{producer}} is scheduled with minimal latency between my previous and next peer.\n\nI, {{producer}}, agree to maintain time synchronization within 50 ms of global atomic clock time, using a method agreed to among block producers.\n\nI, {{producer}}, agree not to produce blocks before my scheduled time unless I have received all blocks produced by the prior block producer.\n\nI, {{producer}}, agree not to publish blocks with timestamps more than 2000ms in the future unless the prior block is more than 75% full by either NET or CPU bandwidth metrics.\n\nI, {{producer}}, agree not to set the RAM supply to more RAM than my nodes contain and to resign if I am unable to provide the RAM approved by more than two-thirds of active block producers, as shown in the system parameters."
+        }
+    ],
+    "variants": []
 }

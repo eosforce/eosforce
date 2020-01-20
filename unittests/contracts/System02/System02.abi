@@ -243,6 +243,29 @@
          {"name":"bpname", "type":"account_name"}
        ]
      },{
+      "name": "setfee",
+      "base": "",
+      "fields": [{
+          "name": "account",
+          "type": "name"
+        },{
+          "name": "action",
+          "type": "name"
+        },{
+          "name": "fee",
+          "type": "asset"
+        },{
+          "name": "cpu_limit",
+          "type": "uint32"
+        },{
+          "name": "net_limit",
+          "type": "uint32"
+        },{
+          "name": "ram_limit",
+          "type": "uint32"
+        }
+      ]
+    },{
        "name": "voteagefee",
        "base": "",
        "fields": [
@@ -314,6 +337,10 @@
        "type": "setabi",
        "ricardian_contract": ""
      },{
+      "name": "setfee",
+      "type": "setfee",
+      "ricardian_contract": "---\nspec_version: \"0.2.0\"\ntitle: Set Action Fee\nsummary: '{{account}} Set {{nowrap action}} in {{account}} 's contracts Fee {{nowrap fee}}'\n---"
+    },{
        "name": "updateauth",
        "type": "updateauth",
        "ricardian_contract": ""

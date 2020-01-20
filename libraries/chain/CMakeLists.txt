@@ -102,7 +102,12 @@ add_library( eosio_chain
              genesis_intrinsics.cpp
              whitelisted_intrinsics.cpp
              thread_utils.cpp
+
              platform_timer_accuracy.cpp
+
+             chain_func_check.cpp
+             chain_init_eosc.cpp
+
              ${PLATFORM_TIMER_IMPL}
              ${HEADERS}
              )

@@ -20,7 +20,9 @@ struct core_sym {
 // CN -> contract C++ name, C -> contract name, D -> top level directory
 #define MAKE_READ_WASM_ABI(CN,C, D) \
    static std::vector<uint8_t> CN ## _wasm() { return read_wasm("${CMAKE_BINARY_DIR}/unittests/" #D "/" #C "/" #C ".wasm"); } \
-   static std::vector<char> CN ## _abi() { return read_abi("${CMAKE_BINARY_DIR}/unittests/" #D "/" #C "/" #C ".abi"); }
+   static chain::bytes CN ## _wasm_byte() { return read_wasm_byte("${CMAKE_BINARY_DIR}/unittests/" #D "/" #C "/" #C ".wasm"); } \
+   static std::vector<char> CN ## _abi() { return read_abi("${CMAKE_BINARY_DIR}/unittests/" #D "/" #C "/" #C ".abi"); } \
+   static chain::bytes CN ## _abi_byte() { return read_abi_byte("${CMAKE_BINARY_DIR}/unittests/" #D "/" #C "/" #C ".abi"); }
 
 namespace eosio {
    namespace testing {
@@ -32,8 +34,20 @@ namespace eosio {
          MAKE_READ_WASM_ABI(eosio_token,  eosio.token,  contracts)
          MAKE_READ_WASM_ABI(eosio_wrap,   eosio.wrap,   contracts)
 
+
          MAKE_READ_WASM_ABI(before_producer_authority_eosio_bios,   eosio.bios, contracts/old_versions/v1.7.0-develop-preactivate_feature)
          MAKE_READ_WASM_ABI(before_preactivate_eosio_bios,          eosio.bios, contracts/old_versions/v1.6.0-rc3)
+
+         // eosforce contracts
+         MAKE_READ_WASM_ABI(eosio_lock,   eosio.lock,     contracts)
+         MAKE_READ_WASM_ABI(eosio_freeze, eosio.freeze,   contracts)
+
+         // eosforce genesis system contracts in early version
+         MAKE_READ_WASM_ABI(system,     System,     contracts)
+         MAKE_READ_WASM_ABI(system_1,   System01,   contracts)
+         MAKE_READ_WASM_ABI(system_2,   System02,   contracts)
+
+         MAKE_READ_WASM_ABI(before_preactivate_eosio_bios,   eosio.bios, contracts/old_versions/v1.6.0-rc3)
 
          // Contracts in `eos/unittests/unittests/test-contracts' directory
          MAKE_READ_WASM_ABI(asserter,              asserter,              test-contracts)

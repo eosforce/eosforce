@@ -5,14 +5,14 @@ include(ExternalProject)
 
 if( EOSIO_COMPILE_TEST_CONTRACTS )
    set(EOSIO_WASM_OLD_BEHAVIOR "Off")
-   find_package(eosio.cdt REQUIRED)
+   find_package(eosforce.cdt REQUIRED)
 
    message( STATUS "Building contracts in directory `eos/unittests/test-contracts/`" )
    ExternalProject_Add(
       test_contracts_project
       SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/test-contracts
       BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/test-contracts
-      CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${EOSIO_CDT_ROOT}/lib/cmake/eosio.cdt/EosioWasmToolchain.cmake -DEOSIO_COMPILE_TEST_CONTRACTS=${EOSIO_COMPILE_TEST_CONTRACTS}
+      CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${EOSFORCE_CDT_ROOT}/lib/cmake/eosforce.cdt/EosioWasmToolchain.cmake -DEOSIO_COMPILE_TEST_CONTRACTS=${EOSIO_COMPILE_TEST_CONTRACTS}
       UPDATE_COMMAND ""
       PATCH_COMMAND ""
       TEST_COMMAND ""
@@ -21,7 +21,7 @@ if( EOSIO_COMPILE_TEST_CONTRACTS )
    )
 else()
   message( STATUS "Not building contracts in directory `eos/unittests/test-contracts/`" )
-  #add_subdirectory(test-contracts)
+  add_subdirectory(test-contracts)
 endif()
 
 if( GPERFTOOLS_FOUND )

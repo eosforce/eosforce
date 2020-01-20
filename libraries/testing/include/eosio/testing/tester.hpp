@@ -8,7 +8,6 @@
 #include <fc/io/json.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/tuple/tuple_io.hpp>
-#include <eosio/chain/wast_to_wasm.hpp>
 
 #include <iosfwd>
 
@@ -74,6 +73,9 @@ namespace eosio { namespace testing {
    fc::variant          read_json_snapshot( const char* fn );
 
    using namespace eosio::chain;
+
+   chain::bytes read_wasm_byte( const char* fn );
+   chain::bytes read_abi_byte( const char* fn );
 
    fc::variant_object filter_fields(const fc::variant_object& filter, const fc::variant_object& value);
 
@@ -162,6 +164,8 @@ namespace eosio { namespace testing {
          void              init(controller::config config, protocol_feature_set&& pfs);
          void              execute_setup_policy(const setup_policy policy);
 
+         static void gen_eosforce_config( controller::config& cfg );
+
          void              close();
          template <typename Lambda>
          void              open( protocol_feature_set&& pfs, fc::optional<chain_id_type> expected_chain_id, Lambda lambda );
@@ -235,7 +239,7 @@ namespace eosio { namespace testing {
          {
             vector<transaction_trace_ptr> traces;
             traces.reserve(names.size());
-            for( auto n : names ) traces.emplace_back( create_account( n, N(eosforce)/*config::system_account_name*/, multisig, include_code ) );
+            for( auto n : names ) traces.emplace_back( create_account( n, N(eosforce), multisig, include_code ) );
             return traces;
          }
 
@@ -256,6 +260,8 @@ namespace eosio { namespace testing {
                                      permission_name parent = config::owner_name );
          void delete_authority( account_name account, permission_name perm,  const vector<permission_level>& auths, const vector<private_key_type>& keys );
          void delete_authority( account_name account, permission_name perm );
+
+         void vote_for_ram( account_name account, const asset& amounts );
 
          transaction_trace_ptr create_account( account_name name,
                                                account_name creator = N(eosforce)/*config::system_account_name*/,
@@ -304,21 +310,22 @@ namespace eosio { namespace testing {
          void              set_code( account_name name, const char* wast, const private_key_type* signer = nullptr );
          void              set_code( account_name name, const vector<uint8_t> wasm, const private_key_type* signer = nullptr  );
          void              set_abi( account_name name, const char* abi_json, const private_key_type* signer = nullptr );
-         void set_fee( account_name account, 
-     			 action_name action, 
-   				 asset fee, 
-   				 uint32_t cpu_limit, 
-   				 uint32_t net_limit,
-   				 uint32_t ram_limit,
-   				 const private_key_type* signer = nullptr );
-   	     void set_fee( account_name auth, 
-   				 account_name account,
-     			 action_name action, 
-   				 asset fee, 
-   				 uint32_t cpu_limit, 
-   				 uint32_t net_limit,
-   				 uint32_t ram_limit,
-   				 const private_key_type* signer = nullptr );
+
+         // func for fee
+         void set_fee( account_name account, action_name action, const asset& fee = asset{100} );
+         void set_fee( account_name account, action_name action, const asset& fee, uint32_t cpu_limit, uint32_t net_limit,uint32_t ram_limit, const private_key_type* signer = nullptr );
+         void set_fee( account_name auth, account_name account, action_name action, const asset& fee, uint32_t cpu_limit, uint32_t net_limit,uint32_t ram_limit, const private_key_type* signer = nullptr );
+
+         const asset get_fee( account_name account, action_name action );
+
+         // func for eosc chain config
+         void set_chain_config( const eosio::chain::setconfig& cfg, const private_key_type* signer = nullptr );
+         void set_chain_func_act_block( account_name typ, uint32_t block_num, const private_key_type* signer = nullptr );
+         bool is_func_opened( account_name typ );
+
+         // open all eosc chain config, this will wait for some blocks
+         void open_all_funcs( const private_key_type* signer = nullptr );
+
 
          bool                          chain_has_transaction( const transaction_id_type& txid ) const;
          const transaction_receipt&    get_transaction_receipt( const transaction_id_type& txid ) const;
@@ -414,6 +421,8 @@ namespace eosio { namespace testing {
             cfg.reversible_guard_size = 0;
             cfg.contracts_console = true;
             cfg.eosvmoc_config.cache_size = 1024*1024*8;
+
+            gen_eosforce_config( cfg );
 
             for(int i = 0; i < boost::unit_test::framework::master_test_suite().argc; ++i) {
                if(boost::unit_test::framework::master_test_suite().argv[i] == std::string("--wabt"))

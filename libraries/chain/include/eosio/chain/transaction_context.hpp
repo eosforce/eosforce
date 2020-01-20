@@ -141,6 +141,7 @@ namespace eosio { namespace chain {
 
          transaction_checktime_timer   transaction_timer;
 
+         // some info to process fee for eosc
          account_name                  fee_payer      = name{};
          asset                         fee_costed     = asset{0};
          asset                         max_fee_to_pay = asset{0};

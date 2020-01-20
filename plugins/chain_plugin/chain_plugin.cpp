@@ -1126,7 +1126,10 @@ void chain_plugin::initialize_genesis() {
    load_contract_code_abi("System01", my->chain_config->System01_code, my->chain_config->System01_abi);
    load_contract_code_abi("eosio.lock", my->chain_config->lock_code, my->chain_config->lock_abi);
 
-   my->genesis = my->chain_config->genesis;
+   my->chain_config->genesis.initial_configuration.max_block_cpu_usage = 1000000;
+   my->chain_config->genesis.initial_configuration.max_transaction_cpu_usage = 500000;
+
+   //my->genesis = my->chain_config->genesis;
 }
 
 void chain_plugin::plugin_startup()

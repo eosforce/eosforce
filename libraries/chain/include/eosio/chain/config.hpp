@@ -75,7 +75,7 @@ const static uint32_t   transaction_id_net_usage                     = 32; // 32
 
 const static uint32_t   default_max_block_cpu_usage                 = 1000'000; /// max block cpu usage in microseconds
 const static uint32_t   default_target_block_cpu_usage_pct          = 10 * percent_1;
-const static uint32_t   default_max_transaction_cpu_usage           = 3*default_max_block_cpu_usage/4; /// max trx cpu usage in microseconds
+const static uint32_t   default_max_transaction_cpu_usage           = 500'000; /// max trx cpu usage in microseconds
 const static uint32_t   default_min_transaction_cpu_usage           = 100; /// min trx cpu usage in microseconds (10000 TPS equiv)
 const static uint32_t   default_subjective_cpu_leeway_us            = 31000; /// default subjective cpu leeway in microseconds
 

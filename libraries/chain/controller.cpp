@@ -321,7 +321,6 @@ struct controller_impl {
     wasmif( cfg.wasm_runtime, cfg.eosvmoc_tierup, db, cfg.state_dir, cfg.eosvmoc_config ),
     resource_limits( db ),
     authorization( s, db ),
-    txfee(),
     protocol_features( std::move(pfs) ),
     conf( cfg ),
     chain_id( chain_id ),
@@ -795,9 +794,6 @@ struct controller_impl {
 
       controller_index_set::add_indices(db);
       contract_database_index_set::add_indices(db);
-
-      //db.add_index<action_fee_object_index>();
-      //db.add_index<config_data_object_index>();
 
       authorization.add_indices();
       resource_limits.add_indices();

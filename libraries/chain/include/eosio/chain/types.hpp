@@ -312,6 +312,7 @@ namespace eosio { namespace chain {
       return exts.emplace(insert_itr, eid, std::move(data));
    }
 
+
    template<typename Container>
    class end_insert_iterator : public std::iterator< std::output_iterator_tag, void, void, void, void >
    {

@@ -486,6 +486,7 @@ namespace eosio { namespace chain {
          }
 
          for( const auto& declared_auth : act.authorization ) {
+
             checktime();
 
             if( !special_case ) {

@@ -201,6 +201,7 @@ namespace eosio { namespace chain {
       FC_DECLARE_DERIVED_EXCEPTION( unactivated_signature_type,        chain_type_exception,
                                     3010016, "Signature type is not a currently activated type" )
 
+
    FC_DECLARE_DERIVED_EXCEPTION( fork_database_exception, chain_exception,
                                  3020000, "Fork database exception" )
 

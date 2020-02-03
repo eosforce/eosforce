@@ -7,6 +7,8 @@ import subprocess
 import sys
 import time
 
+import genesis
+
 args = None
 logFile = None
 
@@ -69,8 +71,8 @@ def createNodeDir(nodeIndex, bpaccount, key):
     config_opts = ''.join(list(map(lambda i: ('p2p-peer-address = 127.0.0.1:%d\n' % (9001 + (nodeIndex + i) % 23 )), range(6))))
 
     config_opts += (
-        ('\n\nhttp-server-address = 0.0.0.0:%d\n' % (8000 + nodeIndex)) +
-        ('p2p-listen-endpoint = 0.0.0.0:%d\n\n\n' % (9000 + nodeIndex)) +
+        ('\n\nhttp-server-address = 127.0.0.1:%d\n' % (8000 + nodeIndex)) +
+        ('p2p-listen-endpoint = 127.0.0.1:%d\n\n\n' % (9000 + nodeIndex)) +
         ('producer-name = %s\n' % (bpaccount['name'])) +
         ('signature-provider = %s=KEY:%s\n' % ( bpaccount['bpkey'], key[1] )) +
         ('bp-mapping = %s=KEY:%sa\n\n\n' % ( bpaccount['name'], bpaccount['name'] )) +
@@ -83,13 +85,13 @@ def createNodeDir(nodeIndex, bpaccount, key):
         ('agent-name = "TestBPNode%2d"\n' % (nodeIndex)) +
         'http-validate-host=false\n' +
         ('max-clients = %d\n' % (datas["maxClients"])) +
-        'chain-state-db-size-mb = 16384\n' +
+        'chain-state-db-size-mb = 1024\n' +
         'https-client-validate-peers = false\n' +
         'access-control-allow-origin = *\n' +
         'access-control-allow-headers = Content-Type\n' +
         'p2p-max-nodes-per-host = 10\n' +
         'max-transaction-time = 16000\n' +
-        'max-irreversible-block-age = 36000\n' +
+        'max-irreversible-block-age = -1\n' +
         'enable-stale-production = true\n' +
         'filter-on=*\n\n\n'
     )
@@ -132,7 +134,7 @@ def stepKillAll():
 def stepStartWallet():
     run('rm -rf ' + os.path.abspath(args.wallet_dir))
     run('mkdir -p ' + os.path.abspath(args.wallet_dir))
-    background(args.keosd + ' --unlock-timeout %d --http-server-address 0.0.0.0:6666 --wallet-dir %s' % (unlockTimeout, os.path.abspath(args.wallet_dir)))
+    background(args.keosd + ' --unlock-timeout %d --http-server-address 127.0.0.1:6666 --wallet-dir %s' % (unlockTimeout, os.path.abspath(args.wallet_dir)))
     sleep(.4)
 
 def stepCreateWallet():
@@ -191,7 +193,8 @@ def stepMakeGenesis():
 
     run('cp ' + args.contracts_dir + '/logging.json ' + os.path.abspath(args.config_dir) + "/logging.json")
 
-    run(args.root + 'build/programs/genesis/genesis')
+    genesis.make_genesis_data()
+
     run('mv ./genesis.json ' + os.path.abspath(args.config_dir))
 
     run('mv ./key.json ' + os.path.abspath(args.config_dir) + '/keys/')

@@ -13,7 +13,7 @@ bp_pub_key = 'EOS5muUziYrETi5b6G2Ev91dCBrEm3qir7PK4S2qSFqfqcmouyzCr'
 sign_pri_key = '5JfjatHRwbmY8SfptFRxHnYUctfnuaxANTGDYUtkfrrBDgkh3hB'
 sign_pub_key = 'EOS7R82SaGaJubv23GwXHyKT4qDCVXi66qkQrnjwmBUvdA4dyzEPG'
 
-boot_time = time.strftime("%Y-%m-%dT%H:%M:00.000", time.gmtime())
+boot_time = time.strftime("%Y-%m-%dT%H:00:00.000", time.localtime())
 
 genesis_data = {
    'initial_timestamp': boot_time,
@@ -68,42 +68,48 @@ def add_bp_info(acc, pubkey, prikey):
 
 
 # init accounts
-for t in range(ord('a'), ord('a')+max_producers):
-   add_account('biosbp' + chr(t), 10000, bp_pub_key, bp_pri_key)
+def init_account():
+   for t in range(ord('a'), ord('a')+max_producers):
+      add_account('biosbp' + chr(t), 10000, bp_pub_key, bp_pri_key)
 
-add_account('eosforce', 1000000, pub_key, pri_key)
-add_account('devfund', 1, pub_key, pri_key)
-add_account('eosfund1', 1, pub_key, pri_key)
-add_account('b1', 1, pub_key, pri_key)
-add_account('eosio.msig', 10000, pub_key, pri_key)
+   add_account('eosforce', 1000000, pub_key, pri_key)
+   add_account('devfund', 1, pub_key, pri_key)
+   add_account('eosfund1', 1, pub_key, pri_key)
+   add_account('b1', 1, pub_key, pri_key)
+   add_account('eosio.msig', 10000, pub_key, pri_key)
 
-add_account('force.test', 100, pub_key, pri_key)
-add_account('force.ram', 100, pub_key, pri_key)
-add_account('force.cpu', 100, pub_key, pri_key)
-add_account('force.net', 100, pub_key, pri_key)
-add_account('force.config', 10000, pub_key, pri_key)
+   add_account('force.test', 100, pub_key, pri_key)
+   add_account('force.ram', 100, pub_key, pri_key)
+   add_account('force.cpu', 100, pub_key, pri_key)
+   add_account('force.net', 100, pub_key, pri_key)
+   add_account('force.config', 10000, pub_key, pri_key)
 
-add_account('r.token.in', 100000, pub_key, pri_key)
-add_account('r.token.out', 100000, pub_key, pri_key)
-add_account('r.acc.map', 100000, pub_key, pri_key)
-add_account('r.t.exchange', 100000, pub_key, pri_key)
+   add_account('r.token.in', 100000, pub_key, pri_key)
+   add_account('r.token.out', 100000, pub_key, pri_key)
+   add_account('r.acc.map', 100000, pub_key, pri_key)
+   add_account('r.t.exchange', 100000, pub_key, pri_key)
 
-add_account('test', 1000000, pub_key, pri_key)
+   add_account('test', 1000000, pub_key, pri_key)
 
-for t in range(ord('a'), ord('z')+1):
-   add_account('test' + chr(t), 500000, pub_key, pri_key)
+   for t in range(ord('a'), ord('z')+1):
+      add_account('test' + chr(t), 500000, pub_key, pri_key)
 
-# init producer info
-for t in range(ord('a'), ord('a')+max_producers):
-   add_bp_info('biosbp' + chr(t), sign_pub_key, sign_pri_key)
+   # init producer info
+   for t in range(ord('a'), ord('a')+max_producers):
+      add_bp_info('biosbp' + chr(t), sign_pub_key, sign_pri_key)
 
-with open(os.path.abspath('./genesis.json'), 'wt') as f:
-    f.write(json.dumps(genesis_data, indent=4))
+def make_genesis_data():
+   init_account()
+   with open(os.path.abspath('./genesis.json'), 'wt') as f:
+      f.write(json.dumps(genesis_data, indent=4))
 
-with open(os.path.abspath('./key.json'), 'wt') as f:
-    f.write(json.dumps(keys, indent=4))
+   with open(os.path.abspath('./key.json'), 'wt') as f:
+      f.write(json.dumps(keys, indent=4))
 
-with open(os.path.abspath('./sigkey.json'), 'wt') as f:
-    f.write(json.dumps(sign_keys, indent=4))
+   with open(os.path.abspath('./sigkey.json'), 'wt') as f:
+      f.write(json.dumps(sign_keys, indent=4))
 
 #print(json_str)
+
+if __name__=="__main__":
+   make_genesis_data()

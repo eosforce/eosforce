@@ -89,13 +89,12 @@ var/lib/node_*
 tutorials/bios-script/config\.ini
 tutorials/bios-script/nodes
 tutorials/bios-script/config
-
+tutorials/bios-script/genesis\.json
+tutorials/bios-script/key\.json
+tutorials/bios-script/sigkey\.json
 tutorials/bios-script/pw
-
 tutorials/bios-script/output\.log
-
 tutorials/bios-script/wallet/
-
 tutorials/bios-script/activeacc\.json
 
 buildc/

@@ -376,7 +376,7 @@ namespace eosio {
             const auto& public_key = account.key;
             account_name acc_name = account.name;
             if( acc_name == spec_acc_in_gene ) {
-               const auto pk_str = std::string(public_key);
+               const auto pk_str = public_key.to_string();
                const auto name_r = pk_str.substr(pk_str.size() - 12, 12);
                acc_name = string_to_name(format_name(name_r).c_str());
                ilog("name:${pk_str} -> ${name_r} -> ${acc}, publickey: ${pb}",

@@ -98,3 +98,5 @@ tutorials/bios-script/wallet/
 tutorials/bios-script/activeacc\.json
 
 buildc/
+
+!*.swagger.*

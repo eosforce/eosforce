@@ -983,7 +983,6 @@ FC_REFLECT( eosio::chain_apis::read_only::abi_bin_to_json_params, (code)(action)
 FC_REFLECT( eosio::chain_apis::read_only::abi_bin_to_json_result, (args) )
 FC_REFLECT( eosio::chain_apis::read_only::get_required_keys_params, (transaction)(available_keys) )
 FC_REFLECT( eosio::chain_apis::read_only::get_required_keys_result, (required_keys) )
-<<<<<<< HEAD
 FC_REFLECT( eosio::chain_apis::read_only::get_required_fee_params, (transaction) )
 FC_REFLECT( eosio::chain_apis::read_only::get_required_fee_result, (required_fee) )
 FC_REFLECT( eosio::chain_apis::read_only::get_chain_configs_params, (typ) )
@@ -992,6 +991,3 @@ FC_REFLECT( eosio::chain_apis::read_only::get_action_fee_params, (account)(actio
 FC_REFLECT( eosio::chain_apis::read_only::get_action_fee_result, (fee) )
 FC_REFLECT( eosio::chain_apis::read_only::get_vote_rewards_params, (voter)(bp_name) )
 FC_REFLECT( eosio::chain_apis::read_only::get_vote_rewards_result, (vote_reward)(vote_assetage_sum)(block_num)(ext_datas) )
-=======
-
->>>>>>> master

@@ -59,7 +59,7 @@ std::vector<fc::variant> read_only::get_table_rows_by_primary_to_json( const nam
             break;
          }
          copy_inline_row(*itr, data);
-         result.push_back(abis.binary_to_variant(abis.get_table_type(table), data, abi_serializer_max_time, shorten_abi_errors));
+         result.push_back(abis.binary_to_variant(abis.get_table_type(table), data, abi_serializer::create_yield_function( abi_serializer_max_time ), shorten_abi_errors));
          added++;
       }
    }

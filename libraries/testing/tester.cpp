@@ -1007,7 +1007,7 @@ namespace eosio { namespace testing {
          );
 
       signed_transaction trx;
-      abi_serializer::from_variant(pretty_trx, trx, get_resolver(), abi_serializer_max_time);
+      abi_serializer::from_variant(pretty_trx, trx, get_resolver(), abi_serializer::create_yield_function( abi_serializer_max_time ));
       set_transaction_headers(trx);
 
       trx.sign( get_private_key( account, name(config::active_name).to_string() ), control->get_chain_id()  );

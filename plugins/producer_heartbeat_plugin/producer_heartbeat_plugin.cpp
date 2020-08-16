@@ -141,7 +141,7 @@ class producer_heartbeat_plugin_impl {
                return;
             if(!producer_name)
                return;
-            abi_serializer eosio_serializer(abi, abi_serializer_max_time);
+            abi_serializer eosio_serializer(abi, abi_serializer::create_yield_function( abi_serializer_max_time ));
             signed_transaction trx;
             action act;
             act.account = heartbeat_contract;
@@ -154,7 +154,7 @@ class producer_heartbeat_plugin_impl {
                mutable_variant_object()
                   ("bpname", producer_name)
                   ("timestamp", fc::time_point::now()), 
-               abi_serializer_max_time);
+               abi_serializer::create_yield_function( abi_serializer_max_time ));
             trx.actions.push_back(act);
             
             trx.expiration = cc.head_block_time() + fc::seconds(30);

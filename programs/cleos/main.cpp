@@ -543,7 +543,7 @@ void print_result( const fc::variant& result ) { try {
 
 using std::cout;
 
-void send_actions(std::vector<chain::action>&& actions, packed_transaction::compression_type compression = packed_transaction::compression_type::none ) {
+void send_actions(std::vector<chain::action>&& actions, packed_transaction::compression_type compression) {
    std::ofstream out;
    if (tx_json_save_file.length()) {
       out.open(tx_json_save_file);
@@ -2060,9 +2060,9 @@ int main( int argc, char** argv ) {
 
    // get config
    string chain_config_name_str;
-   auto getChainConfig = get->add_subcommand("config", localized("Get chain config by name from chain"), false);
+   auto getChainConfig = get->add_subcommand("config", localized("Get chain config by name from chain"));
    getChainConfig->add_option("name", chain_config_name_str, localized("Name of chain config"))->required();
-   getChainConfig->set_callback([&] {
+   getChainConfig->callback([&] {
       auto arg= fc::mutable_variant_object( "typ", chain_config_name_str);
       std::cout << fc::json::to_pretty_string(call(get_chain_configs, arg)) << std::endl;
    });
@@ -2070,10 +2070,10 @@ int main( int argc, char** argv ) {
    // get fee
    string get_fee_account_name_str;
    string get_fee_action_name_str;
-   auto getActionFee = get->add_subcommand("fee", localized("Get fee of action account name and action name"), false);
+   auto getActionFee = get->add_subcommand("fee", localized("Get fee of action account name and action name"));
    getActionFee->add_option("account", get_fee_account_name_str, localized("Action account"))->required();
    getActionFee->add_option("action", get_fee_action_name_str, localized("Action name"))->required();
-   getActionFee->set_callback([&] {
+   getActionFee->callback([&] {
       auto result = call(get_action_fee, fc::mutable_variant_object("json", false)
          ("account", get_fee_account_name_str)
          ("action", get_fee_action_name_str)
@@ -3155,12 +3155,12 @@ int main( int argc, char** argv ) {
    auto setemergency = system->add_subcommand("setemergency", localized("Setting the status of the chain is an emergency"));
    add_standard_transaction_options(setemergency);
    setemergency->add_option("bp_name", bp_name_str, localized("bp name (string)"))->required();
-   setemergency->set_callback([&] { set_or_cancle_emergency(true); });
+   setemergency->callback([&] { set_or_cancle_emergency(true); });
 
    auto cancleemergency = system->add_subcommand("cancleemergency", localized("Setting the status of the chain is an emergency"));
    add_standard_transaction_options(cancleemergency);
    cancleemergency->add_option("bp_name", bp_name_str, localized("bp name (string)"))->required();
-   cancleemergency->set_callback([&] { set_or_cancle_emergency(false); });
+   cancleemergency->callback([&] { set_or_cancle_emergency(false); });
 
    auto listbps = list_bp_subcommand(system);
 

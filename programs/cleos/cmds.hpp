@@ -41,7 +41,7 @@ struct vote_producer_list_subcommand {
       auto vote_proxy = actionRoot->add_subcommand("list", localized("Get all of Voting information for the voter"));
       vote_proxy->add_option("voter", voter_str, localized("The voting account"))->required();
 
-      vote_proxy->set_callback([this] {
+      vote_proxy->callback([this] {
          auto result = call(get_table_func, fc::mutable_variant_object("json", true)
                ("code", name(config::system_account_name).to_string())
                ("scope", voter_str)
@@ -68,7 +68,7 @@ struct update_bp_subcommand {
       add_standard_transaction_options(register_producer);
 
 
-      register_producer->set_callback([this] {
+      register_producer->callback([this] {
          const auto producer_name = string_to_name(producer_str);
          public_key_type producer_key;
          try {
@@ -92,7 +92,7 @@ struct vote_producer_claim_subcommand {
       add_standard_transaction_options(vote_proxy);
 
 
-      vote_proxy->set_callback([this] {
+      vote_proxy->callback([this] {
          const auto voter_name = string_to_name( voter_str );
          fc::variant act_payload = fc::mutable_variant_object()
                ("voter", voter_name)
@@ -113,7 +113,7 @@ struct vote_producer_unfreeze_subcommand {
       vote_proxy->add_option("bpname", bpname_str, localized("Receive the dividend bp name"))->required();
       add_standard_transaction_options(vote_proxy);
 
-      vote_proxy->set_callback([this] {
+      vote_proxy->callback([this] {
          const auto voter_name = string_to_name( voter_str );
          fc::variant act_payload = fc::mutable_variant_object()
                ("voter", voter_name)
@@ -136,7 +136,7 @@ struct vote_producer_vote_subcommand {
       vote_proxy->add_option("amount", amount, localized("The amount of EOS to vote"))->required();
       add_standard_transaction_options(vote_proxy);
 
-      vote_proxy->set_callback([this] {
+      vote_proxy->callback([this] {
          const auto voter_name = string_to_name( voter_str );
          char doubleamount[20] = {0};
          sprintf(doubleamount,"%.4f",amount);
@@ -155,7 +155,7 @@ struct list_bp_subcommand {
    list_bp_subcommand(CLI::App* actionRoot) {
       auto list_bps = actionRoot->add_subcommand("listbps", localized("Get all of bp information"));
       list_bps->add_option("-l,--limit", limit, localized("The maximum number of rows to return"));
-      list_bps->set_callback([this] {
+      list_bps->callback([this] {
          auto result = call(get_table_func, fc::mutable_variant_object("json", true)
                ("code", name(config::system_account_name).to_string())
                ("scope", "eosio")
@@ -185,7 +185,7 @@ struct set_fee_subcommand {
       set_fee_subcmd->add_option("ram_limit", ram_limit_by_contract, localized("The ram max use limit to set to action"));
       add_standard_transaction_options(set_fee_subcmd);
 
-      set_fee_subcmd->set_callback([this] {
+      set_fee_subcmd->callback([this] {
          asset a;
          a = a.from_string(fee_to_set);
          dlog("set fee ${act}, ${fee}", ("act", action_to_set_fee)("fee", a));

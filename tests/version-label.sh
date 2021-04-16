@@ -1,15 +1,7 @@
 #!/bin/bash
+set -eo pipefail
 # The purpose of this test is to ensure that the output of the "nodeos --version" command matches the version string defined by our CMake files
-# If the environment variable BUILDKITE_TAG is empty or unset, this test will echo success
 echo '##### Nodeos Version Label Test #####'
-if [[ "$BUILDKITE_TAG" == '' || "$BUILDKITE" != 'true' ]]; then
-    echo 'This test is only run in Buildkite against tagged builds.'
-    [[ "$BUILDKITE" != 'true' ]] && echo 'This is not Buildkite.'
-    [[ "$BUILDKITE_TAG" == '' ]] && echo 'This is not a tagged build.'
-    echo 'Exiting...'
-    exit 0
-fi
-echo 'Tagged build detected, running test.'
 # orient ourselves
 [[ "$EOSIO_ROOT" == '' ]] && EOSIO_ROOT=$(echo $(pwd)/ | grep -ioe '.*/eos/')
 [[ "$EOSIO_ROOT" == '' ]] && EOSIO_ROOT=$(echo $(pwd)/ | grep -ioe '.*/EOSIO/eosio/')
@@ -62,10 +54,16 @@ if [[ "$EXPECTED" == '' ]]; then
 fi
 echo "Expecting \"$EXPECTED\"..."
 # get nodeos version
-ACTUAL=$($EOSIO_ROOT/build/bin/nodeos --version) || : # nodeos currently returns -1 for --version
-# test
+ACTUAL=$($EOSIO_ROOT/build/bin/nodeos --version)
+EXIT_CODE=$?
+# verify 0 exit code explicitly
+if [[ $EXIT_CODE -ne 0 ]]; then
+    echo "Nodeos produced non-zero exit code \"$EXIT_CODE\"."
+    exit $EXIT_CODE
+fi
+# test version
 if [[ "$EXPECTED" == "$ACTUAL" ]]; then
-    echo 'Passed with \"$ACTUAL\".'
+    echo "Passed with \"$ACTUAL\"."
     exit 0
 fi
 echo 'Failed!'

@@ -1511,7 +1511,7 @@ struct controller_impl {
                      transaction_metadata::trx_type::implicit );
 
                auto onftrace = push_transaction(onftrx, fc::time_point::maximum(),
-                  config::default_min_transaction_cpu_usage, true);
+                  config::default_min_transaction_cpu_usage, true, 0);
                if( onftrace->except ) throw *onftrace->except;
             } catch( const fc::exception& e ) {
                EOS_ASSERT(false, transaction_exception, "on fee transaction failed, exception: ${e}", ( "e", e ));

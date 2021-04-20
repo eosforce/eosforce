@@ -1587,6 +1587,71 @@ void get_account( const string& accountName, const string& coresym, bool json_fo
          return ss.str();
       };
 
+      std::cout << std::fixed << setprecision(3);
+      std::cout << indent << std::left << std::setw(11) << "used:"      << std::right << std::setw(18) << to_pretty_net( res.net_limit.used ) << "\n";
+      std::cout << indent << std::left << std::setw(11) << "available:" << std::right << std::setw(18) << to_pretty_net( res.net_limit.available ) << "\n";
+      std::cout << indent << std::left << std::setw(11) << "limit:"     << std::right << std::setw(18) << to_pretty_net( res.net_limit.max ) << "\n";
+      std::cout << std::endl;
+
+      std::cout << "cpu bandwidth:" << std::endl;
+
+      if ( res.total_resources.is_object() ) {
+         auto cpu_total = to_asset(res.total_resources.get_object()["cpu_weight"].as_string());
+
+         if( res.self_delegated_bandwidth.is_object() ) {
+            asset cpu_own = asset::from_string( res.self_delegated_bandwidth.get_object()["cpu_weight"].as_string() );
+            staked += cpu_own;
+
+            auto cpu_others = cpu_total - cpu_own;
+
+            std::cout << indent << "staked:" << std::setw(20) << cpu_own
+                      << std::string(11, ' ') << "(total stake delegated from account to self)" << std::endl
+                      << indent << "delegated:" << std::setw(17) << cpu_others
+                      << std::string(11, ' ') << "(total staked delegated to account from others)" << std::endl;
+         } else {
+            auto cpu_others = cpu_total;
+            std::cout << indent << "delegated:" << std::setw(17) << cpu_others
+                      << std::string(11, ' ') << "(total staked delegated to account from others)" << std::endl;
+         }
+      }
+
+      std::cout << std::fixed << setprecision(3);
+      std::cout << indent << std::left << std::setw(11) << "used:"      << std::right << std::setw(18) << to_pretty_time( res.cpu_limit.used ) << "\n";
+      std::cout << indent << std::left << std::setw(11) << "available:" << std::right << std::setw(18) << to_pretty_time( res.cpu_limit.available ) << "\n";
+      std::cout << indent << std::left << std::setw(11) << "limit:"     << std::right << std::setw(18) << to_pretty_time( res.cpu_limit.max ) << "\n";
+      std::cout << std::endl;
+
+      if( res.subjective_cpu_bill_limit.valid() ) {
+         std::cout << "subjective cpu bandwidth:" << std::endl;
+         std::cout << indent << std::left << std::setw(11) << "used:"      << std::right << std::setw(18) << to_pretty_time( (res.subjective_cpu_bill_limit)->used ) << "\n";
+         std::cout << std::endl;
+      }
+
+      if( res.refund_request.is_object() ) {
+         auto obj = res.refund_request.get_object();
+         auto request_time = fc::time_point_sec::from_iso_string( obj["request_time"].as_string() );
+         fc::time_point refund_time = request_time + fc::days(3);
+         auto now = res.head_block_time;
+         asset net = asset::from_string( obj["net_amount"].as_string() );
+         asset cpu = asset::from_string( obj["cpu_amount"].as_string() );
+         unstaking = net + cpu;
+
+         if( unstaking > asset( 0, unstaking.get_symbol() ) ) {
+            std::cout << std::fixed << setprecision(3);
+            std::cout << "unstaking tokens:" << std::endl;
+            std::cout << indent << std::left << std::setw(25) << "time of unstake request:" << std::right << std::setw(20) << string(request_time);
+            if( now >= refund_time ) {
+               std::cout << " (available to claim now with 'eosio::refund' action)\n";
+            } else {
+               std::cout << " (funds will be available in " << to_pretty_time( (refund_time - now).count(), 0 ) << ")\n";
+            }
+            std::cout << indent << std::left << std::setw(25) << "from net bandwidth:" << std::right << std::setw(18) << net << std::endl;
+            std::cout << indent << std::left << std::setw(25) << "from cpu bandwidth:" << std::right << std::setw(18) << cpu << std::endl;
+            std::cout << indent << std::left << std::setw(25) << "total:" << std::right << std::setw(18) << unstaking << std::endl;
+            std::cout << std::endl;
+         }
+      }
+
       if( res.core_liquid_balance.valid() ) {
          std::cout << res.core_liquid_balance->get_symbol().name() << " balances: " << std::endl;
          std::cout << indent << std::left << std::setw(11)

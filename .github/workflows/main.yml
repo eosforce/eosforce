@@ -56,7 +56,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: amazon_linux-2-build
       - name: Parallel Test
@@ -76,7 +76,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: amazon_linux-2-build
       - name: WASM Spec Test
@@ -96,7 +96,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: amazon_linux-2-build
       - name: Serial Test
@@ -140,7 +140,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: centos-77-build
       - name: Parallel Test
@@ -160,7 +160,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: centos-77-build
       - name: WASM Spec Test
@@ -180,7 +180,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: centos-77-build
       - name: Serial Test
@@ -224,7 +224,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: ubuntu-1604-build
       - name: Parallel Test
@@ -244,7 +244,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: ubuntu-1604-build
       - name: WASM Spec Test
@@ -264,7 +264,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: ubuntu-1604-build
       - name: Serial Test
@@ -308,7 +308,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: ubuntu-1804-build
       - name: Parallel Test
@@ -328,7 +328,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: ubuntu-1804-build
       - name: WASM Spec Test
@@ -348,7 +348,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: ubuntu-1804-build
       - name: Serial Test
@@ -390,7 +390,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: macos-1015-build
       - name: Parallel Test
@@ -408,7 +408,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: macos-1015-build
       - name: WASM Spec Test
@@ -426,7 +426,7 @@ jobs:
         with:
           submodules: recursive
       - name: Download Build Artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4.1.7
         with:
           name: macos-1015-build
       - name: Serial Test
